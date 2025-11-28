@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class KurikulumController extends Controller
 {
-    public function getAllData(): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $kurikulum = Kurikulum::with(['prodi'])->get();
@@ -35,7 +35,7 @@ class KurikulumController extends Controller
         }
     }
 
-    public function index(): JsonResponse
+    public function getAllData(): JsonResponse
     {
         try {
             $kurikulums = Kurikulum::with(['prodi'])->get();

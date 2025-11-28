@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\ManagementPengguna;
 
-use App\Http\Controllers\Controller;
+use Exception;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Exception;
+use App\Models\RefreshToken as RefreshTokenModel;
 
 class UserController extends Controller
 {
@@ -15,10 +17,13 @@ class UserController extends Controller
     {
         try {
             $users = User::with('roles')->get();
-
+            $role = Role::get();
             return response()->json([
                 'success' => true,
-                'data' => $users,
+                'data' => [
+                    'users' => $users,
+                    'role' => $role
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json(['message' => 'Failed to retrieve users.', 'error' => $e->getMessage()], 500);
@@ -45,8 +50,8 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'password' => 'required|min:6',
-                'status' => 'nullable|boolean',
+                'password' => 'required|min:6|confirmed',
+                'status' => 'nullable|in:aktif,tidak-aktif',
             ]);
 
             if ($validator->fails()) {
@@ -57,7 +62,7 @@ class UserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'status' => $request->status ?? true,
+                'status' => $request->status,
             ]);
 
             if ($request->roles) {
@@ -82,8 +87,8 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|email|unique:users,email,' . $id,
-                'password' => 'sometimes|min:6',
-                'status' => 'sometimes|boolean',
+                'password' => 'sometimes|min:6|confirmed',
+                'status' => 'sometimes|in:aktif,tidak-aktif',
             ]);
 
             if ($validator->fails()) {
@@ -113,6 +118,10 @@ class UserController extends Controller
     public function destroy($id)
     {
         try {
+            // Hapus refresh token terkait user
+            RefreshTokenModel::where('user_id', $id)->delete();
+
+            // Baru hapus user
             $user = User::findOrFail($id);
             $user->delete();
 
@@ -120,8 +129,11 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'User deleted successfully.',
             ]);
-        } catch (Exception $e) {
-            return response()->json(['message' => 'Failed to delete user.', 'error' => $e->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete user.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

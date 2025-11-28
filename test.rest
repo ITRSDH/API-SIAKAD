@@ -1,15 +1,15 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token =
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NjM5NjQ4NDQsImV4cCI6MTc2Mzk2ODQ0NCwibmJmIjoxNzYzOTY0ODQ0LCJqdGkiOiJOaWZ4R01HWlZHemQ5RWNMIiwic3ViIjoiYTA2MDNjMjItN2M5YS00MzRiLTgxZGUtYTlmNjUyOWRjYzQwIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.MH2E0LEugOS4GXYVKNgN2GxD8YsywjkwTrX1UaV6LcQ
 
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "email": "adminsuper@example.com",
-  "password": "password123"
+  "email": "admin@example.com",
+  "password": "password"
 }
 
 ### Logout
@@ -24,6 +24,12 @@ Authorization: Bearer {{ token }}
 GET {{ base_url }}/auth/me
 Authorization: Bearer {{ token }}
 
-### Get list of Mata Kuliah
+### Get list of Users
 GET {{ base_url }}/users
 Authorization: Bearer {{ token }}
+
+### Get list of Permissions Menu
+GET http://localhost:8001/api/permissions/menu
+Authorization: Bearer {{ token }}
+
+

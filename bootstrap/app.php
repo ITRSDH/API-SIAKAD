@@ -13,7 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'jwt.token' =>  App\Http\Middleware\JWTTokenMiddleware::class
+            'jwt.token' =>  App\Http\Middleware\JWTTokenMiddleware::class,
+            'check.role.permission' => \App\Http\Middleware\CheckRolePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

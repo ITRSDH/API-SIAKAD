@@ -12,7 +12,7 @@ use Exception;
 
 class ProdiController extends Controller
 {
-    public function getAllData(): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $prodi = Prodi::with(['jenjang'])->get();
@@ -39,7 +39,7 @@ class ProdiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function getAllData(Request $request): JsonResponse
     {
         try {
             // $prodi = Prodi::with('jenjang')->paginate($request->paginator, ['*'], 'page', $request->page);

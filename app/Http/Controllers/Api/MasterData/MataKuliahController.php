@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class MataKuliahController extends Controller
 {
-    public function getAllData(): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             // Ambil data tanpa nested relasi untuk mata_kuliah
@@ -41,7 +41,7 @@ class MataKuliahController extends Controller
         }
     }
 
-    public function index(): JsonResponse
+    public function getAllData(): JsonResponse
     {
         try {
             // Memuat relasi kurikulum

@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class KelasPararelController extends Controller
 {
-    public function getAllData(): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $kelasPararels = KelasPararel::with(['prodi'])->get();
@@ -35,7 +35,7 @@ class KelasPararelController extends Controller
         }
     }
 
-    public function index(): JsonResponse
+    public function getAllData(): JsonResponse
     {
         try {
             $kelasPararels = KelasPararel::with(['prodi'])->get();

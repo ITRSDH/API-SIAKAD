@@ -17,14 +17,14 @@ class UserSeeder extends Seeder
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'password' => bcrypt('password'),
-            'status' => 'active',
+            'status' => 'aktif',
         ]);
 
         User::create([
             'name' => 'Inactive User',
             'email' => 'inactive@example.com',
             'password' => bcrypt('password'),
-            'status' => 'inactive',
+            'status' => 'tidak-aktif',
         ]);
     }
 }

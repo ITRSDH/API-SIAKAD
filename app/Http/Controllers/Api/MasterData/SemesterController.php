@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class SemesterController extends Controller
 {
-    public function getAllData(): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $semester = Semester::with(['tahunAkademik'])->get();
@@ -36,7 +36,7 @@ class SemesterController extends Controller
         }
     }
 
-    public function index(): JsonResponse
+    public function getAllData(): JsonResponse
     {
         try {
             $semesters = Semester::with(['tahunAkademik'])->get();

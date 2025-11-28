@@ -17,35 +17,63 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         try {
+            // Validasi input dasar
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email',
-                'password' => 'required',
+                'password' => 'required', // password minimal 6 karakter
+            ], [
+                'email.required' => 'Email wajib diisi.',
+                'email.email' => 'Format email tidak valid.',
+                'password.required' => 'Password wajib diisi.',
+                // 'password.min' => 'Password minimal 6 karakter.',
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 422);
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
             }
 
+            // Ambil kredensial
             $credentials = $request->only('email', 'password');
 
+            //  Cek apakah user ada
             $user = User::where('email', $credentials['email'])->first();
 
-            if (!$user || !$user->status) {
-                return response()->json(['error' => 'Account is inactive or does not exist.'], 401);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Akun tidak ditemukan.'
+                ], 404);
             }
 
+            // Validasi status user
+            if ($user->status !== 'aktif') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Akun belum aktif. Silakan hubungi admin.'
+                ], 403);
+            }
+
+            // (Opsional) Jika pakai verifikasi email Laravel
             if (!$token = Auth::guard('api')->attempt($credentials)) {
-                return response()->json(['error' => 'Unauthorized'], 401);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Email atau password salah.'
+                ], 401);
             }
 
-            // Hapus refresh token lama
+            //  Hapus refresh token lama
             RefreshTokenModel::where('user_id', $user->id)->delete();
 
+            // Buat refresh token baru
             $refreshToken = $this->createRefreshToken($user->id, $request);
 
+            // Return response sukses
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful.',
+                'message' => 'Login berhasil.',
                 'data' => [
                     'access_token' => $token,
                     'refresh_token' => $refreshToken,
@@ -53,9 +81,14 @@ class AuthController extends Controller
                     'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
                     'user' => $this->transformUser($user),
                 ]
-            ]);
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['message' => 'Login failed.', 'error' => $e->getMessage()], 500);
+            // Tangani error tak terduga
+            return response()->json([
+                'success' => false,
+                'message' => 'Login gagal.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -64,7 +97,7 @@ class AuthController extends Controller
         try {
             $user = Auth::guard('api')->user();
 
-            if (!$user || !$user->status) {
+            if (!$user || $user->status !== 'aktif') {
                 return response()->json(['error' => 'User account is inactive or does not exist.'], 401);
             }
 
@@ -123,18 +156,49 @@ class AuthController extends Controller
         }
     }
 
-    public function me()
+    public function me(Request $request)
     {
         try {
             $user = Auth::guard('api')->user();
 
             if (!$user) {
-                return response()->json(['error' => 'User not authenticated'], 401);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
             }
 
-            return response()->json($this->transformUser($user));
-        } catch (Exception $e) {
-            return response()->json(['message' => 'Failed to retrieve user.', 'error' => $e->getMessage()], 500);
+            // Ambil data roles & permissions
+            $roles = $user->roles->pluck('name');
+            $permissions = $user->getAllPermissions()->pluck('name');
+
+            // Pastikan created_at dan updated_at berbentuk string tanggal, bukan integer
+            if (isset($data['created_at']) && is_numeric($data['created_at'])) {
+                $data['created_at'] = date('Y-m-d H:i:s', $data['created_at']);
+            }
+
+            if (isset($data['updated_at']) && is_numeric($data['updated_at'])) {
+                $data['updated_at'] = date('Y-m-d H:i:s', $data['updated_at']);
+            }
+
+            // Return langsung tanpa transformUser
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'role' => $roles,
+                    'permission' => $permissions,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user data.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -160,8 +224,9 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'roles' => $user->getRoleNames(),
-            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'status' => $user->status,
+            // 'roles' => $user->getRoleNames(),
+            // 'permissions' => $user->getAllPermissions()->pluck('name'),
         ];
     }
 }

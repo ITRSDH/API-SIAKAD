@@ -53,7 +53,7 @@ Route::group(['middleware' => 'api'], function ($router) {
         return response()->json([
             'message' => 'Selamat Datang.'
         ]);
-    })->name('api.hello');
+    });
 });
 
 Route::prefix('v1')->group(function () {
@@ -68,78 +68,121 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware('jwt.token')->group(function () {
+    Route::middleware('jwt.token', 'check.role.permission')->group(function () {
 
-        Route::apiResource('users', UserController::class);
-        Route::apiResource('roles', RoleController::class);
-        Route::apiResource('permissions', PermissionController::class);
+        Route::name('siakad.')->group(function () {
 
-        // Start Master Data
-        // Jenjang Pendidikan
-        Route::apiResource('jenjang-pendidikan', JenjangPendidikanController::class);
+            Route::name('master.')->group(function () {
 
-        // Program Studi
-        Route::apiResource('prodi', ProdiController::class);
-        Route::get('/all-prodi', [ProdiController::class, 'getAllData']);
+                Route::name('referensi.')->group(function () {
 
-        // Tahun Akademik
-        Route::apiResource('tahun-akademik', TahunAkademikController::class);
-        Route::post('/tahun-akademik/{id}/aktif', [TahunAkademikController::class, 'setAktif']);
+                    // Jenjang Pendidikan
+                    Route::apiResource('jenjang-pendidikan', JenjangPendidikanController::class);
 
-        Route::apiResource('semester', SemesterController::class);
-        Route::get('/all-semester', [SemesterController::class, 'getAllData']);
+                    // Program Studi
+                    Route::apiResource('prodi', ProdiController::class);
+                    Route::get('/all-prodi', [ProdiController::class, 'getAllData'])->name('prodi.all');
 
-        Route::apiResource('kurikulum', KurikulumController::class);
-        Route::get('/all-kurikulum', [KurikulumController::class, 'getAllData']);
+                    // Jenis Kelas
+                    Route::apiResource('jenis-kelas', JenisKelasController::class);
 
-        Route::apiResource('mata-kuliah', MataKuliahController::class);
-        Route::get('/all-mata-kuliah', [MataKuliahController::class, 'getAllData']);
-        Route::get('/edit-mata-kuliah/{id}', [MataKuliahController::class, 'getEditData']);
+                    // Ruang
+                    Route::apiResource('ruang', RuangController::class);
 
-        Route::apiResource('jenis-kelas', JenisKelasController::class);
+                    // Jenis Pembayaran
+                    Route::apiResource('jenis-pembayaran', JenisPembayaranController::class);
+                });
 
-        Route::apiResource('kelas-pararel', KelasPararelController::class);
-        Route::get('/all-kelas-pararel', [KelasPararelController::class, 'getAllData']);
+                Route::name('setting-akademik.')->group(function () {
 
-        Route::apiResource('ruang', RuangController::class);
+                    // Tahun Akademik
+                    Route::apiResource('tahun-akademik', TahunAkademikController::class);
+                    Route::post('/tahun-akademik/{id}/aktif', [TahunAkademikController::class, 'setAktif'])->name('tahun-akademik.aktif');
 
-        Route::apiResource('dosen', DosenController::class);
+                    // Semester
+                    Route::apiResource('semester', SemesterController::class);
+                    Route::get('/all-semester', [SemesterController::class, 'getAllData'])->name('semester.all');
 
-        Route::apiResource('mahasiswa', MahasiswaController::class);
+                    // Kurikulum
+                    Route::apiResource('kurikulum', KurikulumController::class);
+                    Route::get('/all-kurikulum', [KurikulumController::class, 'getAllData'])->name('kurikulum.all');
 
-        Route::apiResource('kelas-mk', KelasMkController::class);
+                    // Mata Kuliah
+                    Route::apiResource('mata-kuliah', MataKuliahController::class);
+                    Route::get('/all-mata-kuliah', [MataKuliahController::class, 'getAllData'])->name('mata-kuliah.all');
+                    Route::get('/edit-mata-kuliah/{id}', [MataKuliahController::class, 'getEditData'])->name('mata-kuliah.edit');
 
-        Route::apiResource('jadwal-kuliah', JadwalKuliahController::class);
+                    // Kelas Pararel
+                    Route::apiResource('kelas-pararel', KelasPararelController::class);
+                    Route::get('/all-kelas-pararel', [KelasPararelController::class, 'getAllData'])->name('kelas-pararel.all');
 
-        Route::apiResource('dosen-kelas-mk', DosenKelasMkController::class);
+                    // Kelas MK
+                    Route::apiResource('kelas-mk', KelasMkController::class);
 
-        Route::apiResource('beban-ajar-dosen', BebanAjarDosenController::class);
+                    // Jadwal Kuliah
+                    Route::apiResource('jadwal-kuliah', JadwalKuliahController::class);
 
-        Route::apiResource('presensi', PresensiController::class);
+                    // Dosen Kelas MK
+                    Route::apiResource('dosen-kelas-mk', DosenKelasMkController::class);
 
-        Route::apiResource('nilai', NilaiController::class);
+                    // Beban Ajar Dosen
+                    Route::apiResource('beban-ajar-dosen', BebanAjarDosenController::class);
 
-        Route::apiResource('krs', KrsController::class);
+                    // Presensi
+                    Route::apiResource('presensi', PresensiController::class);
 
-        Route::apiResource('krs-detail', KrsDetailController::class);
+                    // Nilai
+                    Route::apiResource('nilai', NilaiController::class);
 
-        Route::apiResource('khs', KhsController::class);
+                    // KRS
+                    Route::apiResource('krs', KrsController::class);
 
-        Route::apiResource('khs-detail', KhsDetailController::class);
+                    // KRS Detail
+                    Route::apiResource('krs-detail', KrsDetailController::class);
 
-        Route::apiResource('jenis-pembayaran', JenisPembayaranController::class);
+                    // KHS
+                    Route::apiResource('khs', KhsController::class);
 
-        Route::apiResource('pembayaran-mahasiswa', PembayaranMahasiswaController::class);
+                    // KHS Detail
+                    Route::apiResource('khs-detail', KhsDetailController::class);
 
-        Route::apiResource('status-akademik-mahasiswa', StatusAkademikMahasiswaController::class);
+                    // Pembayaran Mahasiswa
+                    Route::apiResource('pembayaran-mahasiswa', PembayaranMahasiswaController::class);
 
-        Route::apiResource('perwalian', PerwalianController::class);
+                    // Status Akademik Mahasiswa
+                    Route::apiResource('status-akademik-mahasiswa', StatusAkademikMahasiswaController::class);
 
-        Route::apiResource('berkas-mahasiswa', BerkasMahasiswaController::class);
+                    // Perwalian
+                    Route::apiResource('perwalian', PerwalianController::class);
 
-        Route::apiResource('alumni', AlumniController::class);
+                    // Berkas Mahasiswa
+                    Route::apiResource('berkas-mahasiswa', BerkasMahasiswaController::class);
 
-        Route::apiResource('kelas-mahasiswa', KelasMahasiswaController::class);
+                    // Alumni
+                    Route::apiResource('alumni', AlumniController::class);
+
+                    // Kelas Mahasiswa
+                    Route::apiResource('kelas-mahasiswa', KelasMahasiswaController::class);
+                });
+
+                // Dosen
+                Route::apiResource('dosen', DosenController::class);
+
+                // Mahasiswa
+                Route::apiResource('mahasiswa', MahasiswaController::class);
+            });
+        });
+
+        Route::name('pengguna.')->group(function () {
+
+            Route::name('setting.')->group(function () {
+                Route::apiResource('users', UserController::class);
+                Route::apiResource('roles', RoleController::class);
+                Route::apiResource('permissions', PermissionController::class);
+                Route::post('/permissions/sync', [PermissionController::class, 'sync'])->name('permissions.sync');
+            });
+        });
+
 
         // End Master Data
 
@@ -156,3 +199,5 @@ Route::prefix('v1')->group(function () {
         // End Website Landing Page
     });
 });
+
+Route::get('/permissions/menu', [PermissionController::class, 'getSidebar'])->name('permissions.menu');

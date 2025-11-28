@@ -14,11 +14,16 @@ class RoleController extends Controller
     {
         try {
             $roles = Role::with('permissions')->get();
+            $permissions = Permission::get();
 
             return response()->json([
                 'success' => true,
-                'data' => $roles
-            ]);
+                'message' => 'Data All Role berhasil diambil',
+                'data' => [
+                    'roles' => $roles,
+                    'permissions' => $permissions,
+                ]
+            ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -57,7 +62,7 @@ class RoleController extends Controller
     public function show($id)
     {
         try {
-            $role = Role::with('permissions')->findById($id);
+            $role = Role::with('permissions')->find($id);
 
             if (!$role) {
                 return response()->json([

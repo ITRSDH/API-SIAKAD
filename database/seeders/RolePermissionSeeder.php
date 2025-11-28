@@ -363,7 +363,7 @@ class RolePermissionSeeder extends Seeder
             'name' => 'Admin Super',
             'email' => 'adminsuper@example.com',
             'password' => Hash::make('password123'), // Ganti dengan password yang aman
-            'status' => 'active', // Sesuaikan dengan enum atau string yang digunakan
+            'status' => 'aktif', // Sesuaikan dengan enum atau string yang digunakan
         ]);
 
         // Assign role admin ke user yang baru dibuat
