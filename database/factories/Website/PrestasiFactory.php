@@ -12,17 +12,25 @@ class PrestasiFactory extends Factory
 
     public function definition()
     {
+        $prestasiTitles = [
+            'Juara 1 Kompetisi Coding Nasional',
+            'Pemenang Hackathon 2024',
+            'Beasiswa Penuh Akademik',
+            'Juara Debat Internasional',
+            'Pemenang Lomba Inovasi Teknologi',
+            'Mahasiswa Berprestasi Tahun 2024',
+            'Penerima Award Kepemimpinan',
+            'Juara Kompetisi UI/UX Design',
+            'Pemenang Scholarship Internasional',
+            'Penghargaan Best Paper di Konferensi Internasional',
+        ];
+
         return [
-            'id' => (string) Str::uuid(),
             'nama_mahasiswa' => $this->faker->name(),
-            'program_studi' => $this->faker->randomElement(['Teknik Informatika', 'Sistem Informasi', 'Manajemen']),
-            'judul_prestasi' => $this->faker->sentence(3),
+            'judul_prestasi' => $this->faker->randomElement($prestasiTitles),
             'tingkat' => $this->faker->randomElement(['kampus', 'nasional', 'internasional']),
-            'tahun' => $this->faker->year(),
-            'deskripsi' => $this->faker->optional()->paragraph(),
-            'gambar' => $this->faker->optional()->imageUrl(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'tahun' => $this->faker->numberBetween(2020, 2024),
+            'deskripsi' => $this->faker->paragraph(),
         ];
     }
 }

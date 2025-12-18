@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Website\Ormawa;
 use App\Http\Requests\Website\StoreOrmawaRequest;
 use App\Http\Requests\Website\UpdateOrmawaRequest;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
 
 class OrmawaController extends Controller
@@ -15,7 +16,7 @@ class OrmawaController extends Controller
     {
         try {
             $ormawa = Ormawa::select([
-                'id', 'nama', 'deskripsi', 'gambar', 'created_at', 'updated_at'
+                'id', 'nama', 'deskripsi', 'kategori', 'gambar', 'created_at', 'updated_at'
             ])->orderBy('created_at', 'desc')->get();
             return response()->json([
                 'success' => true,
@@ -31,15 +32,14 @@ class OrmawaController extends Controller
         }
     }
 
-    public function store(StoreOrmawaRequest $request)
+    public function store(StoreOrmawaRequest $request, ImageService $imageService)
     {
         try {
             $data = $request->validated();
 
             if ($request->hasFile('gambar')) {
-                $file = $request->file('gambar');
-                $path = $file->store('ormawa', 'public');
-                $data['gambar'] = $path;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'ormawa');
+                $data['gambar'] = $newStoragePath;
             }
 
             $ormawa = Ormawa::create($data);
@@ -75,7 +75,7 @@ class OrmawaController extends Controller
         }
     }
 
-    public function update(UpdateOrmawaRequest $request, $id)
+    public function update(UpdateOrmawaRequest $request, $id, ImageService $imageService)
     {
         try {
             $ormawa = Ormawa::findOrFail($id);
@@ -83,12 +83,9 @@ class OrmawaController extends Controller
 
             if ($request->hasFile('gambar')) {
                 // Hapus gambar lama jika ada
-                if ($ormawa->gambar && Storage::disk('public')->exists($ormawa->gambar)) {
-                    Storage::disk('public')->delete($ormawa->gambar);
-                }
-                $file = $request->file('gambar');
-                $path = $file->store('ormawa', 'public');
-                $data['gambar'] = $path;
+                $oldPath = $ormawa->gambar ?? null;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'ormawa', $oldPath);
+                $data['gambar'] = $newStoragePath;
             }
 
             $ormawa->update($data);
@@ -106,10 +103,16 @@ class OrmawaController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy($id, ImageService $imageService)
     {
         try {
             $ormawa = Ormawa::findOrFail($id);
+            
+            // Hapus gambar jika ada
+            if ($ormawa->gambar && Storage::disk('public')->exists($ormawa->gambar)) {
+                $imageService->deletePublicFileIfExists($ormawa->gambar);
+            }
+            
             $ormawa->delete();
             return response()->json([
                 'success' => true,

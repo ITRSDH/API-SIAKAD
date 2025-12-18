@@ -5,6 +5,8 @@ namespace App\Models\Website;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\MasterData\Prodi;
 
 class Prestasi extends Model
 {
@@ -16,6 +18,7 @@ class Prestasi extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'id_prodi',
         'nama_mahasiswa',
         'program_studi',
         'judul_prestasi',
@@ -28,4 +31,10 @@ class Prestasi extends Model
     protected $casts = [
         'tahun' => 'integer',
     ];
+
+    // Relasi ke Prodi
+    public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(Prodi::class, 'id_prodi');
+    }
 }

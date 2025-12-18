@@ -15,7 +15,7 @@ class StorePrestasiRequest extends FormRequest
     {
         return [
             'nama_mahasiswa' => 'required|string|max:255',
-            'program_studi' => 'required|string|max:100',
+            'id_prodi' => 'nullable|exists:prodi,id',
             'judul_prestasi' => 'required|string|max:255',
             'tingkat' => 'required|string|max:100',
             'tahun' => 'required|integer',

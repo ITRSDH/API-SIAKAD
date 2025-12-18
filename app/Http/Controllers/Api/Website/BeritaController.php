@@ -7,6 +7,7 @@ use App\Models\Website\Berita;
 use Illuminate\Http\Request;
 use App\Http\Requests\Website\StoreBeritaRequest;
 use App\Http\Requests\Website\UpdateBeritaRequest;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
@@ -14,8 +15,21 @@ class BeritaController extends Controller
     public function index(Request $request)
     {
         try {
+            $search = $request->query('search');
+			$perPage = $request->query('per_page', 10);
+
             // Ambil semua data, tapi hanya kolom tertentu yang ditampilkan
-            $berita = Berita::select('id', 'judul', 'isi', 'kategori', 'created_at')->orderBy('created_at', 'desc')->get();
+            $query = Berita::select('id', 'judul', 'gambar', 'isi', 'kategori', 'tanggal')->orderBy('created_at', 'desc');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('judul', 'like', "%{$search}%")
+                      ->orWhere('kategori', 'like', "%{$search}%")
+                      ->orWhere('isi', 'like', "%{$search}%");
+                });
+            }
+
+            $berita = $query->paginate($perPage);
 
             return response()->json([
                 'success' => true,
@@ -31,14 +45,13 @@ class BeritaController extends Controller
         }
     }
 
-    public function store(StoreBeritaRequest $request)
+    public function store(StoreBeritaRequest $request, ImageService $imageService)
     {
         try {
             $data = $request->validated();
             if ($request->hasFile('gambar')) {
-                $file = $request->file('gambar');
-                $path = $file->store('berita', 'public');
-                $data['gambar'] = $path;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'berita');
+                $data['gambar'] = $newStoragePath;
             }
             $berita = Berita::create($data);
             return response()->json([
@@ -73,19 +86,16 @@ class BeritaController extends Controller
         }
     }
 
-    public function update(UpdateBeritaRequest $request, $id)
+    public function update(UpdateBeritaRequest $request, $id, ImageService $imageService)
     {
         try {
             $berita = Berita::findOrFail($id);
             $data = $request->validated();
             if ($request->hasFile('gambar')) {
                 // Hapus gambar lama jika ada
-                if ($berita->gambar && Storage::disk('public')->exists($berita->gambar)) {
-                    Storage::disk('public')->delete($berita->gambar);
-                }
-                $file = $request->file('gambar');
-                $path = $file->store('berita', 'public');
-                $data['gambar'] = $path;
+                $oldPath = $berita->gambar ?? null;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'berita', $oldPath);
+                $data['gambar'] = $newStoragePath;
             }
             $berita->update($data);
             return response()->json([
@@ -106,6 +116,9 @@ class BeritaController extends Controller
     {
         try {
             $berita = Berita::findOrFail($id);
+            if ($berita->gambar) {
+                Storage::disk('public')->delete($berita->gambar);
+            }
             $berita->delete();
             return response()->json([
                 'success' => true,

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('refresh_tokens', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users', 'id');;
+            $table->foreignUuid('user_id')->constrained('users', 'id');
             $table->string('refresh_token', 128);
             $table->timestamp('expires_at');
             $table->boolean('revoked')->default(false);

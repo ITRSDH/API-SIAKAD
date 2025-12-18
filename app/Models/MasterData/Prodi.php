@@ -56,4 +56,10 @@ class Prodi extends Model
     {
         return $this->hasMany(KelasPararel::class, 'id_prodi');
     }
+
+    // Relasi ke Prestasi
+    public function prestasi(): HasMany
+    {
+        return $this->hasMany(\App\Models\Website\Prestasi::class, 'id_prodi');
+    }
 }

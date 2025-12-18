@@ -16,7 +16,7 @@ class StoreGaleriRequest extends FormRequest
         return [
             'judul' => 'required|string|max:255',
             'kategori' => 'required|string|max:100',
-            'gambar' => 'required|file|max:255',
+            'gambar' => 'required|file|max:2048',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
         ];

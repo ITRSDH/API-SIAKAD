@@ -16,7 +16,7 @@ class StoreOrmawaRequest extends FormRequest
         return [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'gambar' => 'required|file|max:2048',
+            'gambar' => 'nullable|file|max:2048',
             'kategori' => 'nullable|string|max:100',
         ];
     }

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Website\Prestasi;
 use App\Http\Requests\Website\StorePrestasiRequest;
 use App\Http\Requests\Website\UpdatePrestasiRequest;
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
 
 class PrestasiController extends Controller
@@ -14,44 +15,82 @@ class PrestasiController extends Controller
     public function index(Request $request)
     {
         try {
-            $prestasi = Prestasi::select([
-                'id', 'nama_mahasiswa', 'program_studi', 'judul_prestasi', 'tingkat', 'tahun', 'deskripsi', 'gambar', 'created_at', 'updated_at'
-            ])->orderBy('created_at', 'desc')->get();
-            return response()->json([
-                'success' => true,
-                'message' => 'Daftar prestasi',
-                'data' => $prestasi
-            ], 200);
+            $search = $request->query('search');
+            $perPage = $request->query('per_page', 10);
+
+            $query = Prestasi::select([
+                'id',
+                'nama_mahasiswa',
+                'judul_prestasi',
+                'tingkat',
+                'tahun',
+                'deskripsi',
+                'gambar',
+                'id_prodi', // ← PENTING untuk relasi
+                'created_at',
+                'updated_at',
+            ])
+                ->with('prodi:id,nama_prodi,id_jenjang_pendidikan') // ← Specify kolom yg diperlukan
+                ->orderBy('created_at', 'desc');
+
+            // Apply search filter jika ada parameter search
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_mahasiswa', 'like', "%{$search}%")
+                        ->orWhere('judul_prestasi', 'like', "%{$search}%")
+                        ->orWhere('tingkat', 'like', "%{$search}%")
+                        ->orWhere('deskripsi', 'like', "%{$search}%");
+                });
+            }
+
+            $prestasi = $query->paginate($perPage);
+
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Daftar prestasi',
+                    'data' => $prestasi,
+                ],
+                200,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data prestasi',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Gagal mengambil data prestasi',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
-    public function store(StorePrestasiRequest $request)
+    public function store(StorePrestasiRequest $request, ImageService $imageService)
     {
         try {
             $data = $request->validated();
             if ($request->hasFile('gambar')) {
-                $file = $request->file('gambar');
-                $path = $file->store('prestasi', 'public');
-                $data['gambar'] = $path;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'prestasi');
+                $data['gambar'] = $newStoragePath;
             }
             $prestasi = Prestasi::create($data);
-            return response()->json([
-                'success' => true,
-                'message' => 'Prestasi berhasil ditambahkan',
-                'data' => $prestasi
-            ], 201);
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Prestasi berhasil ditambahkan',
+                    'data' => $prestasi,
+                ],
+                201,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambahkan prestasi',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Gagal menambahkan prestasi',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
@@ -59,46 +98,55 @@ class PrestasiController extends Controller
     {
         try {
             $prestasi = Prestasi::findOrFail($id);
-            return response()->json([
-                'success' => true,
-                'message' => 'Detail prestasi',
-                'data' => $prestasi
-            ], 200);
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Detail prestasi',
+                    'data' => $prestasi,
+                ],
+                200,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Prestasi tidak ditemukan',
-                'error' => $e->getMessage()
-            ], 404);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Prestasi tidak ditemukan',
+                    'error' => $e->getMessage(),
+                ],
+                404,
+            );
         }
     }
 
-    public function update(UpdatePrestasiRequest $request, $id)
+    public function update(UpdatePrestasiRequest $request, $id, ImageService $imageService)
     {
         try {
-            $prestasi = Prestasi::findOrFail($id);
+            $prestasi = Prestasi::with('prodi:id,nama_prodi,id_jenjang_pendidikan')->findOrFail($id);
             $data = $request->validated();
             if ($request->hasFile('gambar')) {
                 // Hapus gambar lama jika ada
-                if ($prestasi->gambar && Storage::disk('public')->exists($prestasi->gambar)) {
-                    Storage::disk('public')->delete($prestasi->gambar);
-                }
-                $file = $request->file('gambar');
-                $path = $file->store('prestasi', 'public');
-                $data['gambar'] = $path;
+                $oldPath = $prestasi->gambar ?? null;
+                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'prestasi', $oldPath);
+                $data['gambar'] = $newStoragePath;
             }
             $prestasi->update($data);
-            return response()->json([
-                'success' => true,
-                'message' => 'Prestasi berhasil diperbarui',
-                'data' => $prestasi
-            ], 200);
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Prestasi berhasil diperbarui',
+                    'data' => $prestasi,
+                ],
+                200,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui prestasi',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Gagal memperbarui prestasi',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
@@ -106,17 +154,26 @@ class PrestasiController extends Controller
     {
         try {
             $prestasi = Prestasi::findOrFail($id);
+            if ($prestasi->gambar) {
+                Storage::disk('public')->delete($prestasi->gambar);
+            }
             $prestasi->delete();
-            return response()->json([
-                'success' => true,
-                'message' => 'Prestasi berhasil dihapus'
-            ], 200);
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Prestasi berhasil dihapus',
+                ],
+                200,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus prestasi',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Gagal menghapus prestasi',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 }

@@ -53,4 +53,25 @@ class LandingContent extends Model
         'jumlah_mitra' => 'integer',
     ];
 
+    // Mutators to handle null values
+    public function setJumlahProgramStudiAttribute($value)
+    {
+        $this->attributes['jumlah_program_studi'] = $value ?? 0;
+    }
+
+    public function setJumlahMahasiswaAttribute($value)
+    {
+        $this->attributes['jumlah_mahasiswa'] = $value ?? 0;
+    }
+
+    public function setJumlahDosenAttribute($value)
+    {
+        $this->attributes['jumlah_dosen'] = $value ?? 0;
+    }
+
+    public function setJumlahMitraAttribute($value)
+    {
+        $this->attributes['jumlah_mitra'] = $value ?? 0;
+    }
+
 }

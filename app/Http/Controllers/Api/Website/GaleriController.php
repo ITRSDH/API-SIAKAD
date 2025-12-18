@@ -8,13 +8,30 @@ use App\Http\Requests\Website\StoreGaleriRequest;
 use App\Http\Requests\Website\UpdateGaleriRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Website\Galeri;
+use App\Services\ImageService;
 
 class GaleriController extends Controller
 {
 	public function index(Request $request)
 	{
 		try {
-			$galeri = Galeri::select('id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at')->orderBy('created_at', 'desc')->get();
+			$search = $request->query('search');
+			$perPage = $request->query('per_page', 10);
+
+			$query = Galeri::select('id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at')
+				->orderBy('created_at', 'desc');
+
+			// Apply search filter jika ada parameter search
+			if ($search) {
+				$query->where(function ($q) use ($search) {
+					$q->where('judul', 'like', "%{$search}%")
+						->orWhere('kategori', 'like', "%{$search}%")
+						->orWhere('deskripsi', 'like', "%{$search}%");
+				});
+			}
+
+			$galeri = $query->paginate($perPage);
+			
 			return response()->json([
 				'success' => true,
 				'message' => 'Daftar galeri',
@@ -29,18 +46,18 @@ class GaleriController extends Controller
 		}
 	}
 
-	public function store(StoreGaleriRequest $request)
+	public function store(StoreGaleriRequest $request, ImageService $imageService)
 	{
 		try {
 			$data = $request->validated();
 
 			if ($request->hasFile('gambar')) {
-				$file = $request->file('gambar');
-				$path = $file->store('galeri', 'public');
+				$path = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'galeri');
 				$data['gambar'] = $path;
 			}
 
 			$galeri = Galeri::create($data);
+			
 			return response()->json([
 				'success' => true,
 				'message' => 'Galeri berhasil ditambahkan',
@@ -73,7 +90,7 @@ class GaleriController extends Controller
 		}
 	}
 
-	public function update(UpdateGaleriRequest $request, $id)
+	public function update(UpdateGaleriRequest $request, $id, ImageService $imageService)
 	{
 		try {
 			$galeri = Galeri::findOrFail($id);
@@ -81,15 +98,13 @@ class GaleriController extends Controller
 
 			if ($request->hasFile('gambar')) {
 				// Hapus gambar lama jika ada
-				if ($galeri->gambar && Storage::disk('public')->exists($galeri->gambar)) {
-					Storage::disk('public')->delete($galeri->gambar);
-				}
-				$file = $request->file('gambar');
-				$path = $file->store('galeri', 'public');
-				$data['gambar'] = $path;
+				$oldPath = $galeri->gambar ?? null;
+				$newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'galeri', $oldPath);
+				$data['gambar'] = $newStoragePath;
 			}
 
 			$galeri->update($data);
+			
 			return response()->json([
 				'success' => true,
 				'message' => 'Galeri berhasil diperbarui',
@@ -108,7 +123,11 @@ class GaleriController extends Controller
 	{
 		try {
 			$galeri = Galeri::findOrFail($id);
+			if ($galeri->gambar) {
+				Storage::disk('public')->delete($galeri->gambar);
+			}
 			$galeri->delete();
+			
 			return response()->json([
 				'success' => true,
 				'message' => 'Galeri berhasil dihapus'

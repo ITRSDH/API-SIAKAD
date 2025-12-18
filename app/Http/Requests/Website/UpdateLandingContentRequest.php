@@ -17,10 +17,10 @@ class UpdateLandingContentRequest extends FormRequest
             'hero_title' => 'sometimes|nullable|string|max:255',
             'hero_subtitle' => 'sometimes|nullable|string',
             'hero_background' => 'sometimes|nullable|file|max:2048',
-            'jumlah_program_studi' => 'sometimes|nullable|integer',
-            'jumlah_mahasiswa' => 'sometimes|nullable|integer',
-            'jumlah_dosen' => 'sometimes|nullable|integer',
-            'jumlah_mitra' => 'sometimes|nullable|integer',
+            'jumlah_program_studi' => 'sometimes|nullable|integer|min:0',
+            'jumlah_mahasiswa' => 'sometimes|nullable|integer|min:0',
+            'jumlah_dosen' => 'sometimes|nullable|integer|min:0',
+            'jumlah_mitra' => 'sometimes|nullable|integer|min:0',
             'keunggulan' => 'sometimes|nullable|string',
             'logo' => 'sometimes|nullable|file|max:2048',
             'nama_aplikasi' => 'sometimes|nullable|string',
@@ -34,5 +34,27 @@ class UpdateLandingContentRequest extends FormRequest
             'telepon' => 'sometimes|nullable|string',
             'email' => 'sometimes|nullable|string|email',
         ];
+    }
+
+    public function prepareForValidation()
+    {
+        // Only transform if the field is present in request
+        $merge = [];
+        if ($this->has('jumlah_program_studi')) {
+            $merge['jumlah_program_studi'] = $this->jumlah_program_studi ?? 0;
+        }
+        if ($this->has('jumlah_mahasiswa')) {
+            $merge['jumlah_mahasiswa'] = $this->jumlah_mahasiswa ?? 0;
+        }
+        if ($this->has('jumlah_dosen')) {
+            $merge['jumlah_dosen'] = $this->jumlah_dosen ?? 0;
+        }
+        if ($this->has('jumlah_mitra')) {
+            $merge['jumlah_mitra'] = $this->jumlah_mitra ?? 0;
+        }
+        
+        if (!empty($merge)) {
+            $this->merge($merge);
+        }
     }
 }

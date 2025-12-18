@@ -17,10 +17,10 @@ class StoreLandingContentRequest extends FormRequest
             'hero_title' => 'nullable|string|max:255',
             'hero_subtitle' => 'nullable|string',
             'hero_background' => 'nullable|file|max:2048',
-            'jumlah_program_studi' => 'nullable|integer',
-            'jumlah_mahasiswa' => 'nullable|integer',
-            'jumlah_dosen' => 'nullable|integer',
-            'jumlah_mitra' => 'nullable|integer',
+            'jumlah_program_studi' => 'nullable|integer|min:0',
+            'jumlah_mahasiswa' => 'nullable|integer|min:0',
+            'jumlah_dosen' => 'nullable|integer|min:0',
+            'jumlah_mitra' => 'nullable|integer|min:0',
             'keunggulan' => 'nullable|string',
             'logo' => 'nullable|file|max:2048',
             'nama_aplikasi' => 'nullable|string',
@@ -34,5 +34,15 @@ class StoreLandingContentRequest extends FormRequest
             'telepon' => 'nullable|string',
             'email' => 'nullable|string|email',
         ];
+    }
+
+    public function prepareForValidation()
+    {
+        $this->merge([
+            'jumlah_program_studi' => $this->jumlah_program_studi ?? 0,
+            'jumlah_mahasiswa' => $this->jumlah_mahasiswa ?? 0,
+            'jumlah_dosen' => $this->jumlah_dosen ?? 0,
+            'jumlah_mitra' => $this->jumlah_mitra ?? 0,
+        ]);
     }
 }

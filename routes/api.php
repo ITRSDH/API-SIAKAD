@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\MasterData\JenjangPendidikanController;
 use App\Http\Controllers\Api\ManagementPengguna\PermissionController;
 use App\Http\Controllers\Api\MasterData\PembayaranMahasiswaController;
 use App\Http\Controllers\Api\MasterData\StatusAkademikMahasiswaController;
+use App\Http\Controllers\Api\Website\GetApiController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -51,13 +52,12 @@ use App\Http\Controllers\Api\MasterData\StatusAkademikMahasiswaController;
 Route::group(['middleware' => 'api'], function ($router) {
     Route::get('/', function () {
         return response()->json([
-            'message' => 'Selamat Datang.'
+            'message' => 'Selamat Datang.',
         ]);
     });
 });
 
 Route::prefix('v1')->group(function () {
-
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
         Route::post('refresh', [AuthController::class, 'refresh']);
@@ -69,13 +69,9 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('jwt.token', 'check.role.permission')->group(function () {
-
         Route::name('siakad.')->group(function () {
-
             Route::name('master.')->group(function () {
-
                 Route::name('referensi.')->group(function () {
-
                     // Jenjang Pendidikan
                     Route::apiResource('jenjang-pendidikan', JenjangPendidikanController::class);
 
@@ -94,7 +90,6 @@ Route::prefix('v1')->group(function () {
                 });
 
                 Route::name('setting-akademik.')->group(function () {
-
                     // Tahun Akademik
                     Route::apiResource('tahun-akademik', TahunAkademikController::class);
                     Route::post('/tahun-akademik/{id}/aktif', [TahunAkademikController::class, 'setAktif'])->name('tahun-akademik.aktif');
@@ -174,7 +169,6 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::name('pengguna.')->group(function () {
-
             Route::name('setting.')->group(function () {
                 Route::apiResource('users', UserController::class);
                 Route::apiResource('roles', RoleController::class);
@@ -183,21 +177,44 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-
         // End Master Data
 
-        // Start Website Landing Page
-        Route::apiResource('pengumuman', PengumumanController::class);
-        Route::apiResource('prestasi', PrestasiController::class);
-        Route::apiResource('beasiswa', BeasiswaController::class);
-        Route::apiResource('berita', BeritaController::class);
-        Route::apiResource('galeri', GaleriController::class);
-        Route::apiResource('faq', FaqController::class);
-        Route::apiResource('landing-content', LandingContentController::class);
-        Route::apiResource('ormawa', OrmawaController::class);
-        Route::apiResource('profile-kampus', ProfileKampusController::class);
-        // End Website Landing Page
+        // Landing Website Kampus
+        Route::name('websitekampus.')->group(function () {
+            Route::name('landing.')->group(function () {
+                Route::apiResource('pengumuman', PengumumanController::class);
+                Route::apiResource('prestasi', PrestasiController::class);
+                Route::apiResource('beasiswa', BeasiswaController::class);
+                Route::apiResource('berita', BeritaController::class);
+                Route::apiResource('galeri', GaleriController::class);
+                Route::apiResource('faq', FaqController::class);
+                Route::apiResource('landing-content', LandingContentController::class);
+                Route::apiResource('ormawa', OrmawaController::class);
+                Route::apiResource('profile-kampus', ProfileKampusController::class);
+            });
+        });
     });
+
+
+    // Public API Routes for Website Kampus
+    Route::get('/landing/pengumuman', [GetApiController::class, 'pengumuman'])->name('landing.pengumuman'); 
+    Route::get('/landing/pengumuman/{id}', [GetApiController::class, 'pengumumanDetail'])->name('landing.pengumuman.detail');
+    Route::get('/landing/prestasi', [GetApiController::class, 'prestasi'])->name('landing.prestasi');
+    Route::get('/landing/prestasi/{id}', [GetApiController::class, 'prestasiDetail'])->name('landing.prestasi.detail');
+    Route::get('/landing/landing-content', [GetApiController::class, 'landingContent'])->name('landing.content');
+    Route::get('/landing/beasiswa', [GetApiController::class, 'beasiswa'])->name('landing.beasiswa');
+    Route::get('/landing/beasiswa/{id}', [GetApiController::class, 'beasiswaDetail'])->name('landing.beasiswa.detail');
+    Route::get('/landing/berita', [GetApiController::class, 'berita'])->name('landing.berita');
+    Route::get('/landing/berita/{id}', [GetApiController::class, 'beritaDetail'])->name('landing.berita.detail');
+    Route::get('/landing/galeri', [GetApiController::class, 'galeri'])->name('landing.galeri');
+    Route::get('/landing/galeri/{id}', [GetApiController::class, 'galeriDetail'])->name('landing.galeri.detail');
+    Route::get('/landing/faq', [GetApiController::class, 'faq'])->name('landing.faq');
+    Route::get('/landing/ormawa', [GetApiController::class, 'ormawa'])->name('landing.ormawa');
+    Route::get('/landing/ormawa/{id}', [GetApiController::class, 'ormawaDetail'])->name('landing.ormawa.detail');
+    Route::get('/landing/profile-kampus', [GetApiController::class, 'profileKampus'])->name('landing.profile-kampus');
+    Route::get('/landing/prodi', [GetApiController::class, 'prodi'])->name('landing.prodi');
+    Route::get('/landing/prodi/{id}', [GetApiController::class, 'prodiDetail'])->name('landing.prodi.detail');
+    Route::get('/landing/prodi/{id}/prestasi', [GetApiController::class, 'prodiPrestasi'])->name('landing.prodi.prestasi');
 });
 
 Route::get('/permissions/menu', [PermissionController::class, 'getSidebar'])->name('permissions.menu');

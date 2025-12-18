@@ -12,16 +12,30 @@ class BeasiswaFactory extends Factory
 
     public function definition()
     {
+        $namaBeasiswa = [
+            'Beasiswa Prestasi Akademik',
+            'Beasiswa Bidik Misi',
+            'Beasiswa KIP Kuliah',
+            'Beasiswa Unggulan',
+            'Beasiswa PPA (Peningkatan Prestasi Akademik)',
+            'Beasiswa BBM (Bantuan Belajar Mahasiswa)',
+            'Beasiswa Supersemar',
+            'Beasiswa Djarum',
+            'Beasiswa Bank Indonesia',
+            'Beasiswa Tanoto Foundation',
+            'Beasiswa LPDP',
+            'Beasiswa Yayasan Karya Salemba Empat',
+        ];
+
+        $kategoriList = ['Akademik', 'Non-Akademik', 'Prestasi', 'Ekonomi', 'Riset'];
+
         return [
-            'id' => (string) Str::uuid(),
-            'nama' => $this->faker->words(2, true),
-            'kategori' => $this->faker->randomElement(['Akademik', 'Non-Akademik', 'Prestasi']),
-            'deskripsi' => $this->faker->paragraph(),
-            'gambar' => $this->faker->imageUrl(),
-            'deadline' => $this->faker->date(),
-            'kuota' => $this->faker->numberBetween(1, 100),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'nama' => $this->faker->randomElement($namaBeasiswa) . ' ' . $this->faker->numberBetween(2024, 2025),
+            'kategori' => $this->faker->randomElement($kategoriList),
+            'deskripsi' => $this->faker->paragraph(3),
+            'gambar' => null, // Will be uploaded manually
+            'deadline' => $this->faker->dateTimeBetween('now', '+6 months'),
+            'kuota' => $this->faker->numberBetween(10, 100),
         ];
     }
 }

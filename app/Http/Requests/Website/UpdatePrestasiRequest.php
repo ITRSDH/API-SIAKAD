@@ -15,7 +15,7 @@ class UpdatePrestasiRequest extends FormRequest
     {
         return [
             'nama_mahasiswa' => 'sometimes|required|string|max:255',
-            'program_studi' => 'sometimes|required|string|max:100',
+            'id_prodi' => 'sometimes|nullable|exists:prodi,id',
             'judul_prestasi' => 'sometimes|required|string|max:255',
             'tingkat' => 'sometimes|required|string|max:100',
             'tahun' => 'sometimes|required|integer',
