@@ -4,9 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Str;
+use App\Models\MasterData\Dosen;
+use App\Models\MasterData\Mahasiswa;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -77,5 +80,15 @@ class User extends Authenticatable implements JWTSubject
         return [
             'status' => $this->status,
         ];
+    }
+
+    public function dosen(): HasOne
+    {
+        return $this->hasOne(Dosen::class, 'user_id');
+    }
+
+    public function mahasiswa(): HasOne
+    {
+        return $this->hasOne(Mahasiswa::class, 'user_id');
     }
 }

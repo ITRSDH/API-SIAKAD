@@ -4,46 +4,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Website\FaqController;
-use App\Http\Controllers\Api\MasterData\KhsController;
-use App\Http\Controllers\Api\MasterData\KrsController;
 use App\Http\Controllers\Api\Website\BeritaController;
 use App\Http\Controllers\Api\Website\GaleriController;
 use App\Http\Controllers\Api\Website\OrmawaController;
-use App\Http\Controllers\Api\MasterData\DosenController;
-use App\Http\Controllers\Api\MasterData\NilaiController;
-use App\Http\Controllers\Api\MasterData\ProdiController;
-use App\Http\Controllers\Api\MasterData\RuangController;
 use App\Http\Controllers\Api\Website\BeasiswaController;
 use App\Http\Controllers\Api\Website\PrestasiController;
-use App\Http\Controllers\Api\MasterData\AlumniController;
-use App\Http\Controllers\Api\MasterData\KelasMkController;
 use App\Http\Controllers\Api\Website\PengumumanController;
-use App\Http\Controllers\Api\MasterData\PresensiController;
-use App\Http\Controllers\Api\MasterData\SemesterController;
-use App\Http\Controllers\Api\MasterData\KhsDetailController;
-use App\Http\Controllers\Api\MasterData\KrsDetailController;
-use App\Http\Controllers\Api\MasterData\KurikulumController;
-use App\Http\Controllers\Api\MasterData\MahasiswaController;
-use App\Http\Controllers\Api\MasterData\PerwalianController;
-use App\Http\Controllers\Api\MasterData\JenisKelasController;
-use App\Http\Controllers\Api\MasterData\MataKuliahController;
 use App\Http\Controllers\Api\Website\ProfileKampusController;
 use App\Http\Controllers\Api\Website\LandingContentController;
 use App\Http\Controllers\Api\ManagementPengguna\RoleController;
 use App\Http\Controllers\Api\ManagementPengguna\UserController;
-use App\Http\Controllers\Api\MasterData\DosenKelasMkController;
-use App\Http\Controllers\Api\MasterData\JadwalKuliahController;
-use App\Http\Controllers\Api\MasterData\KelasPararelController;
-use App\Http\Controllers\Api\MasterData\TahunAkademikController;
-use App\Http\Controllers\Api\MasterData\BebanAjarDosenController;
-use App\Http\Controllers\Api\MasterData\KelasMahasiswaController;
-use App\Http\Controllers\Api\MasterData\BerkasMahasiswaController;
-use App\Http\Controllers\Api\MasterData\JenisPembayaranController;
-use App\Http\Controllers\Api\MasterData\JenjangPendidikanController;
 use App\Http\Controllers\Api\ManagementPengguna\PermissionController;
-use App\Http\Controllers\Api\MasterData\PembayaranMahasiswaController;
-use App\Http\Controllers\Api\MasterData\StatusAkademikMahasiswaController;
 use App\Http\Controllers\Api\Website\GetApiController;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -69,102 +42,48 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('jwt.token', 'check.role.permission')->group(function () {
+
+        Route::get('dashboard/admin', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard.admin');
+        Route::get('dashboard/baak', [\App\Http\Controllers\Api\Siakad\BAAK\DashboardController::class, 'index'])->name('dashboard.baak');
+        Route::get('dashboard/dosen-pa', [\App\Http\Controllers\Api\Siakad\DOSEN_PA\DashboardController::class, 'index'])->name('dashboard.dosen-pa');
+        Route::get('dashboard/dosen-pengampu', [\App\Http\Controllers\Api\Siakad\DOSEN_PENGAMPU\DashboardController::class, 'index'])->name('dashboard.dosen-pengampu');
+        Route::get('dashboard/mahasiswa', [\App\Http\Controllers\Api\Siakad\MAHASISWA\DashboardController::class, 'index'])->name('dashboard.mahasiswa');
+
+
         Route::name('siakad.')->group(function () {
             Route::name('master.')->group(function () {
-                Route::name('referensi.')->group(function () {
-                    // Jenjang Pendidikan
-                    Route::apiResource('jenjang-pendidikan', JenjangPendidikanController::class);
 
-                    // Program Studi
-                    Route::apiResource('prodi', ProdiController::class);
-                    Route::get('/all-prodi', [ProdiController::class, 'getAllData'])->name('prodi.all');
+                Route::name('refrensi.')->group(function () {
+                    Route::apiResource('jenjang-pendidikan', \App\Http\Controllers\Api\Siakad\MasterData\JenjangPendidikanController::class);
 
-                    // Jenis Kelas
-                    Route::apiResource('jenis-kelas', JenisKelasController::class);
+                    Route::apiResource('prodi', \App\Http\Controllers\Api\Siakad\MasterData\ProdiController::class);
 
-                    // Ruang
-                    Route::apiResource('ruang', RuangController::class);
+                    Route::apiResource('tahun-akademik', \App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class);
+                    Route::put('tahun-akademik/tahun-aktif/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class, 'setTahunAktif'])->name('tahun-akademik.tahun-aktif');
+                    Route::put('tahun-akademik/semester-aktif/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class, 'setSemesterAktif'])->name('tahun-akademik.semester-aktif');
 
-                    // Jenis Pembayaran
-                    Route::apiResource('jenis-pembayaran', JenisPembayaranController::class);
+                    Route::apiResource('jenis-kelas', \App\Http\Controllers\Api\Siakad\MasterData\JenisKelasController::class);
+
+                    Route::apiResource('kurikulum', \App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class);
+
+                    Route::get('/mata-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'index'])->name('mata-kuliah.index');
+                    Route::get('/mata-kuliah/create', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'create'])->name('mata-kuliah.create');
+                    Route::post('/mata-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'store'])->name('mata-kuliah.store');
+                    Route::get('/mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'show'])->name('mata-kuliah.show');
+                    Route::get('/mata-kuliah/semester/{semester}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'edit'])->name('mata-kuliah.edit');
+                    Route::put('/mata-kuliah/semester/{semester}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'update'])->name('mata-kuliah.update');
+                    Route::delete('/mata-kuliah/semester/{semester}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
+                    Route::delete('/mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'destroysigle'])->name('mata-kuliah.destroysigle');
+
+                    Route::apiResource('dosen', \App\Http\Controllers\Api\Siakad\MasterData\DosenController::class);
+
+                    Route::apiResource('mahasiswa', \App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class);
+
+                    Route::apiResource('jenis-pembayaran', \App\Http\Controllers\Api\Siakad\MasterData\JenisPembayaranController::class);
+
+                    Route::apiResource('ruang', \App\Http\Controllers\Api\Siakad\MasterData\RuangController::class);
                 });
-
-                Route::name('setting-akademik.')->group(function () {
-                    // Tahun Akademik
-                    Route::apiResource('tahun-akademik', TahunAkademikController::class);
-                    Route::post('/tahun-akademik/{id}/aktif', [TahunAkademikController::class, 'setAktif'])->name('tahun-akademik.aktif');
-
-                    // Semester
-                    Route::apiResource('semester', SemesterController::class);
-                    Route::get('/all-semester', [SemesterController::class, 'getAllData'])->name('semester.all');
-
-                    // Kurikulum
-                    Route::apiResource('kurikulum', KurikulumController::class);
-                    Route::get('/all-kurikulum', [KurikulumController::class, 'getAllData'])->name('kurikulum.all');
-
-                    // Mata Kuliah
-                    Route::apiResource('mata-kuliah', MataKuliahController::class);
-                    Route::get('/all-mata-kuliah', [MataKuliahController::class, 'getAllData'])->name('mata-kuliah.all');
-                    Route::get('/edit-mata-kuliah/{id}', [MataKuliahController::class, 'getEditData'])->name('mata-kuliah.edit');
-
-                    // Kelas Pararel
-                    Route::apiResource('kelas-pararel', KelasPararelController::class);
-                    Route::get('/all-kelas-pararel', [KelasPararelController::class, 'getAllData'])->name('kelas-pararel.all');
-
-                    // Kelas MK
-                    Route::apiResource('kelas-mk', KelasMkController::class);
-
-                    // Jadwal Kuliah
-                    Route::apiResource('jadwal-kuliah', JadwalKuliahController::class);
-
-                    // Dosen Kelas MK
-                    Route::apiResource('dosen-kelas-mk', DosenKelasMkController::class);
-
-                    // Beban Ajar Dosen
-                    Route::apiResource('beban-ajar-dosen', BebanAjarDosenController::class);
-
-                    // Presensi
-                    Route::apiResource('presensi', PresensiController::class);
-
-                    // Nilai
-                    Route::apiResource('nilai', NilaiController::class);
-
-                    // KRS
-                    Route::apiResource('krs', KrsController::class);
-
-                    // KRS Detail
-                    Route::apiResource('krs-detail', KrsDetailController::class);
-
-                    // KHS
-                    Route::apiResource('khs', KhsController::class);
-
-                    // KHS Detail
-                    Route::apiResource('khs-detail', KhsDetailController::class);
-
-                    // Pembayaran Mahasiswa
-                    Route::apiResource('pembayaran-mahasiswa', PembayaranMahasiswaController::class);
-
-                    // Status Akademik Mahasiswa
-                    Route::apiResource('status-akademik-mahasiswa', StatusAkademikMahasiswaController::class);
-
-                    // Perwalian
-                    Route::apiResource('perwalian', PerwalianController::class);
-
-                    // Berkas Mahasiswa
-                    Route::apiResource('berkas-mahasiswa', BerkasMahasiswaController::class);
-
-                    // Alumni
-                    Route::apiResource('alumni', AlumniController::class);
-
-                    // Kelas Mahasiswa
-                    Route::apiResource('kelas-mahasiswa', KelasMahasiswaController::class);
-                });
-
-                // Dosen
-                Route::apiResource('dosen', DosenController::class);
-
-                // Mahasiswa
-                Route::apiResource('mahasiswa', MahasiswaController::class);
+                // Route::name('setting-akademik.')->group(function () {});
             });
         });
 
@@ -197,7 +116,7 @@ Route::prefix('v1')->group(function () {
 
 
     // Public API Routes for Website Kampus
-    Route::get('/landing/pengumuman', [GetApiController::class, 'pengumuman'])->name('landing.pengumuman'); 
+    Route::get('/landing/pengumuman', [GetApiController::class, 'pengumuman'])->name('landing.pengumuman');
     Route::get('/landing/pengumuman/{id}', [GetApiController::class, 'pengumumanDetail'])->name('landing.pengumuman.detail');
     Route::get('/landing/prestasi', [GetApiController::class, 'prestasi'])->name('landing.prestasi');
     Route::get('/landing/prestasi/{id}', [GetApiController::class, 'prestasiDetail'])->name('landing.prestasi.detail');
@@ -216,5 +135,3 @@ Route::prefix('v1')->group(function () {
     Route::get('/landing/prodi/{id}', [GetApiController::class, 'prodiDetail'])->name('landing.prodi.detail');
     Route::get('/landing/prodi/{id}/prestasi', [GetApiController::class, 'prodiPrestasi'])->name('landing.prodi.prestasi');
 });
-
-Route::get('/permissions/menu', [PermissionController::class, 'getSidebar'])->name('permissions.menu');

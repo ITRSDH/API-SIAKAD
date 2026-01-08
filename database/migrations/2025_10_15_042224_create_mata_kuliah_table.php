@@ -14,17 +14,18 @@ return new class extends Migration
         Schema::create('mata_kuliah', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('id_kurikulum')->constrained('kurikulum', 'id');
-            $table->string('kode_mk');
+            $table->string('kode_mk')->unique();
             $table->string('nama_mk');
-            $table->integer('sks');
-            $table->integer('semester_rekomendasi');
-            $table->enum('jenis', ['Wajib', 'Pilihan']);
-            $table->text('deskripsi')->nullable();
 
-            $table->integer('teori')->default(0);
-            $table->integer('seminar')->default(0);
-            $table->integer('praktikum')->default(0);
-            $table->integer('praktek_klinik')->default(0);
+            // TOTAL SKS (Jumlah)
+            $table->unsignedTinyInteger('sks');
+
+            // Distribusi SKS
+            $table->unsignedTinyInteger('teori')->default(0);            // T
+            $table->unsignedTinyInteger('praktikum')->default(0);        // P
+            $table->unsignedTinyInteger('klinik')->default(0);   // K
+
+            $table->unsignedTinyInteger('semester_rekomendasi');
 
             $table->timestamps();
         });

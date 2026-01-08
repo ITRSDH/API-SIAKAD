@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
+            // role permission
+            RolePermissionSeeder::class,
             // Data Master
             JenjangPendidikanSeeder::class,
             ProdiSeeder::class,
@@ -32,32 +34,29 @@ class DatabaseSeeder extends Seeder
             // Logika Bisnis
             SemesterSeeder::class,
             KurikulumSeeder::class,
-            MataKuliahSeeder::class,
+            // MataKuliahSeeder::class,
             KelasPararelSeeder::class,
-            DosenSeeder::class,
-            MahasiswaSeeder::class,
-            KelasMkSeeder::class,
-            JadwalKuliahSeeder::class,
-            DosenKelasMkSeeder::class,
-            BebanAjarDosenSeeder::class,
-            PresensiSeeder::class,
-            NilaiSeeder::class,
-            KrsSeeder::class,
-            KrsDetailSeeder::class,
-            KhsSeeder::class,
-            KhsDetailSeeder::class,
-            PembayaranMahasiswaSeeder::class,
-            StatusAkademikMahasiswaSeeder::class,
-            PerwalianSeeder::class,
-            BerkasMahasiswaSeeder::class,
-            AlumniSeeder::class,
-            KelasMahasiswaSeeder::class,
+            // DosenSeeder::class,
+            // MahasiswaSeeder::class,
+            // KelasMkSeeder::class,
+            // JadwalKuliahSeeder::class,
+            // DosenKelasMkSeeder::class,
+            // BebanAjarDosenSeeder::class,
+            // PresensiSeeder::class,
+            // NilaiSeeder::class,
+            // KrsSeeder::class,
+            // KrsDetailSeeder::class,
+            // KhsSeeder::class,
+            // KhsDetailSeeder::class,
+            // PembayaranMahasiswaSeeder::class,
+            // StatusAkademikMahasiswaSeeder::class,
+            // PerwalianSeeder::class,
+            // BerkasMahasiswaSeeder::class,
+            // AlumniSeeder::class,
+            // KelasMahasiswaSeeder::class,
 
             // Auth
             UserSeeder::class,
-
-            // role permission
-            // RolePermissionSeeder::class,
         ]);
     }
 }

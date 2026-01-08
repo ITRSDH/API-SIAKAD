@@ -1,14 +1,14 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NjM5NjQ4NDQsImV4cCI6MTc2Mzk2ODQ0NCwibmJmIjoxNzYzOTY0ODQ0LCJqdGkiOiJOaWZ4R01HWlZHemQ5RWNMIiwic3ViIjoiYTA2MDNjMjItN2M5YS00MzRiLTgxZGUtYTlmNjUyOWRjYzQwIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.MH2E0LEugOS4GXYVKNgN2GxD8YsywjkwTrX1UaV6LcQ
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njc4NTM4NzUsImV4cCI6MTc2Nzg1NzQ3NSwibmJmIjoxNzY3ODUzODc1LCJqdGkiOiIwOXBFUUNaR212WlhEYkg5Iiwic3ViIjoiYTBjNTI0ZDEtNzI0OS00Yzc1LWIwMmEtY2RlZWU4YzZjNDAxIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.JYZhfLHfTh5-q4h6bvtX7s3REFtVJwJ3U1aFYtD2faI
 
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@example.com",
+  "username": "admin@example.com",
   "password": "password"
 }
 
@@ -28,8 +28,109 @@ Authorization: Bearer {{ token }}
 GET {{ base_url }}/users
 Authorization: Bearer {{ token }}
 
+### Get list of Administrators
+GET {{ base_url }}/dashboard/admin
+Authorization: Bearer {{ token }}
+### Get list of BAAK
+GET {{ base_url }}/dashboard/baak
+Authorization: Bearer {{ token }}
+### Get list of Dosen PA
+GET {{ base_url }}/dashboard/dosen-pa
+Authorization: Bearer {{ token }}
+### Get list of Dosen Pengampu
+GET {{ base_url }}/dashboard/dosen-pengampu
+Authorization: Bearer {{ token }}
+### Get list of Mahasiswa
+GET {{ base_url }}/dashboard/mahasiswa
+Authorization: Bearer {{ token }}
+
 ### Get list of Permissions Menu
 GET http://localhost:8001/api/permissions/menu
 Authorization: Bearer {{ token }}
 
+### Get list of Users
+GET {{ base_url }}/mahasiswa
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/dosen
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/beban-ajar-dosen
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/dosenmatakuliah
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/dosenpa
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/dosenpa/a07e32be-dca6-484c-9dc5-db97c9db4385
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/dosenpengampu/a07e7d0b-fb28-4152-aa5e-6f70abb6638b
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/dosenpengampu
+Authorization: Bearer {{ token }}
 
+
+### Get list of dosen mk
+GET http://localhost:8001/api/akademik/kalender
+Authorization: Bearer {{ token }}
+### Get list of dosen mk
+GET http://localhost:8001/api/akademik/kalender/c3071651-d1fd-4c0a-9117-d95ddbc0f784
+Authorization: Bearer {{ token }}
+
+
+### Get list of Users
+GET {{ base_url }}/mata-kuliah
+Authorization: Bearer {{ token }}
+
+### Store Mata Kuliah dengan Token
+POST {{ base_url }}/mata-kuliah
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "id_prodi": "55874407-7512-4312-a94d-f3049e3cdb68",
+    "id_kurikulum": "b5f0b0e4-4fc6-425e-b1f1-1f0d190a3fa9",
+    "semester_rekomendasi": 3,
+    "mata_kuliah": [
+        {
+            "kode_mk": "MK001",
+            "nama_mk": "Matematika Dasar",
+            "teori": 2,
+            "praktikum": 1,
+            "klinik": 0
+        }
+    ]
+}
+### Update Mata Kuliah Semester dengan Token
+PUT {{ base_url }}/mata-kuliah/semester/3
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id_prodi": "55874407-7512-4312-a94d-f3049e3cdb68",
+  "id_kurikulum": "b5f0b0e4-4fc6-425e-b1f1-1f0d190a3fa9",
+  "semester_rekomendasi": 3,
+  "mata_kuliah": [
+    {
+      "id": "a0c57af7-9d64-4a84-bf7f-214eb0e41783",
+      "kode_mk": "MK001",
+      "nama_mk": "Matematika Diskrit",
+      "teori": 2,
+      "praktikum": 1,
+      "klinik": 0
+    },
+    {
+      "id": "a0c584a4-15f8-4023-b5b9-2c571f71fdc9",
+      "kode_mk": "MK002",
+      "nama_mk": "Pemrograman Web",
+      "teori": 3,
+      "praktikum": 2,
+      "klinik": 0
+    }
+  ]
+}
