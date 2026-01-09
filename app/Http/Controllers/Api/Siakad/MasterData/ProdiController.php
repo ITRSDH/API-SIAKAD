@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Prodi;
@@ -31,29 +31,6 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data All Program Studi.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function getAllData(Request $request): JsonResponse
-    {
-        try {
-            // $prodi = Prodi::with('jenjang')->paginate($request->paginator, ['*'], 'page', $request->page);
-            $prodi = Prodi::with('jenjang')->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Daftar program studi',
-                'data' => $prodi
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data program studi',
                 'error' => $e->getMessage()
             ], 500);
         }

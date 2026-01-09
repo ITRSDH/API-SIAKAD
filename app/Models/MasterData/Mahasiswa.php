@@ -2,11 +2,12 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Mahasiswa extends Model
 {
@@ -17,6 +18,7 @@ class Mahasiswa extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = [
+        'user_id',
         'id_prodi',
         'id_kelas_pararel',
         'id_dosen',
@@ -92,12 +94,6 @@ class Mahasiswa extends Model
         return $this->hasMany(PembayaranMahasiswa::class, 'id_mahasiswa');
     }
 
-    // Relasi ke Status Akademik Mahasiswa
-    public function statusAkademik(): HasMany
-    {
-        return $this->hasMany(StatusAkademikMahasiswa::class, 'id_mahasiswa');
-    }
-
     // Relasi ke Perwalian
     public function perwalian(): HasMany
     {
@@ -114,5 +110,10 @@ class Mahasiswa extends Model
     public function alumni(): HasMany
     {
         return $this->hasMany(Alumni::class, 'id_mahasiswa');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

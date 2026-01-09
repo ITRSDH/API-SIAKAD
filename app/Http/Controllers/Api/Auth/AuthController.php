@@ -17,15 +17,13 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         try {
-            // Validasi input dasar
+            // Validasi input
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
-                'password' => 'required', // password minimal 6 karakter
+                'username' => 'required', // email / nim / nup
+                'password' => 'required',
             ], [
-                'email.required' => 'Email wajib diisi.',
-                'email.email' => 'Format email tidak valid.',
+                'username.required' => 'Email / NIM / NUP wajib diisi.',
                 'password.required' => 'Password wajib diisi.',
-                // 'password.min' => 'Password minimal 6 karakter.',
             ]);
 
             if ($validator->fails()) {
@@ -35,11 +33,18 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Ambil kredensial
-            $credentials = $request->only('email', 'password');
+            $username = $request->username;
+            $password = $request->password;
 
-            //  Cek apakah user ada
-            $user = User::where('email', $credentials['email'])->first();
+            // 🔍 Cari user berdasarkan email / nim / nup
+            $user = User::where('email', $username)
+                ->orWhereHas('mahasiswa', function ($q) use ($username) {
+                    $q->where('nim', $username);
+                })
+                ->orWhereHas('dosen', function ($q) use ($username) {
+                    $q->where('nup', $username);
+                })
+                ->first();
 
             if (!$user) {
                 return response()->json([
@@ -56,21 +61,23 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // (Opsional) Jika pakai verifikasi email Laravel
-            if (!$token = Auth::guard('api')->attempt($credentials)) {
+            // 🔐 Login tetap pakai email
+            if (!$token = Auth::guard('api')->attempt([
+                'email' => $user->email,
+                'password' => $password
+            ])) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Email atau password salah.'
+                    'error' => 'Email / NIM / NUP atau password salah.'
                 ], 401);
             }
 
-            //  Hapus refresh token lama
+            // Hapus refresh token lama
             RefreshTokenModel::where('user_id', $user->id)->delete();
 
             // Buat refresh token baru
             $refreshToken = $this->createRefreshToken($user->id, $request);
 
-            // Return response sukses
             return response()->json([
                 'success' => true,
                 'message' => 'Login berhasil.',
@@ -83,7 +90,6 @@ class AuthController extends Controller
                 ]
             ], 200);
         } catch (Exception $e) {
-            // Tangani error tak terduga
             return response()->json([
                 'success' => false,
                 'message' => 'Login gagal.',
@@ -172,16 +178,21 @@ class AuthController extends Controller
             $roles = $user->roles->pluck('name');
             $permissions = $user->getAllPermissions()->pluck('name');
 
-            // Pastikan created_at dan updated_at berbentuk string tanggal, bukan integer
-            if (isset($data['created_at']) && is_numeric($data['created_at'])) {
-                $data['created_at'] = date('Y-m-d H:i:s', $data['created_at']);
+            // Inisialisasi data profil (dosen atau mahasiswa)
+            $profile = null;
+            $profileType = null;
+
+            // Cek apakah user memiliki relasi ke dosen
+            if ($user->relationLoaded('dosen') || $user->dosen) {
+                $profile = $user->dosen;
+                $profileType = 'dosen';
+            }
+            // Cek apakah user memiliki relasi ke mahasiswa
+            elseif ($user->relationLoaded('mahasiswa') || $user->mahasiswa) {
+                $profile = $user->mahasiswa;
+                $profileType = 'mahasiswa';
             }
 
-            if (isset($data['updated_at']) && is_numeric($data['updated_at'])) {
-                $data['updated_at'] = date('Y-m-d H:i:s', $data['updated_at']);
-            }
-
-            // Return langsung tanpa transformUser
             return response()->json([
                 'success' => true,
                 'user' => [
@@ -192,6 +203,8 @@ class AuthController extends Controller
                     'role' => $roles,
                     'permission' => $permissions,
                 ],
+                'profile_type' => $profileType,
+                'profile' => $profile
             ]);
         } catch (\Exception $e) {
             return response()->json([

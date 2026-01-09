@@ -1,30 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
-use App\Models\MasterData\Mahasiswa;
 use Illuminate\Http\Request;
+use App\Models\MasterData\Ruang;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\BerkasMahasiswa;
 use Illuminate\Validation\ValidationException;
 
-class BerkasMahasiswaController extends Controller
+class RuangController extends Controller
 {
     public function index(): JsonResponse
     {
         try {
-            $berkasMahasiswas = BerkasMahasiswa::with(['mahasiswa'])->get();
+            $ruang = Ruang::all();
             return response()->json([
                 'success' => true,
-                'message' => 'Daftar Berkas Mahasiswa',
-                'data' => $berkasMahasiswas
+                'message' => 'Daftar Ruang',
+                'data' => $ruang
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data berkas mahasiswa.',
+                'message' => 'Terjadi kesalahan saat mengambil data ruang.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -34,19 +33,17 @@ class BerkasMahasiswaController extends Controller
     {
         try {
             $request->validate([
-                'id_mahasiswa' => 'required|exists:mahasiswa,id',
-                'jenis_berkas' => 'required|string|max:255',
-                'file_path' => 'required|string|max:500', // Sesuaikan dengan tempat penyimpanan
-                'file_nama' => 'required|string|max:255',
-                'tanggal_upload' => 'required|date',
+                'nama_ruang' => 'required|string|max:255',
+                'kapasitas' => 'required|integer|min:1',
+                'jenis_ruang' => 'nullable|string|max:255',
             ]);
 
-            $berkasMahasiswa = BerkasMahasiswa::create($request->all());
+            $ruang = Ruang::create($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Berkas Mahasiswa berhasil ditambahkan.',
-                'data' => $berkasMahasiswa
+                'message' => 'Ruang berhasil ditambahkan.',
+                'data' => $ruang
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -57,7 +54,7 @@ class BerkasMahasiswaController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menambahkan berkas mahasiswa.',
+                'message' => 'Terjadi kesalahan saat menambahkan ruang.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -66,24 +63,24 @@ class BerkasMahasiswaController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $berkasMahasiswa = BerkasMahasiswa::with(['mahasiswa'])->find($id);
+            $ruang = Ruang::find($id);
 
-            if (!$berkasMahasiswa) {
+            if (!$ruang) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Berkas Mahasiswa tidak ditemukan.'
+                    'message' => 'Ruang tidak ditemukan.'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Berkas Mahasiswa',
-                'data' => $berkasMahasiswa
+                'message' => 'Detail Ruang',
+                'data' => $ruang
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data berkas mahasiswa.',
+                'message' => 'Terjadi kesalahan saat mengambil data ruang.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -92,29 +89,27 @@ class BerkasMahasiswaController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $berkasMahasiswa = BerkasMahasiswa::find($id);
+            $ruang = Ruang::find($id);
 
-            if (!$berkasMahasiswa) {
+            if (!$ruang) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Berkas Mahasiswa tidak ditemukan.'
+                    'message' => 'Ruang tidak ditemukan.'
                 ], 404);
             }
 
             $request->validate([
-                'id_mahasiswa' => 'sometimes|exists:mahasiswa,id',
-                'jenis_berkas' => 'sometimes|string|max:255',
-                'file_path' => 'sometimes|string|max:500',
-                'file_nama' => 'sometimes|string|max:255',
-                'tanggal_upload' => 'sometimes|date',
+                'nama_ruang' => 'sometimes|string|max:255',
+                'kapasitas' => 'sometimes|integer|min:1',
+                'jenis_ruang' => 'nullable|string|max:255',
             ]);
 
-            $berkasMahasiswa->update($request->all());
+            $ruang->update($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Berkas Mahasiswa berhasil diperbarui.',
-                'data' => $berkasMahasiswa
+                'message' => 'Ruang berhasil diperbarui.',
+                'data' => $ruang
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -125,7 +120,7 @@ class BerkasMahasiswaController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui berkas mahasiswa.',
+                'message' => 'Terjadi kesalahan saat memperbarui ruang.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -134,25 +129,25 @@ class BerkasMahasiswaController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $berkasMahasiswa = BerkasMahasiswa::find($id);
+            $ruang = Ruang::find($id);
 
-            if (!$berkasMahasiswa) {
+            if (!$ruang) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Berkas Mahasiswa tidak ditemukan.'
+                    'message' => 'Ruang tidak ditemukan.'
                 ], 404);
             }
 
-            $berkasMahasiswa->delete();
+            $ruang->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Berkas Mahasiswa berhasil dihapus.'
+                'message' => 'Ruang berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus berkas mahasiswa.',
+                'message' => 'Terjadi kesalahan saat menghapus ruang.',
                 'error' => $e->getMessage()
             ], 500);
         }

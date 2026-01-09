@@ -16,10 +16,11 @@ return new class extends Migration
             $table->foreignUuid('id_prodi')->constrained('prodi', 'id');
             $table->foreignUuid('id_kelas_pararel')->constrained('kelas_pararel', 'id')->nullable(); // bisa null saat belum masuk kelas
             $table->foreignUuid('id_dosen')->constrained('dosen', 'id')->nullable(); // dosen wali
+            $table->foreignUuid('user_id')->constrained('users', 'id')->nullable();
             $table->string('nim')->unique();
             $table->string('nama_mahasiswa');
             $table->enum('jenis_kelamin', ['L', 'P']);
-            $table->date('tanggal_lahir');
+            $table->date('tanggal_lahir')->nullable();
             $table->text('alamat')->nullable();
             $table->string('no_hp')->nullable();
             $table->string('email')->unique()->nullable();

@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('dosen', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('id_prodi')->constrained('prodi', 'id');
+            $table->foreignUuid('user_id')->constrained('users', 'id')->nullable();
             $table->string('nidn')->unique()->nullable();
             $table->string('nup')->unique()->nullable();
             $table->string('nama_dosen');
             $table->enum('jenis_kelamin', ['L', 'P']);
-            $table->date('tanggal_lahir');
+            $table->date('tanggal_lahir')->nullable();
             $table->text('alamat')->nullable();
             $table->string('no_hp')->nullable();
             $table->string('email')->unique()->nullable();

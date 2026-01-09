@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\JenjangPendidikan;

@@ -23,12 +23,9 @@ class MataKuliah extends Model
         'nama_mk',
         'sks',
         'semester_rekomendasi',
-        'jenis',
-        'deskripsi',
         'teori',
-        'seminar',
         'praktikum',
-        'praktek_klinik',
+        'klinik',
     ];
 
     // Relasi ke Kurikulum

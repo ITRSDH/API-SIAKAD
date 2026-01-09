@@ -2,11 +2,12 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Dosen extends Model
 {
@@ -18,6 +19,7 @@ class Dosen extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'id_prodi',
+        'user_id',
         'nidn',
         'nup',
         'nama_dosen',
@@ -70,5 +72,10 @@ class Dosen extends Model
     public function perwalian(): HasMany
     {
         return $this->hasMany(Perwalian::class, 'id_dosen');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

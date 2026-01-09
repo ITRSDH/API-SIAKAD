@@ -1,33 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
-use App\Models\MasterData\Dosen;
-use App\Models\MasterData\Ruang;
-use App\Models\MasterData\KelasMk;
-use App\Models\MasterData\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\JadwalKuliah;
+use App\Models\MasterData\JenisPembayaran;
 use Illuminate\Validation\ValidationException;
 
-class JadwalKuliahController extends Controller
+class JenisPembayaranController extends Controller
 {
     public function index(): JsonResponse
     {
         try {
-            $jadwalKuliahs = JadwalKuliah::with(['kelasMk', 'dosen', 'ruang', 'semester'])->get();
+            $jenisPembayarans = JenisPembayaran::all();
             return response()->json([
                 'success' => true,
-                'message' => 'Daftar Jadwal Kuliah',
-                'data' => $jadwalKuliahs
+                'message' => 'Daftar Jenis Pembayaran',
+                'data' => $jenisPembayarans
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data jadwal kuliah.',
+                'message' => 'Terjadi kesalahan saat mengambil data jenis pembayaran.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -37,21 +33,17 @@ class JadwalKuliahController extends Controller
     {
         try {
             $request->validate([
-                'id_kelas_mk' => 'required|exists:kelas_mk,id',
-                'id_dosen' => 'required|exists:dosen,id',
-                'id_ruang' => 'required|exists:ruang,id',
-                'id_semester' => 'required|exists:semester,id',
-                'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
-                'jam_mulai' => 'required|date_format:H:i',
-                'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+                'nama_pembayaran' => 'required|string|max:255',
+                'nominal' => 'required|integer|min:0', // Dalam satuan rupiah
+                'keterangan' => 'nullable|string',
             ]);
 
-            $jadwalKuliah = JadwalKuliah::create($request->all());
+            $jenisPembayaran = JenisPembayaran::create($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jadwal Kuliah berhasil ditambahkan.',
-                'data' => $jadwalKuliah
+                'message' => 'Jenis Pembayaran berhasil ditambahkan.',
+                'data' => $jenisPembayaran
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -62,7 +54,7 @@ class JadwalKuliahController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menambahkan jadwal kuliah.',
+                'message' => 'Terjadi kesalahan saat menambahkan jenis pembayaran.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -71,24 +63,24 @@ class JadwalKuliahController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $jadwalKuliah = JadwalKuliah::with(['kelasMk', 'dosen', 'ruang', 'semester'])->find($id);
+            $jenisPembayaran = JenisPembayaran::find($id);
 
-            if (!$jadwalKuliah) {
+            if (!$jenisPembayaran) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jadwal Kuliah tidak ditemukan.'
+                    'message' => 'Jenis Pembayaran tidak ditemukan.'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Jadwal Kuliah',
-                'data' => $jadwalKuliah
+                'message' => 'Detail Jenis Pembayaran',
+                'data' => $jenisPembayaran
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data jadwal kuliah.',
+                'message' => 'Terjadi kesalahan saat mengambil data jenis pembayaran.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -97,31 +89,27 @@ class JadwalKuliahController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $jadwalKuliah = JadwalKuliah::find($id);
+            $jenisPembayaran = JenisPembayaran::find($id);
 
-            if (!$jadwalKuliah) {
+            if (!$jenisPembayaran) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jadwal Kuliah tidak ditemukan.'
+                    'message' => 'Jenis Pembayaran tidak ditemukan.'
                 ], 404);
             }
 
             $request->validate([
-                'id_kelas_mk' => 'sometimes|exists:kelas_mk,id',
-                'id_dosen' => 'sometimes|exists:dosen,id',
-                'id_ruang' => 'sometimes|exists:ruang,id',
-                'id_semester' => 'sometimes|exists:semester,id',
-                'hari' => 'sometimes|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
-                'jam_mulai' => 'sometimes|date_format:H:i',
-                'jam_selesai' => 'sometimes|date_format:H:i|after:jam_mulai',
+                'nama_pembayaran' => 'sometimes|string|max:255',
+                'nominal' => 'sometimes|integer|min:0',
+                'keterangan' => 'nullable|string',
             ]);
 
-            $jadwalKuliah->update($request->all());
+            $jenisPembayaran->update($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jadwal Kuliah berhasil diperbarui.',
-                'data' => $jadwalKuliah
+                'message' => 'Jenis Pembayaran berhasil diperbarui.',
+                'data' => $jenisPembayaran
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -132,7 +120,7 @@ class JadwalKuliahController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui jadwal kuliah.',
+                'message' => 'Terjadi kesalahan saat memperbarui jenis pembayaran.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -141,25 +129,25 @@ class JadwalKuliahController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $jadwalKuliah = JadwalKuliah::find($id);
+            $jenisPembayaran = JenisPembayaran::find($id);
 
-            if (!$jadwalKuliah) {
+            if (!$jenisPembayaran) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jadwal Kuliah tidak ditemukan.'
+                    'message' => 'Jenis Pembayaran tidak ditemukan.'
                 ], 404);
             }
 
-            $jadwalKuliah->delete();
+            $jenisPembayaran->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jadwal Kuliah berhasil dihapus.'
+                'message' => 'Jenis Pembayaran berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus jadwal kuliah.',
+                'message' => 'Terjadi kesalahan saat menghapus jenis pembayaran.',
                 'error' => $e->getMessage()
             ], 500);
         }

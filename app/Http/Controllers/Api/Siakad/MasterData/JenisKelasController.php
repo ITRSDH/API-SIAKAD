@@ -1,29 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\JenisPembayaran;
+use App\Models\MasterData\JenisKelas;
 use Illuminate\Validation\ValidationException;
 
-class JenisPembayaranController extends Controller
+class JenisKelasController extends Controller
 {
     public function index(): JsonResponse
     {
         try {
-            $jenisPembayarans = JenisPembayaran::all();
+            $jenisKelas = JenisKelas::all();
             return response()->json([
                 'success' => true,
-                'message' => 'Daftar Jenis Pembayaran',
-                'data' => $jenisPembayarans
+                'message' => 'Daftar Jenis Kelas',
+                'data' => $jenisKelas
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data jenis pembayaran.',
+                'message' => 'Terjadi kesalahan saat mengambil data jenis kelas.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -33,17 +33,16 @@ class JenisPembayaranController extends Controller
     {
         try {
             $request->validate([
-                'nama_pembayaran' => 'required|string|max:255',
-                'nominal' => 'required|integer|min:0', // Dalam satuan rupiah
-                'keterangan' => 'nullable|string',
+                'nama_kelas' => 'required|string|max:255',
+                'deskripsi' => 'nullable|string',
             ]);
 
-            $jenisPembayaran = JenisPembayaran::create($request->all());
+            $jenisKelas = JenisKelas::create($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jenis Pembayaran berhasil ditambahkan.',
-                'data' => $jenisPembayaran
+                'message' => 'Jenis Kelas berhasil ditambahkan.',
+                'data' => $jenisKelas
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -54,7 +53,7 @@ class JenisPembayaranController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menambahkan jenis pembayaran.',
+                'message' => 'Terjadi kesalahan saat menambahkan jenis kelas.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -63,24 +62,24 @@ class JenisPembayaranController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $jenisPembayaran = JenisPembayaran::find($id);
+            $jenisKelas = JenisKelas::find($id);
 
-            if (!$jenisPembayaran) {
+            if (!$jenisKelas) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jenis Pembayaran tidak ditemukan.'
+                    'message' => 'Jenis Kelas tidak ditemukan.'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Jenis Pembayaran',
-                'data' => $jenisPembayaran
+                'message' => 'Detail Jenis Kelas',
+                'data' => $jenisKelas
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data jenis pembayaran.',
+                'message' => 'Terjadi kesalahan saat mengambil data jenis kelas.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -89,27 +88,26 @@ class JenisPembayaranController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $jenisPembayaran = JenisPembayaran::find($id);
+            $jenisKelas = JenisKelas::find($id);
 
-            if (!$jenisPembayaran) {
+            if (!$jenisKelas) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jenis Pembayaran tidak ditemukan.'
+                    'message' => 'Jenis Kelas tidak ditemukan.'
                 ], 404);
             }
 
             $request->validate([
-                'nama_pembayaran' => 'sometimes|string|max:255',
-                'nominal' => 'sometimes|integer|min:0',
-                'keterangan' => 'nullable|string',
+                'nama_kelas' => 'sometimes|string|max:255',
+                'deskripsi' => 'nullable|string',
             ]);
 
-            $jenisPembayaran->update($request->all());
+            $jenisKelas->update($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jenis Pembayaran berhasil diperbarui.',
-                'data' => $jenisPembayaran
+                'message' => 'Jenis Kelas berhasil diperbarui.',
+                'data' => $jenisKelas
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -120,7 +118,7 @@ class JenisPembayaranController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui jenis pembayaran.',
+                'message' => 'Terjadi kesalahan saat memperbarui jenis kelas.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -129,25 +127,25 @@ class JenisPembayaranController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $jenisPembayaran = JenisPembayaran::find($id);
+            $jenisKelas = JenisKelas::find($id);
 
-            if (!$jenisPembayaran) {
+            if (!$jenisKelas) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jenis Pembayaran tidak ditemukan.'
+                    'message' => 'Jenis Kelas tidak ditemukan.'
                 ], 404);
             }
 
-            $jenisPembayaran->delete();
+            $jenisKelas->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jenis Pembayaran berhasil dihapus.'
+                'message' => 'Jenis Kelas berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus jenis pembayaran.',
+                'message' => 'Terjadi kesalahan saat menghapus jenis kelas.',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -1,30 +1,35 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use App\Models\MasterData\Mahasiswa;
-use Illuminate\Http\Request;
-use App\Models\MasterData\Alumni;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\MasterData\Kurikulum;
+use App\Models\MasterData\Prodi;
+use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
-class AlumniController extends Controller
+class KurikulumController extends Controller
 {
     public function index(): JsonResponse
     {
         try {
-            $alumnis = Alumni::with(['mahasiswa'])->get();
+            $kurikulum = Kurikulum::with(['prodi'])->get();
+            $prodi = Prodi::get();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Daftar Alumni',
-                'data' => $alumnis
+                'message' => 'Data All Kurikulum berhasil diambil',
+                'data' => [
+                    'kurikulum' => $kurikulum,
+                    'prodi' => $prodi,
+                ]
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data alumni.',
+                'message' => 'Terjadi kesalahan saat mengambil data All Kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -34,18 +39,18 @@ class AlumniController extends Controller
     {
         try {
             $request->validate([
-                'id_mahasiswa' => 'required|exists:mahasiswa,id|unique:alumni,id_mahasiswa',
-                'tanggal_lulus' => 'required|date',
-                'ipk' => 'required|numeric|min:0|max:4',
-                'no_ijazah' => 'nullable|string|unique:alumni,no_ijazah',
+                'id_prodi' => 'required|exists:prodi,id',
+                'nama_kurikulum' => 'required|string|max:255',
+                'tahun_kurikulum' => 'required|integer|min:2000|max:' . (date('Y') + 10),
+                'status' => 'boolean',
             ]);
 
-            $alumni = Alumni::create($request->all());
+            $kurikulum = Kurikulum::create($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Alumni berhasil ditambahkan.',
-                'data' => $alumni
+                'message' => 'Kurikulum berhasil ditambahkan.',
+                'data' => $kurikulum
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -56,7 +61,7 @@ class AlumniController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menambahkan alumni.',
+                'message' => 'Terjadi kesalahan saat menambahkan kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -65,24 +70,24 @@ class AlumniController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $alumni = Alumni::with(['mahasiswa'])->find($id);
+            $kurikulum = Kurikulum::with(['prodi'])->find($id);
 
-            if (!$alumni) {
+            if (!$kurikulum) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Alumni tidak ditemukan.'
+                    'message' => 'Kurikulum tidak ditemukan.'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Alumni',
-                'data' => $alumni
+                'message' => 'Detail Kurikulum',
+                'data' => $kurikulum
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data alumni.',
+                'message' => 'Terjadi kesalahan saat mengambil data kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -91,28 +96,28 @@ class AlumniController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $alumni = Alumni::find($id);
+            $kurikulum = Kurikulum::find($id);
 
-            if (!$alumni) {
+            if (!$kurikulum) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Alumni tidak ditemukan.'
+                    'message' => 'Kurikulum tidak ditemukan.'
                 ], 404);
             }
 
             $request->validate([
-                'id_mahasiswa' => 'sometimes|exists:mahasiswa,id|unique:alumni,id_mahasiswa,' . $id,
-                'tanggal_lulus' => 'sometimes|date',
-                'ipk' => 'sometimes|numeric|min:0|max:4',
-                'no_ijazah' => 'nullable|string|unique:alumni,no_ijazah,' . $id,
+                'id_prodi' => 'sometimes|exists:prodi,id',
+                'nama_kurikulum' => 'sometimes|string|max:255',
+                'tahun_kurikulum' => 'sometimes|integer|min:2000|max:' . (date('Y') + 10),
+                'status' => 'sometimes|boolean',
             ]);
 
-            $alumni->update($request->all());
+            $kurikulum->update($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Alumni berhasil diperbarui.',
-                'data' => $alumni
+                'message' => 'Kurikulum berhasil diperbarui.',
+                'data' => $kurikulum
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -123,7 +128,7 @@ class AlumniController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui alumni.',
+                'message' => 'Terjadi kesalahan saat memperbarui kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -132,25 +137,25 @@ class AlumniController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $alumni = Alumni::find($id);
+            $kurikulum = Kurikulum::find($id);
 
-            if (!$alumni) {
+            if (!$kurikulum) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Alumni tidak ditemukan.'
+                    'message' => 'Kurikulum tidak ditemukan.'
                 ], 404);
             }
 
-            $alumni->delete();
+            $kurikulum->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Alumni berhasil dihapus.'
+                'message' => 'Kurikulum berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus alumni.',
+                'message' => 'Terjadi kesalahan saat menghapus kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }

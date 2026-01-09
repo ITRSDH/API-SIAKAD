@@ -1,34 +1,35 @@
 <?php
 
-namespace App\Http\Controllers\Api\MasterData;
+namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
-use App\Models\MasterData\Prodi;
-use App\Models\MasterData\Dosen;
-use App\Models\MasterData\KelasPararel;
 use Illuminate\Http\Request;
+use App\Models\MasterData\Dosen;
+use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\Mahasiswa;
 use Illuminate\Validation\ValidationException;
 
-class MahasiswaController extends Controller
+class DosenController extends Controller
 {
     public function index(): JsonResponse
     {
         try {
-            // Memuat relasi yang relevan
-            $mahasiswas = Mahasiswa::with(['prodi', 'kelasPararel', 'dosenWali'])->get();
-
+            // Memuat relasi prodi
+            $dosens = Dosen::with(['prodi'])->get();
+            $dataprodi = Prodi::all();
             return response()->json([
                 'success' => true,
-                'message' => 'Daftar Mahasiswa',
-                'data' => $mahasiswas
+                'message' => 'Daftar Dosen',
+                'data' => [
+                    'dosen' => $dosens,
+                    'prodi' => $dataprodi
+                ]
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data mahasiswa.',
+                'message' => 'Terjadi kesalahan saat mengambil data dosen.',
                 'error' => $e->getMessage() // Hanya tampilkan pesan error jika debug=true
             ], 500);
         }
@@ -37,24 +38,24 @@ class MahasiswaController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $mahasiswa = Mahasiswa::with(['prodi', 'kelasPararel', 'dosenWali'])->find($id);
+            $dosen = Dosen::with(['prodi'])->find($id);
 
-            if (!$mahasiswa) {
+            if (!$dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.'
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Mahasiswa',
-                'data' => $mahasiswa
+                'message' => 'Detail Dosen',
+                'data' => $dosen
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data mahasiswa.',
+                'message' => 'Terjadi kesalahan saat mengambil data dosen.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -65,29 +66,27 @@ class MahasiswaController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
-                'id_kelas_pararel' => 'nullable|exists:kelas_pararel,id', // Bisa null saat pertama kali
-                'id_dosen' => 'nullable|exists:dosen,id', // Bisa null saat pertama kali
-                'nim' => 'required|string|max:20|unique:mahasiswa,nim',
-                'nama_mahasiswa' => 'required|string|max:255',
+                'user_id' => 'required|exists:user,id',
+                'nidn' => 'nullable|string|unique:dosen,nidn',
+                'nup' => 'nullable|string|unique:dosen,nup',
+                'nama_dosen' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:L,P',
-                'tanggal_lahir' => 'required|date',
+                'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'required|email|unique:mahasiswa,email',
-                'asal_sekolah' => 'nullable|string|max:255',
-                'nama_orang_tua' => 'nullable|string|max:255',
-                'no_hp_orang_tua' => 'nullable|string|max:15',
-                'status' => 'required|in:Aktif,Cuti,DO,Lulus', // Default 'Aktif' biasanya di model
-                'angkatan' => 'required|integer|min:1900|max:2100', // Sesuaikan rentang tahun
+                'email' => 'nullable|email|unique:dosen,email',
+                'jabatan_akademik' => 'nullable|string|max:255', // Asisten Ahli, Lektor, dll
+                'pangkat_golongan' => 'nullable|string|max:255',
+                'status_aktif' => 'boolean', // Default: true
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 
-            $mahasiswa = Mahasiswa::create($request->all());
+            $dosen = Dosen::create($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mahasiswa berhasil dibuat.',
-                'data' => $mahasiswa
+                'message' => 'Dosen berhasil dibuat.',
+                'data' => $dosen
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -98,7 +97,7 @@ class MahasiswaController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat membuat mahasiswa.',
+                'message' => 'Terjadi kesalahan saat membuat dosen.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -107,40 +106,38 @@ class MahasiswaController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $mahasiswa = Mahasiswa::find($id);
+            $dosen = Dosen::find($id);
 
-            if (!$mahasiswa) {
+            if (!$dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.'
                 ], 404);
             }
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'id_kelas_pararel' => 'nullable|sometimes|exists:kelas_pararel,id',
-                'id_dosen' => 'nullable|sometimes|exists:dosen,id',
-                'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
-                'nama_mahasiswa' => 'sometimes|string|max:255',
+                'user_id' => 'sometimes|exists:user,id',
+                'nidn' => 'nullable|string|unique:dosen,nidn,' . $id,
+                'nup' => 'nullable|string|unique:dosen,nup,' . $id,
+                'nama_dosen' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
-                'tanggal_lahir' => 'sometimes|date',
+                'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'sometimes|email|unique:mahasiswa,email,' . $id,
-                'asal_sekolah' => 'nullable|string|max:255',
-                'nama_orang_tua' => 'nullable|string|max:255',
-                'no_hp_orang_tua' => 'nullable|string|max:15',
-                'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
-                'angkatan' => 'sometimes|integer|min:1900|max:2100',
+                'email' => 'nullable|email|unique:dosen,email,' . $id,
+                'jabatan_akademik' => 'nullable|string|max:255',
+                'pangkat_golongan' => 'nullable|string|max:255',
+                'status_aktif' => 'boolean',
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 
-            $mahasiswa->update($request->all());
+            $dosen->update($request->all());
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mahasiswa berhasil diperbarui.',
-                'data' => $mahasiswa
+                'message' => 'Dosen berhasil diperbarui.',
+                'data' => $dosen
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -151,7 +148,7 @@ class MahasiswaController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui mahasiswa.',
+                'message' => 'Terjadi kesalahan saat memperbarui dosen.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -160,25 +157,25 @@ class MahasiswaController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $mahasiswa = Mahasiswa::find($id);
+            $dosen = Dosen::find($id);
 
-            if (!$mahasiswa) {
+            if (!$dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.'
                 ], 404);
             }
 
-            $mahasiswa->delete();
+            $dosen->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mahasiswa berhasil dihapus.'
+                'message' => 'Dosen berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus mahasiswa.',
+                'message' => 'Terjadi kesalahan saat menghapus dosen.',
                 'error' => $e->getMessage()
             ], 500);
         }
