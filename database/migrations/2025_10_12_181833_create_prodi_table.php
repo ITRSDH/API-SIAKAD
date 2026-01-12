@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('kode_prodi', 10)->unique();
             $table->string('nama_prodi', 100);
             $table->foreignUuid('id_jenjang_pendidikan')->constrained('jenjang_pendidikan', 'id');
-            $table->foreignUuid('id_kaprodi')->constrained('dosen', 'id');
+            // $table->foreignUuid('id_kaprodi')->constrained('dosen', 'id');
             $table->string('akreditasi', 10)->nullable();
             $table->year('tahun_berdiri')->nullable();
             $table->integer('kuota')->default(0);
