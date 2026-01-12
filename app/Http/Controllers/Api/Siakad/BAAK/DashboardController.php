@@ -34,7 +34,7 @@ class DashboardController extends Controller
             $totalPembayaranLunas = PembayaranMahasiswa::where('status_pembayaran', 'Lunas')->count();
             $totalPembayaranBelumLunas = PembayaranMahasiswa::where('status_pembayaran', 'Belum Lunas')->count();
 
-            $stats = [
+            $data = [
                 'total_pembayaran' => $totalPembayaran,
                 'total_jenis_pembayaran' => $totalJenisPembayaran,
                 'total_pembayaran_lunas' => $totalPembayaranLunas,
@@ -44,7 +44,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data for BAK.',
-                'data' => $stats
+                'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

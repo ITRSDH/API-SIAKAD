@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('dashboard/admin', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard.admin');
         Route::get('dashboard/baak', [\App\Http\Controllers\Api\Siakad\BAAK\DashboardController::class, 'index'])->name('dashboard.baak');
+        Route::get('dashboard/kaprodi', [\App\Http\Controllers\Api\Siakad\KAPRODI\DashboardController::class, 'index'])->name('dashboard.kaprodi');
         Route::get('dashboard/dosen-pa', [\App\Http\Controllers\Api\Siakad\DOSEN_PA\DashboardController::class, 'index'])->name('dashboard.dosen-pa');
         Route::get('dashboard/dosen-pengampu', [\App\Http\Controllers\Api\Siakad\DOSEN_PENGAMPU\DashboardController::class, 'index'])->name('dashboard.dosen-pengampu');
         Route::get('dashboard/mahasiswa', [\App\Http\Controllers\Api\Siakad\MAHASISWA\DashboardController::class, 'index'])->name('dashboard.mahasiswa');

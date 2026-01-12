@@ -23,51 +23,79 @@ class MataKuliahController extends Controller
             // Ambil tahun akademik aktif
             $tahunAkademikAktif = TahunAkademik::where('status_aktif', true)->first();
 
+            // Ambil semua mata kuliah beserta relasi kurikulum dan prodi
             $mataKuliahs = MataKuliah::with(['kurikulum.prodi'])->get();
 
-            $processedMataKuliah = $mataKuliahs->map(function ($mk) {
-                return [
-                    'id' => $mk->id,
-                    'id_kurikulum' => $mk->kurikulum->id ?? null,
-                    'kode_mk' => $mk->kode_mk,
-                    'nama_mk' => $mk->nama_mk,
-                    'sks' => $mk->sks,
-                    'teori' => $mk->teori,
-                    'praktikum' => $mk->praktikum,
-                    'klinik' => $mk->klinik,
-                    'semester_rekomendasi' => $mk->semester_rekomendasi,
-                    'prodi_nama' => $mk->kurikulum->prodi->nama_prodi ?? null,
-                    'kurikulum_nama' => $mk->kurikulum->nama_kurikulum ?? null
-                ];
-            });
+            // Kelompokkan berdasarkan prodi, lalu kurikulum, lalu semester
+            $grouped = $mataKuliahs->groupBy([
+                function ($mk) {
+                    return $mk->kurikulum->prodi->id ?? null;
+                }, // Grup berdasarkan ID Prodi
+                function ($mk) {
+                    return $mk->kurikulum->id ?? null;
+                }, // Grup berdasarkan ID Kurikulum
+                'semester_rekomendasi' // Grup berdasarkan semester
+            ]);
 
-            $groupedMataKuliah = $processedMataKuliah
-                ->sortByDesc('semester_rekomendasi')
-                ->groupBy('semester_rekomendasi')
-                ->map(function ($mataKuliahPerSemester) use ($tahunAkademikAktif) {
-                    $first = $mataKuliahPerSemester->first();
-                    return [
-                        'prodi' => $first['prodi_nama'],
-                        'kurikulum' => $first['kurikulum_nama'],
-                        'semester' => $first['semester_rekomendasi'],
+            $result = [];
+
+            foreach ($grouped as $idProdi => $kurikulums) {
+                foreach ($kurikulums as $idKurikulum => $semesters) {
+                    $prodi = null;
+                    $kurikulum = null;
+
+                    $semesterData = [];
+
+                    foreach ($semesters as $semester => $mataKuliah) {
+                        $semesterData[] = [
+                            'semester' => $semester,
+                            'mata_kuliah' => $mataKuliah->map(function ($mk) {
+                                return [
+                                    'id' => $mk->id,
+                                    'kode_mk' => $mk->kode_mk,
+                                    'nama_mk' => $mk->nama_mk,
+                                    'sks' => $mk->sks,
+                                    'teori' => $mk->teori,
+                                    'praktikum' => $mk->praktikum,
+                                    'klinik' => $mk->klinik,
+                                ];
+                            })->toArray()
+                        ];
+
+                        // Ambil data prodi dan kurikulum dari item mata kuliah pertama dalam semester
+                        if (!$prodi) {
+                            $prodi = [
+                                'id' => $mataKuliah->first()->kurikulum->prodi->id,
+                                'nama_prodi' => $mataKuliah->first()->kurikulum->prodi->nama_prodi
+                            ];
+                        }
+
+                        if (!$kurikulum) {
+                            $kurikulum = [
+                                'id' => $mataKuliah->first()->kurikulum->id,
+                                'nama_kurikulum' => $mataKuliah->first()->kurikulum->nama_kurikulum,
+                            ];
+                        }
+                    }
+
+                    $kurikulum['semesters'] = $semesterData;
+
+                    $result[] = [
                         'tahun_akademik_aktif' => $tahunAkademikAktif ? [
                             'id' => $tahunAkademikAktif->id,
                             'tahun_akademik' => $tahunAkademikAktif->tahun_akademik,
                             'status_aktif' => $tahunAkademikAktif->status_aktif,
                         ] : null,
-                        'mata_kuliah' => $mataKuliahPerSemester->map(function ($mk) {
-                            unset($mk['prodi_nama'], $mk['kurikulum_nama']);
-                            return $mk;
-                        })
+                        'prodi' => $prodi,
+                        'kurikulum' => $kurikulum,
                     ];
-                });
+                }
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data master berhasil diambil',
-                'data' => [
-                    'grouped_mata_kuliah' => array_values($groupedMataKuliah->toArray())
-                ]
+                'data' => $result
             ], 200);
         } catch (Exception $e) {
             return response()->json([

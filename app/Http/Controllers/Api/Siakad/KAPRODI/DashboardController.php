@@ -50,7 +50,7 @@ class DashboardController extends Controller
                 $query->where('id', $prodiId);
             })->count();
 
-            $stats = [
+            $data = [
                 'total_dosen' => $totalDosenProdi,
                 'total_mahasiswa' => $totalMahasiswaProdi,
                 'total_kelas_mk' => $totalKelasMkProdi,
@@ -60,7 +60,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data for Kaprodi.',
-                'data' => $stats
+                'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

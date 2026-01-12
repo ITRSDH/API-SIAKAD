@@ -42,7 +42,7 @@ class DashboardController extends Controller
             $totalPresensiInput = Presensi::whereIn('id_kelas_mk', $kelasAmpuIds)->count();
             $totalNilaiInput = Nilai::whereIn('id_kelas_mk', $kelasAmpuIds)->count();
 
-            $stats = [
+            $data = [
                 'total_kelas_ampu' => $totalKelasAmpu,
                 'total_jadwal_ampu' => $totalJadwalAmpu,
                 'total_presensi_input' => $totalPresensiInput,
@@ -52,7 +52,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data for Dosen Pengampu.',
-                'data' => $stats
+                'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

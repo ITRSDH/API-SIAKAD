@@ -1,7 +1,7 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njc4NTM4NzUsImV4cCI6MTc2Nzg1NzQ3NSwibmJmIjoxNzY3ODUzODc1LCJqdGkiOiIwOXBFUUNaR212WlhEYkg5Iiwic3ViIjoiYTBjNTI0ZDEtNzI0OS00Yzc1LWIwMmEtY2RlZWU4YzZjNDAxIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.JYZhfLHfTh5-q4h6bvtX7s3REFtVJwJ3U1aFYtD2faI
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NjgwMTQ0NDMsImV4cCI6MTc2ODAxODA0MywibmJmIjoxNzY4MDE0NDQzLCJqdGkiOiJKN1lqVG5TUTJZY3dUNXNQIiwic3ViIjoiYTBjNTI0ZDEtNzI0OS00Yzc1LWIwMmEtY2RlZWU4YzZjNDAxIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.qLYAIrsYJujsHUr1bbHQ7vUP6ZJzgdm3X-VYxp7YzVc
 
 ### Login
 POST {{ base_url }}/auth/login
@@ -84,6 +84,10 @@ Authorization: Bearer {{ token }}
 
 ### Get list of Users
 GET {{ base_url }}/mata-kuliah
+Authorization: Bearer {{ token }}
+
+### Get list of Users
+GET {{ base_url }}/mata-kuliah/semester/3?id_kurikulum=a0c773d9-f8b6-40e4-b9e0-61bdc7a4eda9
 Authorization: Bearer {{ token }}
 
 ### Store Mata Kuliah dengan Token

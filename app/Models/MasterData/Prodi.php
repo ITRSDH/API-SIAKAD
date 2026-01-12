@@ -22,6 +22,7 @@ class Prodi extends Model
         'tahun_berdiri',
         'kuota',
         'gelar_lulusan',
+        'id_kaprodi',
     ];
 
     protected $keyType = 'string';
@@ -31,6 +32,12 @@ class Prodi extends Model
     public function jenjang(): BelongsTo
     {
         return $this->belongsTo(JenjangPendidikan::class, 'id_jenjang_pendidikan');
+    }
+
+    // Relasi ke Dosen (sebagai Kaprodi)
+    public function kaprodi(): BelongsTo
+    {
+        return $this->belongsTo(Dosen::class, 'id_kaprodi');
     }
 
     // Relasi ke Mahasiswa

@@ -15,7 +15,7 @@ class ProdiController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $prodi = Prodi::with(['jenjang'])->get();
+            $prodi = Prodi::with(['jenjang', 'kaprodi'])->get();
             // Ambil jenjang pendidikan dengan prodi
             $jenjang_pendidikan = JenjangPendidikan::get();
 
@@ -46,6 +46,7 @@ class ProdiController extends Controller
                 'kode_prodi' => 'required|unique:prodi,kode_prodi',
                 'nama_prodi' => 'required|string|max:100',
                 'id_jenjang_pendidikan' => 'required|exists:jenjang_pendidikan,id',
+                'id_kaprodi' => 'nullable|exists:dosen,id',
                 'akreditasi' => 'nullable|in:A,B,C,Unggul',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
                 'kuota' => 'nullable|integer|min:0',
@@ -57,7 +58,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil ditambahkan',
-                'data' => $prodi->load('jenjang')
+                'data' => $prodi->load('jenjang', 'kaprodi')
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -81,7 +82,7 @@ class ProdiController extends Controller
                 ], 400);
             }
 
-            $prodi = Prodi::with('jenjang')->findOrFail($id);
+            $prodi = Prodi::with('jenjang', 'kaprodi')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -116,6 +117,7 @@ class ProdiController extends Controller
                 'kode_prodi' => 'sometimes|required|unique:prodi,kode_prodi,' . $id,
                 'nama_prodi' => 'sometimes|required|string|max:100',
                 'id_jenjang_pendidikan' => 'sometimes|required|exists:jenjang_pendidikan,id',
+                'id_kaprodi' => 'sometimes|exists:dosen,id',
                 'akreditasi' => 'nullable|in:A,B,C,Unggul',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
                 'kuota' => 'nullable|integer|min:0',
@@ -127,7 +129,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil diperbarui',
-                'data' => $prodi->load('jenjang')
+                'data' => $prodi->load('jenjang', 'kaprodi')
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

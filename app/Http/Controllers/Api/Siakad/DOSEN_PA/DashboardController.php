@@ -37,7 +37,7 @@ class DashboardController extends Controller
             $totalKrsDisetujui = Krs::whereIn('id_mahasiswa', $mahasiswaBimbinganIds)->where('status', 'Disetujui')->count();
             $totalPerwalian = Perwalian::where('id_dosen', $dosenId)->count();
 
-            $stats = [
+            $data = [
                 'total_mahasiswa_bimbingan' => $totalMahasiswaBimbingan,
                 'total_krs_disetujui' => $totalKrsDisetujui,
                 'total_perwalian' => $totalPerwalian,
@@ -46,7 +46,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data for Dosen PA.',
-                'data' => $stats
+                'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

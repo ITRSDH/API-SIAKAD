@@ -39,7 +39,7 @@ class DashboardController extends Controller
             $totalMahasiswa = Mahasiswa::count();
             $totalPembayaran = PembayaranMahasiswa::count();
 
-            $stats = [
+            $data = [
                 'total_prodi' => $totalProdi,
                 'total_dosen' => $totalDosen,
                 'total_mahasiswa' => $totalMahasiswa,
@@ -49,7 +49,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data for Admin.',
-                'data' => $stats
+                'data' => $data
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
