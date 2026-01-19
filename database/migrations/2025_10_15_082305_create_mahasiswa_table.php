@@ -14,16 +14,16 @@ return new class extends Migration
         Schema::create('mahasiswa', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('id_prodi')->constrained('prodi', 'id');
-            $table->foreignUuid('id_kelas_pararel')->constrained('kelas_pararel', 'id')->nullable(); // bisa null saat belum masuk kelas
-            $table->foreignUuid('id_dosen')->constrained('dosen', 'id')->nullable(); // dosen wali
-            $table->foreignUuid('user_id')->constrained('users', 'id')->nullable();
+            $table->foreignUuid('id_kelas_pararel')->nullable()->constrained('kelas_pararel', 'id'); // bisa null saat belum masuk kelas
+            $table->foreignUuid('id_dosen')->nullable()->constrained('dosen', 'id'); // dosen wali
+            $table->foreignUuid('user_id')->nullable()->constrained('users', 'id');
             $table->string('nim')->unique();
             $table->string('nama_mahasiswa');
             $table->enum('jenis_kelamin', ['L', 'P']);
             $table->date('tanggal_lahir')->nullable();
             $table->text('alamat')->nullable();
             $table->string('no_hp')->nullable();
-            $table->string('email')->unique()->nullable();
+            // $table->string('email')->unique()->nullable();
             $table->string('asal_sekolah')->nullable();
             $table->string('nama_orang_tua')->nullable();
             $table->string('no_hp_orang_tua')->nullable();

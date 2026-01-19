@@ -62,10 +62,10 @@ class UserSeeder extends Seeder
             'tanggal_lahir' => '1980-01-01',
             'alamat' => 'Alamat Kaprodi',
             'no_hp' => '081234567890',
-            'email' => 'kaprodi@example.com',
-            'jabatan_akademik' => 'Lektor',
-            'pangkat_golongan' => 'III/d',
-            'status_aktif' => true,
+            // 'email' => 'kaprodi@example.com',
+            // 'jabatan_akademik' => 'Lektor',
+            // 'pangkat_golongan' => 'III/d',
+            // 'status_aktif' => true,
         ]);
 
         // --- Buat User Dosen Pengampu terlebih dahulu ---
@@ -88,10 +88,10 @@ class UserSeeder extends Seeder
             'tanggal_lahir' => '1985-05-10',
             'alamat' => 'Alamat Dosen',
             'no_hp' => '081234567891',
-            'email' => 'dosen@example.com', // Harus berbeda dari kaprodi
-            'jabatan_akademik' => 'Asisten Ahli',
-            'pangkat_golongan' => 'III/c',
-            'status_aktif' => true,
+            // 'email' => 'dosen@example.com', // Harus berbeda dari kaprodi
+            // 'jabatan_akademik' => 'Asisten Ahli',
+            // 'pangkat_golongan' => 'III/c',
+            // 'status_aktif' => true,
         ]);
 
         // --- Buat User Dosen PA terlebih dahulu ---
@@ -114,10 +114,10 @@ class UserSeeder extends Seeder
             'tanggal_lahir' => '1982-07-15',
             'alamat' => 'Alamat Dosen PA',
             'no_hp' => '081234567892',
-            'email' => 'dosen.pa@example.com',
-            'jabatan_akademik' => 'Lektor',
-            'pangkat_golongan' => 'III/d',
-            'status_aktif' => true,
+            // 'email' => 'dosen.pa@example.com',
+            // 'jabatan_akademik' => 'Lektor',
+            // 'pangkat_golongan' => 'III/d',
+            // 'status_aktif' => true,
         ]);
 
         // --- Ambil ID Dosen Wali untuk Mahasiswa ---
@@ -144,7 +144,7 @@ class UserSeeder extends Seeder
             'tanggal_lahir' => '2005-03-20',
             'alamat' => 'Alamat Mahasiswa',
             'no_hp' => '081234567893',
-            'email' => 'mahasiswa@example.com',
+            // 'email' => 'mahasiswa@example.com',
             'asal_sekolah' => 'SMA Contoh',
             'nama_orang_tua' => 'Orang Tua Mahasiswa',
             'no_hp_orang_tua' => '081234567894',

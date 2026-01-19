@@ -27,15 +27,15 @@ class Dosen extends Model
         'tanggal_lahir',
         'alamat',
         'no_hp',
-        'email',
-        'jabatan_akademik',
-        'pangkat_golongan',
-        'status_aktif',
+        // 'email',
+        // 'jabatan_akademik',
+        // 'pangkat_golongan',
+        // 'status_aktif',
     ];
 
     protected $casts = [
         'tanggal_lahir' => 'date',
-        'status_aktif' => 'boolean',
+        // 'status_aktif' => 'boolean',
     ];
 
     // Relasi ke Prodi

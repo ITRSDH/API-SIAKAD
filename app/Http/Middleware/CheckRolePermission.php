@@ -27,6 +27,11 @@ class CheckRolePermission
             ], 401);
         }
 
+        // Cek jika user memiliki role admin, maka lewati semua pengecekan
+        if ($user->hasRole('admin')) {
+            return $next($request);
+        }
+
         // Ambil nama route yang sedang diakses
         $routeName = Route::currentRouteName();
 

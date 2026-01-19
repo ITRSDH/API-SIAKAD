@@ -66,7 +66,7 @@ class DosenController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
-                'user_id' => 'required|exists:user,id',
+                // 'user_id' => 'required|exists:user,id',
                 'nidn' => 'nullable|string|unique:dosen,nidn',
                 'nup' => 'nullable|string|unique:dosen,nup',
                 'nama_dosen' => 'required|string|max:255',
@@ -74,10 +74,10 @@ class DosenController extends Controller
                 'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'nullable|email|unique:dosen,email',
-                'jabatan_akademik' => 'nullable|string|max:255', // Asisten Ahli, Lektor, dll
-                'pangkat_golongan' => 'nullable|string|max:255',
-                'status_aktif' => 'boolean', // Default: true
+                // 'email' => 'nullable|email|unique:dosen,email',
+                // 'jabatan_akademik' => 'nullable|string|max:255', // Asisten Ahli, Lektor, dll
+                // 'pangkat_golongan' => 'nullable|string|max:255',
+                // 'status_aktif' => 'boolean', // Default: true
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 
@@ -117,7 +117,7 @@ class DosenController extends Controller
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'user_id' => 'sometimes|exists:user,id',
+                // 'user_id' => 'sometimes|exists:user,id',
                 'nidn' => 'nullable|string|unique:dosen,nidn,' . $id,
                 'nup' => 'nullable|string|unique:dosen,nup,' . $id,
                 'nama_dosen' => 'sometimes|string|max:255',
@@ -125,10 +125,10 @@ class DosenController extends Controller
                 'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'nullable|email|unique:dosen,email,' . $id,
-                'jabatan_akademik' => 'nullable|string|max:255',
-                'pangkat_golongan' => 'nullable|string|max:255',
-                'status_aktif' => 'boolean',
+                // 'email' => 'nullable|email|unique:dosen,email,' . $id,
+                // 'jabatan_akademik' => 'nullable|string|max:255',
+                // 'pangkat_golongan' => 'nullable|string|max:255',
+                // 'status_aktif' => 'boolean',
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 

@@ -73,21 +73,21 @@ class MahasiswaController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
-                'id_kelas_pararel' => 'nullable|exists:kelas_pararel,id', // Bisa null saat pertama kali
-                'id_dosen' => 'nullable|exists:dosen,id', // Bisa null saat pertama kali
-                'user_id' => 'nullable|exists:user,id',
+                // 'id_kelas_pararel' => 'nullable|exists:kelas_pararel,id', // Bisa null saat pertama kali
+                // 'id_dosen' => 'nullable|exists:dosen,id', // Bisa null saat pertama kali
+                // 'user_id' => 'nullable|exists:user,id',
                 'nim' => 'required|string|max:20|unique:mahasiswa,nim',
                 'nama_mahasiswa' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:L,P',
                 'tanggal_lahir' => 'required|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'required|email|unique:mahasiswa,email',
+                // 'email' => 'required|email|unique:mahasiswa,email',
                 'asal_sekolah' => 'nullable|string|max:255',
                 'nama_orang_tua' => 'nullable|string|max:255',
                 'no_hp_orang_tua' => 'nullable|string|max:15',
                 'status' => 'required|in:Aktif,Cuti,DO,Lulus', // Default 'Aktif' biasanya di model
-                'angkatan' => 'required|integer|min:1900|max:2100', // Sesuaikan rentang tahun
+                'angkatan' => 'required|integer|min:1900|max:' . (date('Y') + 10) // Sesuaikan rentang tahun
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 
@@ -128,21 +128,21 @@ class MahasiswaController extends Controller
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'id_kelas_pararel' => 'nullable|sometimes|exists:kelas_pararel,id',
-                'id_dosen' => 'nullable|sometimes|exists:dosen,id',
-                'user_id' => 'nullable|sometimes|exists:user,id',
+                // 'id_kelas_pararel' => 'nullable|sometimes|exists:kelas_pararel,id',
+                // 'id_dosen' => 'nullable|sometimes|exists:dosen,id',
+                // 'user_id' => 'nullable|sometimes|exists:user,id',
                 'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
                 'nama_mahasiswa' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
                 'tanggal_lahir' => 'sometimes|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'sometimes|email|unique:mahasiswa,email,' . $id,
+                // 'email' => 'sometimes|email|unique:mahasiswa,email,' . $id,
                 'asal_sekolah' => 'nullable|string|max:255',
                 'nama_orang_tua' => 'nullable|string|max:255',
                 'no_hp_orang_tua' => 'nullable|string|max:15',
                 'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
-                'angkatan' => 'sometimes|integer|min:1900|max:2100',
+                'angkatan' => 'sometimes|integer|min:1900|max:' . (date('Y') + 10)
                 // Tambahkan validasi untuk field lain jika ada
             ]);
 

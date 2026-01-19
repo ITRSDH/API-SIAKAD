@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api\Siakad\KAPRODI;
 use Illuminate\Http\Request;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Nilai;
+use App\Models\MasterData\Prodi;
+use App\Models\MasterData\KelasMK;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Mahasiswa;
-use App\Models\MasterData\KelasMK;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -39,7 +40,17 @@ class DashboardController extends Controller
                 ], 404);
             }
 
-            $prodiId = $dosen->id_prodi;
+            // Cari prodi di mana dosen ini adalah kaprodi
+            $prodi = Prodi::where('id_kaprodi', $dosen->id)->first();
+
+            if (!$prodi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda bukan kaprodi dari prodi manapun.'
+                ], 404);
+            }
+
+            $prodiId = $prodi->id;
 
             $totalDosenProdi = Dosen::where('id_prodi', $prodiId)->count();
             $totalMahasiswaProdi = Mahasiswa::where('id_prodi', $prodiId)->count();

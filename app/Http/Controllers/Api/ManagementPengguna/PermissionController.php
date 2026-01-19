@@ -39,6 +39,12 @@ class PermissionController extends Controller
                 $uri = $route->uri();
                 $name = $route->getName();
 
+                // Cek apakah route memiliki middleware 'check.role.permission'
+                $middleware = $route->middleware();
+                if (!in_array('check.role.permission', $middleware)) {
+                    return false;
+                }
+
                 // daftar yang ingin di-skip
                 $skip = ['sanctum', 'storage'];
 

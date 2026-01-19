@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('dosen', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('id_prodi')->constrained('prodi', 'id');
-            $table->foreignUuid('user_id')->constrained('users', 'id')->nullable();
+            $table->foreignUuid('user_id')->nullable()->constrained('users', 'id');
             $table->string('nidn')->unique()->nullable();
             $table->string('nup')->unique()->nullable();
             $table->string('nama_dosen');
@@ -22,10 +22,10 @@ return new class extends Migration
             $table->date('tanggal_lahir')->nullable();
             $table->text('alamat')->nullable();
             $table->string('no_hp')->nullable();
-            $table->string('email')->unique()->nullable();
-            $table->string('jabatan_akademik')->nullable(); // Asisten Ahli, Lektor, dll
-            $table->string('pangkat_golongan')->nullable();
-            $table->boolean('status_aktif')->default(true);
+            // $table->string('email')->unique()->nullable();
+            // $table->string('jabatan_akademik')->nullable(); // Asisten Ahli, Lektor, dll
+            // $table->string('pangkat_golongan')->nullable();
+            // $table->boolean('status_aktif')->default(true);
             $table->timestamps();
         });
     }

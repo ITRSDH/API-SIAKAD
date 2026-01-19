@@ -58,12 +58,19 @@ Route::prefix('v1')->group(function () {
                     Route::apiResource('jenjang-pendidikan', \App\Http\Controllers\Api\Siakad\MasterData\JenjangPendidikanController::class);
 
                     Route::apiResource('prodi', \App\Http\Controllers\Api\Siakad\MasterData\ProdiController::class);
+                    Route::put('prodi/{id}/kaprodi', [\App\Http\Controllers\Api\Siakad\MasterData\ProdiController::class, 'updateKaprodi'])->name('prodi.update-kaprodi');
 
                     Route::apiResource('tahun-akademik', \App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class);
                     Route::put('tahun-akademik/tahun-aktif/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class, 'setTahunAktif'])->name('tahun-akademik.tahun-aktif');
                     Route::put('tahun-akademik/semester-aktif/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\TahunAkademikController::class, 'setSemesterAktif'])->name('tahun-akademik.semester-aktif');
 
                     Route::apiResource('jenis-kelas', \App\Http\Controllers\Api\Siakad\MasterData\JenisKelasController::class);
+
+                    Route::get('/kelas-mk', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'index'])->name('kelas-mk.index');
+                    Route::get('/kelas-mk/create', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'create'])->name('kelas-mk.create');
+                    Route::post('/kelas-mk', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'store'])->name('kelas-mk.store');
+
+                    Route::apiResource('kelas-pararel', \App\Http\Controllers\Api\Siakad\MasterData\KelasPararelController::class);
 
                     Route::apiResource('kurikulum', \App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class);
 
