@@ -69,6 +69,11 @@ Route::prefix('v1')->group(function () {
                     Route::get('/kelas-mk', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'index'])->name('kelas-mk.index');
                     Route::get('/kelas-mk/create', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'create'])->name('kelas-mk.create');
                     Route::post('/kelas-mk', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'store'])->name('kelas-mk.store');
+                    // Route::get('/kelas-mk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'show'])->name('kelas-mk.show');
+                    Route::get('/kelas-mk/{id}/edit', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'edit'])->name('kelas-mk.edit');
+                    Route::put('/kelas-mk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'update'])->name('kelas-mk.update');
+                    Route::delete('/kelas-mk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasMKController::class, 'destroy'])->name('kelas-mk.destroy');
+
 
                     Route::apiResource('kelas-pararel', \App\Http\Controllers\Api\Siakad\MasterData\KelasPararelController::class);
 
@@ -90,6 +95,9 @@ Route::prefix('v1')->group(function () {
                     Route::apiResource('jenis-pembayaran', \App\Http\Controllers\Api\Siakad\MasterData\JenisPembayaranController::class);
 
                     Route::apiResource('ruang', \App\Http\Controllers\Api\Siakad\MasterData\RuangController::class);
+
+                    Route::apiResource('dosen-mk-jadwal', \App\Http\Controllers\Api\Siakad\MasterData\DosenMKJadwalController::class);
+                    Route::get('/dosen-mk-jadwal/create', [\App\Http\Controllers\Api\Siakad\MasterData\DosenMKJadwalController::class, 'create'])->name('dosen-mk-jadwal.create');
                 });
                 // Route::name('setting-akademik.')->group(function () {});
             });
