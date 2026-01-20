@@ -61,8 +61,8 @@ class ProfileKampusController extends Controller
 				// Jika belum ada, buat data baru
 				if ($request->hasFile('struktur_image')) {
 					$file = $request->file('struktur_image');
-					$path = $file->store('profile_kampus', 'public');
-					$data['struktur_image'] = $path;
+					$newStoragePath = $imageService->convertToWebpAndReplace($file, 75, 'profile_kampus');
+					$data['struktur_image'] = $newStoragePath;
 				}
 				
 				$profile = ProfileKampus::create($data);

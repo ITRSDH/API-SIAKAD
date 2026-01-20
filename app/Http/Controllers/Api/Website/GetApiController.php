@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
+use App\Models\MasterData\Dosen;
+use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Prodi;
 use Illuminate\Http\Request;
 use App\Models\Website\Prestasi;
@@ -20,7 +22,7 @@ class GetApiController extends Controller
     public function prestasi()
     {
         try {
-            $prestasi = Prestasi::paginate(10);
+            $prestasi = Prestasi::with('prodi')->paginate(10);
             
             return response()->json([
                 'status' => 'success',
@@ -355,4 +357,31 @@ class GetApiController extends Controller
             ], 500);
         }
     }
+
+
+    public function countAll()
+    {
+        try {
+            $totalProdi = Prodi::count();
+            $totalMahasiswa = Mahasiswa::count();
+            $totalDosen = Dosen::count();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data total Prodi, Mahasiswa, dan Dosen berhasil diambil',
+                'data' => [
+                    'totalProdi' => $totalProdi,
+                    'totalMahasiswa' => $totalMahasiswa,
+                    'totalDosen' => $totalDosen
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data total Prodi, Mahasiswa, dan Dosen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
 }

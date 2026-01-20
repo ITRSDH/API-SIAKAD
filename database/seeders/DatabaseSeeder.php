@@ -57,6 +57,10 @@ class DatabaseSeeder extends Seeder
 
             // Auth
             UserSeeder::class,
+
+            // Website
+            ProfileKampusSeeder::class,
+            LandingContentSeeder::class,
         ]);
     }
 }

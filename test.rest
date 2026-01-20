@@ -1,7 +1,7 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njg3OTE5NzMsImV4cCI6MTc2ODc5NTU3MywibmJmIjoxNzY4NzkxOTczLCJqdGkiOiI4NjdiaWE0S1IyWlFOZW5BIiwic3ViIjoiYTBkMTZlNWEtODQxMi00YzYzLWJhMWMtZGNmZGY3MjlhMjM4IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.zXbAeKEWPpS5S-LA8rAztZRpGwGPiRJaWnUaG-Fy_WY
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njg2MTY0MzQsImV4cCI6MTc2ODYyMDAzNCwibmJmIjoxNzY4NjE2NDM0LCJqdGkiOiJMTEQyWkVOT0ZlOU9lU0RhIiwic3ViIjoiYTBkMTU1MmEtMTU0Yi00ZTllLTk5ZjQtMGQ4Yjg2ZDkzNTg1IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.QOAEno8p_eKOzGgBe9d17bW53F1qw6rjgxy6n-Tc474
 
 ### Login
 POST {{ base_url }}/auth/login
@@ -139,10 +139,11 @@ Authorization: Bearer {{token}}
   ]
 }
 
-
 ### Get list of Users
 GET {{ base_url }}/kelas-mk
 Authorization: Bearer {{ token }}
 ### Get list of Users
 GET {{ base_url }}/kelas-mk/create
 Authorization: Bearer {{ token }}
+### Get Prodi
+GET {{ base_url }}/landing/prodi
