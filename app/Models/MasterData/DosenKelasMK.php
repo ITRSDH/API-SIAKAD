@@ -16,9 +16,8 @@ class DosenKelasMk extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = [
-        'id_kelas_mk',
         'id_dosen',
-        'peran',
+        'id_kelas_mk',
     ];
 
     // Relasi ke Kelas MK

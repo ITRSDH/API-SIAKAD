@@ -7,7 +7,7 @@ POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin@example.com",
+  "username": "dosen.pa@example.com",
   "password": "password"
 }
 
@@ -139,15 +139,49 @@ Authorization: Bearer {{token}}
 }
 
 ### Get list of Users
-GET {{ base_url }}/kelas-mk/a0df3789-863b-468a-83f8-788f8745f446/edit
+GET {{ base_url }}/kelas-mk/a0e6f4e3-239b-4a30-989a-f7df52c462ac/edit
 Authorization: Bearer {{ token }}
 ### Get list of Users
 GET {{ base_url }}/kelas-mk/create
 Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/kelas-mk/create?nama_prodi=Sarjana+Keperawatan&semester=1
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/kelas-mk
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/kelas-mk/a0f02df3-c85b-4cdd-9f2d-707140f7baf0/edit
+Authorization: Bearer {{ token }}
 
 ### Get list of Users
-GET {{ base_url }}/dosen-mk-jadwal
+GET {{ base_url }}/dosen-mk
 Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/dosen-mk/create
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/dosen-mk-jadwal/a0e4eb99-fc5d-43da-b1ff-4a6778ed5570/create
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/jadwal-beban-ajar-dosen/a0ec460a-3903-4a16-a2d0-6fcfeb584d61
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/krs
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/pengajuan-krs/daftar-matkul
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/pengajuan-krs/status
+Authorization: Bearer {{ token }}
+### Get list of Users
+DELETE {{ base_url }}/pengajuan-krs/a0f18d67-a046-4dd8-bae4-0f99a05b0dbc
+Authorization: Bearer {{ token }}
+### Get list of Users
+GET {{ base_url }}/dosen/verifikasi-krs/daftar-verifikasi
+Authorization: Bearer {{ token }}
+
 ### Get Prodi
 GET {{ base_url }}/landing/prodi
 ### Get Mahasiswa Baru

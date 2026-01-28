@@ -16,7 +16,7 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $roles = ['admin', 'kaprodi', 'dosen_pengampu', 'dosen_pa', 'mahasiswa', 'baak'];
+        $roles = ['admin', 'kaprodi', 'dosen', 'mahasiswa', 'baak'];
 
         foreach ($roles as $role) {
             Role::create(['name' => $role, 'guard_name' => 'api']); // Tambahkan guard_name

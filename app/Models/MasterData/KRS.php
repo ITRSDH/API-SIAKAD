@@ -21,11 +21,15 @@ class Krs extends Model
         'id_semester',
         'tanggal_pengisian',
         'status',
+        'tanggal_verifikasi',
+        'id_dosen_wali',
+        'catatan_verifikasi',
         'jumlah_sks_diambil',
     ];
 
     protected $casts = [
         'tanggal_pengisian' => 'date',
+        'tanggal_verifikasi' => 'date',
     ];
 
     // Relasi ke Mahasiswa
@@ -38,6 +42,12 @@ class Krs extends Model
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class, 'id_semester');
+    }
+
+    // Relasi ke Dosen Wali
+    public function dosenWali(): BelongsTo
+    {
+        return $this->belongsTo(Dosen::class, 'id_dosen_wali');
     }
 
     // Relasi ke KRS Detail

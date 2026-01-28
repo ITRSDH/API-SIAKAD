@@ -16,7 +16,10 @@ return new class extends Migration
             $table->foreignUuid('id_mahasiswa')->constrained('mahasiswa', 'id');
             $table->foreignUuid('id_semester')->constrained('semester', 'id');
             $table->date('tanggal_pengisian');
-            $table->enum('status', ['Draft', 'Disetujui', 'Ditolak', 'Selesai'])->default('Draft');
+            $table->string('status', 20)->default('Menunggu Verifikasi');
+            $table->date('tanggal_verifikasi')->nullable();
+            $table->foreignUuid('id_dosen_wali')->nullable()->constrained('dosen', 'id');
+            $table->string('catatan_verifikasi')->nullable();
             $table->integer('jumlah_sks_diambil');
             $table->timestamps();
         });

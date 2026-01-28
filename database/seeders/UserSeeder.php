@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\User;
-use App\Models\MasterData\Dosen;
-use App\Models\MasterData\Mahasiswa;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use App\Models\MasterData\Dosen;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
+use App\Models\MasterData\Mahasiswa;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class UserSeeder extends Seeder
 {
@@ -36,11 +37,11 @@ class UserSeeder extends Seeder
         $bakUser->assignRole('baak');
 
         // --- Ambil ID Prodi ---
-        $prodiId = \App\Models\MasterData\Prodi::first()->id;
+        // $prodiId = \App\Models\MasterData\Prodi::first()->id;
+        $prodiD3KBD = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
 
         // Ambil kelas pararel (pastikan sudah ada data kelas pararel)
-        $kelasPararel = \App\Models\MasterData\KelasPararel::first()->id;
-
+        $kelasPararelA = DB::table('kelas_pararel')->where('nama_kelas', 'A')->where('id_prodi', $prodiD3KBD)->value('id');
 
         // --- Buat User Kaprodi terlebih dahulu ---
         $kaprodiUser = User::create([
@@ -54,7 +55,7 @@ class UserSeeder extends Seeder
         // --- Buat Dosen Kaprodi dengan user_id ---
         $kaprodiDosen = Dosen::create([
             'user_id' => $kaprodiUser->id, // Hubungkan user_id saat insert
-            'id_prodi' => $prodiId,
+            'id_prodi' => $prodiD3KBD,
             'nidn' => 'NIDN001',
             'nup' => 'NUP001',
             'nama_dosen' => 'Kaprodi Keperawatan',
@@ -75,12 +76,12 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'status' => 'aktif',
         ]);
-        $dosenPengampuUser->assignRole('dosen_pengampu');
+        $dosenPengampuUser->assignRole('dosen');
 
         // --- Buat Dosen Biasa dengan user_id ---
         $dosenBiasa = Dosen::create([
             'user_id' => $dosenPengampuUser->id, // Hubungkan user_id saat insert
-            'id_prodi' => $prodiId,
+            'id_prodi' => $prodiD3KBD,
             'nidn' => 'NIDN002',
             'nup' => 'NUP002',
             'nama_dosen' => 'Dosen Biasa',
@@ -101,12 +102,12 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'status' => 'aktif',
         ]);
-        $dosenPaUser->assignRole('dosen_pa');
+        $dosenPaUser->assignRole('dosen');
 
         // --- Buat Dosen PA dengan user_id ---
         $dosenPA = Dosen::create([
             'user_id' => $dosenPaUser->id, // Hubungkan user_id saat insert
-            'id_prodi' => $prodiId,
+            'id_prodi' => $prodiD3KBD,
             'nidn' => 'NIDN003',
             'nup' => 'NUP003',
             'nama_dosen' => 'Dosen PA',
@@ -135,8 +136,8 @@ class UserSeeder extends Seeder
         // --- Buat Mahasiswa dengan user_id ---
         $mahasiswa = Mahasiswa::create([
             'user_id' => $mahasiswaUser->id, // Hubungkan user_id saat insert
-            'id_prodi' => $prodiId,
-            'id_kelas_pararel' => $kelasPararel,
+            'id_prodi' => $prodiD3KBD,
+            'id_kelas_pararel' => $kelasPararelA,
             'id_dosen' => $dosenWaliId,
             'nim' => '2023001',
             'nama_mahasiswa' => 'Mahasiswa Contoh',

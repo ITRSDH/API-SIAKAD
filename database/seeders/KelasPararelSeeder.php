@@ -14,7 +14,7 @@ class KelasPararelSeeder extends Seeder
      */
     public function run(): void
     {
-        $prodiS1Kep = DB::table('prodi')->where('kode_prodi', 'S1-KEP')->value('id');
+        $prodiS1Kep = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
 
         $kelasPararels = [
             [

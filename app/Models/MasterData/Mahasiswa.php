@@ -58,12 +58,6 @@ class Mahasiswa extends Model
         return $this->belongsTo(Dosen::class, 'id_dosen');
     }
 
-    // Relasi ke Kelas Mahasiswa
-    public function kelasMahasiswa(): HasMany
-    {
-        return $this->hasMany(KelasMahasiswa::class, 'id_mahasiswa');
-    }
-
     // Relasi ke Nilai
     public function nilai(): HasMany
     {

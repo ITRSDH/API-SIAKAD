@@ -43,13 +43,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('jwt.token', 'check.role.permission')->group(function () {
 
-        Route::get('dashboard/admin', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard.admin');
-        Route::get('dashboard/baak', [\App\Http\Controllers\Api\Siakad\BAAK\DashboardController::class, 'index'])->name('dashboard.baak');
-        Route::get('dashboard/kaprodi', [\App\Http\Controllers\Api\Siakad\KAPRODI\DashboardController::class, 'index'])->name('dashboard.kaprodi');
-        Route::get('dashboard/dosen-pa', [\App\Http\Controllers\Api\Siakad\DOSEN_PA\DashboardController::class, 'index'])->name('dashboard.dosen-pa');
-        Route::get('dashboard/dosen-pengampu', [\App\Http\Controllers\Api\Siakad\DOSEN_PENGAMPU\DashboardController::class, 'index'])->name('dashboard.dosen-pengampu');
-        Route::get('dashboard/mahasiswa', [\App\Http\Controllers\Api\Siakad\MAHASISWA\DashboardController::class, 'index'])->name('dashboard.mahasiswa');
-
+        // Route::get('dashboard', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard');
 
         Route::name('siakad.')->group(function () {
             Route::name('master.')->group(function () {
@@ -103,8 +97,30 @@ Route::prefix('v1')->group(function () {
 
                     Route::apiResource('ruang', \App\Http\Controllers\Api\Siakad\MasterData\RuangController::class);
 
-                    Route::apiResource('dosen-mk-jadwal', \App\Http\Controllers\Api\Siakad\MasterData\DosenMKJadwalController::class);
-                    Route::get('/dosen-mk-jadwal/create', [\App\Http\Controllers\Api\Siakad\MasterData\DosenMKJadwalController::class, 'create'])->name('dosen-mk-jadwal.create');
+                    Route::get('/dosen-mk/create', [\App\Http\Controllers\Api\Siakad\MasterData\DosenMKController::class, 'create'])->name('dosen-mk.create');
+                    Route::get('/dosen-mk/{id}/edit', [\App\Http\Controllers\Api\Siakad\MasterData\DosenMKController::class, 'edit'])->name('dosen-mk.edit');
+                    Route::apiResource('dosen-mk', \App\Http\Controllers\Api\Siakad\MasterData\DosenMKController::class);
+
+                    Route::get('/jadwal-beban-ajar-dosen/{dosenmk}', [\App\Http\Controllers\Api\Siakad\MasterData\JadwalBebanAjarDosenController::class, 'createJadwalBebanajarDosen'])->name('jadwal-beban-ajar-dosen.create');
+                    Route::get('/jadwal-beban-ajar-dosen/{dosenmk}/detail', [\App\Http\Controllers\Api\Siakad\MasterData\JadwalBebanAjarDosenController::class, 'getJadwalDetail'])->name('jadwal-beban-ajar-dosen.detail');
+                    Route::post('/jadwal-beban-ajar-dosen', [\App\Http\Controllers\Api\Siakad\MasterData\JadwalBebanAjarDosenController::class, 'storeOrUpdateJadwalKuliah'])->name('jadwal-beban-ajar-dosen.store');
+                    Route::put('/jadwal-beban-ajar-dosen/{dosenmk?}', [\App\Http\Controllers\Api\Siakad\MasterData\JadwalBebanAjarDosenController::class, 'storeOrUpdateJadwalKuliah'])->name('jadwal-beban-ajar-dosen.update');
+                    Route::delete('/jadwal-beban-ajar-dosen/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\JadwalBebanAjarDosenController::class, 'deleteJadwal'])->name('jadwal-beban-ajar-dosen.delete');
+
+                    // Mahasiswa Pengajuan KRS
+                    Route::get('/pengajuan-krs/daftar-matkul', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'daftarMatkulPilihan'])->name('pengajuan-krs.daftar-matkul');
+                    Route::post('/pengajuan-krs', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'pengajuanKrs'])->name('pengajuan-krs.pengajuan-krs');
+                    Route::post('/draft', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'simpanDraftKrs'])->name('pengajuan-krs.simpan-draft');
+                    Route::post('/{id}/submit', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'submitKrs'])->name('pengajuan-krs.submit');
+                    Route::delete('/pengajuan-krs/{id}', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'batalPengajuanKrs'])->name('pengajuan-krs.batal-pengajuan');
+                    Route::get('/pengajuan-krs/status', [\App\Http\Controllers\Api\Siakad\MAHASISWA\PengajuanKRSController::class, 'statusPengajuanKrs'])->name('pengajuan-krs.status');
+
+                    // Dosen Wali Verifikasi KRS
+                    Route::get('/dosen/verifikasi-krs/daftar-verifikasi', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'daftarKrsPerluVerifikasi'])->name('dosen-verifikasi-krs.daftar-verifikasi');
+                    Route::get('/dosen/verifikasi-krs/{id}', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'detailKrs'])->name('dosen-verifikasi-krs.detail');
+                    Route::post('/dosen/verifikasi-krs/{id}/approve', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'approveKrs'])->name('dosen-verifikasi-krs.approve');
+                    Route::post('/dosen/verifikasi-krs/{id}/reject', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'rejectKrs'])->name('dosen-verifikasi-krs.reject');
+                    Route::get('/dosen/verifikasi-krs/daftar-terverifikasi', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'daftarKrsTerverifikasi'])->name('dosen-verifikasi-krs.daftar-terverifikasi');
                 });
                 // Route::name('setting-akademik.')->group(function () {});
             });

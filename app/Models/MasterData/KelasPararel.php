@@ -34,10 +34,4 @@ class KelasPararel extends Model
     {
         return $this->hasMany(KelasMk::class, 'id_kelas_pararel');
     }
-
-    // Relasi ke Kelas Mahasiswa
-    public function kelasMahasiswa(): HasMany
-    {
-        return $this->hasMany(KelasMahasiswa::class, 'id_kelas_pararel');
-    }
 }

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('id_kelas_mk')->constrained('kelas_mk', 'id');
             $table->foreignUuid('id_dosen')->constrained('dosen', 'id');
-            $table->enum('peran', ['Koordinator', 'Asisten'])->default('Koordinator');
+            // $table->enum('peran', ['Koordinator', 'Asisten'])->default('Koordinator');
             $table->timestamps();
         });
     }
