@@ -14,12 +14,11 @@ class KelasPararelSeeder extends Seeder
      */
     public function run(): void
     {
-        $prodiS1Kep = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
-
+        $prodiD3KBD = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
         $kelasPararels = [
             [
                 'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiS1Kep,
+                'id_prodi' => $prodiD3KBD,
                 'nama_kelas' => 'A',
                 'angkatan' => 2024,
                 'created_at' => now(),
@@ -27,7 +26,7 @@ class KelasPararelSeeder extends Seeder
             ],
             [
                 'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiS1Kep,
+                'id_prodi' => $prodiD3KBD,
                 'nama_kelas' => 'B',
                 'angkatan' => 2024,
                 'created_at' => now(),

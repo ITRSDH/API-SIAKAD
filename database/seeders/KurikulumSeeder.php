@@ -14,12 +14,11 @@ class KurikulumSeeder extends Seeder
      */
     public function run(): void
     {
-        $prodiS1Kep = DB::table('prodi')->where('kode_prodi', 'S1-KEP')->value('id');
-
+        $prodiD3KBD = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
         $kurikulums = [
             [
                 'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiS1Kep,
+                'id_prodi' => $prodiD3KBD,
                 'nama_kurikulum' => 'Kurikulum 2020',
                 'tahun_kurikulum' => 2020,
                 'status' => true, // Aktif
@@ -28,7 +27,7 @@ class KurikulumSeeder extends Seeder
             ],
             [
                 'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiS1Kep,
+                'id_prodi' => $prodiD3KBD,
                 'nama_kurikulum' => 'Kurikulum 2015',
                 'tahun_kurikulum' => 2015,
                 'status' => false, // Tidak Aktif
