@@ -1,13 +1,13 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njk1ODI0MDgsImV4cCI6MTc2OTU4NjAwOCwibmJmIjoxNzY5NTgyNDA4LCJqdGkiOiJjdlhnc291ZUVzcUNyZVNFIiwic3ViIjoiYTBkZjE5M2ItYmQ4Ny00OWZjLWE1NjEtMGNhODMzNjgxNTVkIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.nvdR22qqn83j5b6Hkq-axG2ANGBDUDfN9_kxeqF0gyE
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njk2MTk4OTMsImV4cCI6MTc2OTYyMzQ5MywibmJmIjoxNzY5NjE5ODkzLCJqdGkiOiJSY0JDamxIS1VnZmRYa2JmIiwic3ViIjoiYTBmMjE4MTEtNjFjNi00NzkzLTg2ZjAtOTcxMGEzYTcwMjZjIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.5GA7RiuOSob6mlLeEqrY4duY8flkgagbaFtHsDJfRWQ
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "username": "dosen.pa@example.com",
+  "username": "admin@example.com",
   "password": "password"
 }
 

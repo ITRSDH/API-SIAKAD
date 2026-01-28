@@ -76,18 +76,18 @@ class PengajuanKRSController extends Controller
                 ], 404);
             }
 
-            $krsAktif = Krs::where('id_mahasiswa', $mahasiswa->id)
-                ->where('id_semester', $semesterAktif->id)
-                ->latest()
-                ->first();
+            // $krsAktif = Krs::where('id_mahasiswa', $mahasiswa->id)
+            //     ->where('id_semester', $semesterAktif->id)
+            //     ->latest()
+            //     ->first();
 
-            $krsStatus = $krsAktif?->status ?? 'Draft';
+            // $krsStatus = $krsAktif?->status ?? 'Draft';
 
-            // KRS dikunci jika sudah diajukan
-            $isLocked = in_array($krsStatus, [
-                'Menunggu Verifikasi',
-                'Disetujui'
-            ]);
+            // // KRS dikunci jika sudah diajukan
+            // $isLocked = in_array($krsStatus, [
+            //     'Menunggu Verifikasi',
+            //     'Disetujui'
+            // ]);
 
             // Ambil data dari KelasMk sebagai sumber utama
             // Filter hanya kelas yang sesuai dengan kelas pararel mahasiswa
@@ -208,11 +208,11 @@ class PengajuanKRSController extends Controller
                         'id' => $kurikulum->id,
                         'nama_kurikulum' => $kurikulum->nama_kurikulum
                     ],
-                    'krs' => [
-                        'id' => $krsAktif?->id,
-                        'status' => $krsStatus,
-                        'is_locked' => $isLocked
-                    ],
+                    // 'krs' => [
+                    //     'id' => $krsAktif?->id,
+                    //     'status' => $krsStatus,
+                    //     'is_locked' => $isLocked
+                    // ],
                     'jumlah_matkul_tersedia' => $mataKuliahTersedia->count(),
                     'matkul_pilihan' => $mataKuliahTersedia
                 ]
