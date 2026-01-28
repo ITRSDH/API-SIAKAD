@@ -16,23 +16,9 @@ class BeasiswaController extends Controller
     public function index(Request $request)
     {
         try {
-            $search = $request->query('search');
-            $perPage = $request->query('per_page', 10);
-
-            $query = Beasiswa::select([
+            $beasiswa = Beasiswa::select([
                 'id', 'nama', 'kategori', 'deskripsi', 'gambar', 'deadline', 'kuota', 'created_at', 'updated_at'
-            ])->orderBy('created_at', 'desc');
-
-            // Apply search filter jika ada parameter search
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama', 'like', "%{$search}%")
-                        ->orWhere('kategori', 'like', "%{$search}%")
-                        ->orWhere('deskripsi', 'like', "%{$search}%");
-                });
-            }
-
-            $beasiswa = $query->paginate($perPage);
+            ])->orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'success' => true,

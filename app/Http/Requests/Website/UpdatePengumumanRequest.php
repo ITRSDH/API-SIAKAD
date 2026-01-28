@@ -17,6 +17,7 @@ class UpdatePengumumanRequest extends FormRequest
             'judul' => 'sometimes|required|string|max:255',
             'isi' => 'sometimes|required|string',
             'kategori' => 'nullable|string|max:100',
+            'tanggal' => 'sometimes|date'
         ];
     }
 }

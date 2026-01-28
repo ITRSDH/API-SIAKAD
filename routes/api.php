@@ -92,6 +92,13 @@ Route::prefix('v1')->group(function () {
 
                     Route::apiResource('mahasiswa', \App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class);
 
+                    // Mahasiswa Baru
+                    Route::get('mahasiswa-baru', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'index'])->name('mahasiswa-baru.index');
+                    Route::get('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'show'])->name('mahasiswa-baru.show');
+                    Route::post('mahasiswa-baru/sync', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'sync'])->name('mahasiswa-baru.sync');
+                    Route::put('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'update'])->name('mahasiswa-baru.update');
+                    Route::delete('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'destroy'])->name('mahasiswa-baru.destroy');
+
                     Route::apiResource('jenis-pembayaran', \App\Http\Controllers\Api\Siakad\MasterData\JenisPembayaranController::class);
 
                     Route::apiResource('ruang', \App\Http\Controllers\Api\Siakad\MasterData\RuangController::class);

@@ -15,21 +15,7 @@ class BeritaController extends Controller
     public function index(Request $request)
     {
         try {
-            $search = $request->query('search');
-			$perPage = $request->query('per_page', 10);
-
-            // Ambil semua data, tapi hanya kolom tertentu yang ditampilkan
-            $query = Berita::select('id', 'judul', 'gambar', 'isi', 'kategori', 'tanggal')->orderBy('created_at', 'desc');
-
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('judul', 'like', "%{$search}%")
-                      ->orWhere('kategori', 'like', "%{$search}%")
-                      ->orWhere('isi', 'like', "%{$search}%");
-                });
-            }
-
-            $berita = $query->paginate($perPage);
+            $berita = Berita::select('id', 'judul', 'gambar', 'isi', 'kategori', 'tanggal')->orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'success' => true,

@@ -1,8 +1,7 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njg3OTE5NzMsImV4cCI6MTc2ODc5NTU3MywibmJmIjoxNzY4NzkxOTczLCJqdGkiOiI4NjdiaWE0S1IyWlFOZW5BIiwic3ViIjoiYTBkMTZlNWEtODQxMi00YzYzLWJhMWMtZGNmZGY3MjlhMjM4IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.zXbAeKEWPpS5S-LA8rAztZRpGwGPiRJaWnUaG-Fy_WY
-
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njk1ODI0MDgsImV4cCI6MTc2OTU4NjAwOCwibmJmIjoxNzY5NTgyNDA4LCJqdGkiOiJjdlhnc291ZUVzcUNyZVNFIiwic3ViIjoiYTBkZjE5M2ItYmQ4Ny00OWZjLWE1NjEtMGNhODMzNjgxNTVkIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.nvdR22qqn83j5b6Hkq-axG2ANGBDUDfN9_kxeqF0gyE
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
@@ -151,3 +150,15 @@ GET {{ base_url }}/dosen-mk-jadwal
 Authorization: Bearer {{ token }}
 ### Get Prodi
 GET {{ base_url }}/landing/prodi
+### Get Mahasiswa Baru
+GET {{ base_url }}/mahasiswa-baru
+Authorization: Bearer {{ token }}
+
+### Sync Mahasiswa Baru by Periode
+POST {{ base_url }}/mahasiswa-baru/sync
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+    "id_periode_pendaftaran": "a0d0a8b7-2b9c-498f-a151-fa749da273e1"
+}

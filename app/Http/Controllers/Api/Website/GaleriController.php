@@ -15,22 +15,8 @@ class GaleriController extends Controller
 	public function index(Request $request)
 	{
 		try {
-			$search = $request->query('search');
-			$perPage = $request->query('per_page', 10);
-
-			$query = Galeri::select('id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at')
-				->orderBy('created_at', 'desc');
-
-			// Apply search filter jika ada parameter search
-			if ($search) {
-				$query->where(function ($q) use ($search) {
-					$q->where('judul', 'like', "%{$search}%")
-						->orWhere('kategori', 'like', "%{$search}%")
-						->orWhere('deskripsi', 'like', "%{$search}%");
-				});
-			}
-
-			$galeri = $query->paginate($perPage);
+			$galeri = Galeri::select('id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at')
+				->orderBy('created_at', 'desc')->get();
 			
 			return response()->json([
 				'success' => true,

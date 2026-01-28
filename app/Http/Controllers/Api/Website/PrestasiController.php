@@ -15,10 +15,7 @@ class PrestasiController extends Controller
     public function index(Request $request)
     {
         try {
-            $search = $request->query('search');
-            $perPage = $request->query('per_page', 10);
-
-            $query = Prestasi::select([
+            $prestasi = Prestasi::select([
                 'id',
                 'nama_mahasiswa',
                 'judul_prestasi',
@@ -31,19 +28,7 @@ class PrestasiController extends Controller
                 'updated_at',
             ])
                 ->with('prodi:id,nama_prodi,id_jenjang_pendidikan') // ← Specify kolom yg diperlukan
-                ->orderBy('created_at', 'desc');
-
-            // Apply search filter jika ada parameter search
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama_mahasiswa', 'like', "%{$search}%")
-                        ->orWhere('judul_prestasi', 'like', "%{$search}%")
-                        ->orWhere('tingkat', 'like', "%{$search}%")
-                        ->orWhere('deskripsi', 'like', "%{$search}%");
-                });
-            }
-
-            $prestasi = $query->paginate($perPage);
+                ->orderBy('created_at', 'desc')->get();
 
             return response()->json(
                 [

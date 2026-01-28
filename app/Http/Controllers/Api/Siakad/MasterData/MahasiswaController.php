@@ -18,7 +18,7 @@ class MahasiswaController extends Controller
     {
         try {
             // Memuat relasi yang relevan
-            $mahasiswas = Mahasiswa::with(['prodi', 'kelasPararel', 'dosenWali'])->get();
+            $mahasiswas = Mahasiswa::with(['prodi', 'kelasPararel', 'dosenWali'])->where('status', '!=', 'PMB')->get();
             $dataprodi = Prodi::all();
             $datadosen = Dosen::all();
             $datakelaspararel = KelasPararel::all();
