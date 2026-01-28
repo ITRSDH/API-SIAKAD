@@ -7,7 +7,7 @@ use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Ruang;
 use App\Models\MasterData\KelasMK;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\DosenKelasMK;
+use App\Models\MasterData\DosenKelasMk;
 use App\Models\MasterData\JadwalKuliah;
 use App\Models\MasterData\BebanAjarDosen;
 

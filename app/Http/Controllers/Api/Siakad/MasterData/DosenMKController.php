@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Siakad\MasterData;
 use Illuminate\Http\Request;
 use App\Models\MasterData\Dosen;
 use Illuminate\Http\JsonResponse;
-use App\Models\MasterData\KelasMK;
+use App\Models\MasterData\KelasMk;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\DosenKelasMk;
