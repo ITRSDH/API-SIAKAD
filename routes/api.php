@@ -121,6 +121,11 @@ Route::prefix('v1')->group(function () {
                     Route::post('/dosen/verifikasi-krs/{id}/approve', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'approveKrs'])->name('dosen-verifikasi-krs.approve');
                     Route::post('/dosen/verifikasi-krs/{id}/reject', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'rejectKrs'])->name('dosen-verifikasi-krs.reject');
                     Route::get('/dosen/verifikasi-krs/daftar-terverifikasi', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenWaliVerifikasiKRSController::class, 'daftarKrsTerverifikasi'])->name('dosen-verifikasi-krs.daftar-terverifikasi');
+
+                    // Dosen Mata kuliah - Get Nilai by Mahasiswa
+                    Route::get('/dosenmk/mahasiswa', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenMkgetmahasiswaController::class, 'getmahasiswa'])->name('dosen-matakuliah.get-mahasiswa');
+                    Route::post('/dosenmk/nilai', [\App\Http\Controllers\Api\Siakad\DOSEN\DosenMkgetmahasiswaController::class, 'storeNilai'])->name('dosen-matakuliah.store-nilai');
+
                 });
                 // Route::name('setting-akademik.')->group(function () {});
             });
