@@ -39,10 +39,10 @@ class Cpl extends Model
     }
 
     // CPL → IK
-    // public function indikatorKinerja(): HasMany
-    // {
-    //     return $this->hasMany(IndikatorKinerja::class, 'id_cpl');
-    // }
+    public function indikatorKinerja(): HasMany
+    {
+        return $this->hasMany(IndikatorKinerja::class, 'id_cpl');
+    }
 
     // CPL ↔ MK
     public function mataKuliah(): BelongsToMany
