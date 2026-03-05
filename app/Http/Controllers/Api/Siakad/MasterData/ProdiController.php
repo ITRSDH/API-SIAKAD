@@ -9,7 +9,6 @@ use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\JenjangPendidikan;
 
 class ProdiController extends Controller
 {
@@ -19,8 +18,7 @@ class ProdiController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $prodi = Prodi::with(['jenjang', 'kaprodi:id,nama_dosen'])->get();
-            $jenjang_pendidikan = JenjangPendidikan::get();
+            $prodi = Prodi::with(['kaprodi:id,nama_dosen'])->get();
 
             // Exclude dosen who are already kaprodi
             $dosen_list = Dosen::whereNotIn('id', function ($query) {
@@ -36,7 +34,6 @@ class ProdiController extends Controller
                 'message' => 'Data All Program Studi berhasil diambil',
                 'data' => [
                     'prodi' => $prodi,
-                    'jenjang_pendidikan' => $jenjang_pendidikan,
                     'dosen_list' => $dosen_list,
                 ]
             ], 200);
@@ -58,11 +55,10 @@ class ProdiController extends Controller
             $request->validate([
                 'kode_prodi' => 'required|unique:prodi,kode_prodi',
                 'nama_prodi' => 'required|string|max:100',
-                'id_jenjang_pendidikan' => 'required|exists:jenjang_pendidikan,id',
+                'jenjang_pendidikan' => 'required|string|max:100',
                 'id_kaprodi' => 'nullable|exists:dosen,id',
                 'akreditasi' => 'nullable|in:A,B,C,Unggul',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-                'kuota' => 'nullable|integer|min:0',
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);
 
@@ -71,7 +67,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil ditambahkan',
-                'data' => $prodi->load('jenjang', 'kaprodi:id,nama_dosen')
+                'data' => $prodi->load('kaprodi:id,nama_dosen')
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -95,7 +91,16 @@ class ProdiController extends Controller
                 ], 400);
             }
 
-            $prodi = Prodi::with('jenjang', 'kaprodi:id,nama_dosen')->findOrFail($id);
+            $prodi = Prodi::select(
+                'id',
+                'kode_prodi',
+                'jenjang_pendidikan',
+                'nama_prodi',
+                'akreditasi',
+                'tahun_berdiri',
+                'gelar_lulusan',
+                'id_kaprodi'
+            )->with('kaprodi:id,nama_dosen')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -129,11 +134,10 @@ class ProdiController extends Controller
             $request->validate([
                 'kode_prodi' => 'sometimes|required|unique:prodi,kode_prodi,' . $id,
                 'nama_prodi' => 'sometimes|required|string|max:100',
-                'id_jenjang_pendidikan' => 'sometimes|required|exists:jenjang_pendidikan,id',
+                'jenjang_pendidikan' => 'sometimes|required|string|max:100',
                 'id_kaprodi' => 'sometimes|nullable|exists:dosen,id',
                 'akreditasi' => 'nullable|in:A,B,C,Unggul',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-                'kuota' => 'nullable|integer|min:0',
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);
 
@@ -142,7 +146,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil diperbarui',
-                'data' => $prodi->load('jenjang', 'kaprodi:id,nama_dosen')
+                'data' => $prodi->load('kaprodi:id,nama_dosen')
             ], 200);
         } catch (Exception $e) {
             return response()->json([

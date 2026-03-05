@@ -1,13 +1,13 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3Njk2Mjk5MzUsImV4cCI6MTc2OTYzMzUzNSwibmJmIjoxNzY5NjI5OTM1LCJqdGkiOiJhZDV0bUJQbnZmc3diZXRjIiwic3ViIjoiYTBmMjQxZDctMTc5Yi00NTY5LWIyMWUtZWI0MTJjODRjYTA2IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0._r2NGlk4oYQWveVJZ8Cuvm8IqW64_077mTExO6VRRTQ
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzE1NzA5MzAsImV4cCI6MTc3MTU3NDUzMCwibmJmIjoxNzcxNTcwOTMwLCJqdGkiOiJnZFB5R0FZMnl2ZWl0UjM2Iiwic3ViIjoiYTExZjI5NWQtODRiOS00OTYzLWJkMjUtOTcwNDgxN2IwMGUwIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.e44FG613djIiuGurFtuUeCKfnVHfmUD5CmBP951yRt0
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "username": "dosen.pengampu@example.com",
+  "username": "admin@example.com",
   "password": "password"
 }
 
@@ -28,7 +28,7 @@ GET {{ base_url }}/users
 Authorization: Bearer {{ token }}
 
 ### Get list of Administrators
-GET {{ base_url }}/dashboard/admin
+GET {{ base_url }}/kurikulum/a1179c55-efda-417e-b258-b14aeddf817e/mata-kuliah
 Authorization: Bearer {{ token }}
 ### Get list of BAAK
 GET {{ base_url }}/dashboard/baak
@@ -37,10 +37,10 @@ Authorization: Bearer {{ token }}
 GET {{ base_url }}/dashboard/dosen-pa
 Authorization: Bearer {{ token }}
 ### Get list of Dosen Pengampu
-GET {{ base_url }}/dashboard/dosen-pengampu
+GET {{ base_url }}/dropdown?type=prodilist
 Authorization: Bearer {{ token }}
 ### Get list of Mahasiswa
-GET {{ base_url }}/dashboard/mahasiswa
+GET {{ base_url }}/kurikulum
 Authorization: Bearer {{ token }}
 
 ### Get list of Permissions Menu
@@ -82,7 +82,7 @@ Authorization: Bearer {{ token }}
 
 
 ### Get list of Users
-GET {{ base_url }}/mata-kuliah
+GET {{ base_url }}/mata-kuliah/prodi
 Authorization: Bearer {{ token }}
 
 ### Get list of Users

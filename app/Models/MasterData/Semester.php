@@ -37,27 +37,4 @@ class Semester extends Model
         return $this->belongsTo(TahunAkademik::class, 'id_tahun_akademik');
     }
 
-    // Relasi ke Jadwal Kuliah
-    public function jadwalKuliah(): HasMany
-    {
-        return $this->hasMany(JadwalKuliah::class, 'id_semester');
-    }
-
-    // Relasi ke Nilai
-    public function nilai(): HasMany
-    {
-        return $this->hasMany(Nilai::class, 'id_semester');
-    }
-
-    // Relasi ke KRS
-    public function krs(): HasMany
-    {
-        return $this->hasMany(Krs::class, 'id_semester');
-    }
-
-    // Relasi ke KHS
-    public function khs(): HasMany
-    {
-        return $this->hasMany(Khs::class, 'id_semester');
-    }
 }
