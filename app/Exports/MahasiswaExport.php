@@ -190,29 +190,29 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
                 // Apply sampai 1000 baris
                 for ($row = 2; $row <= 1000; $row++) {
 
-                    // Kolom G = jenis_kelamin
-                    $validationJenisKelamin = $sheet->getCell("G{$row}")->getDataValidation();
+                    // Kolom E = status
+                    $validationStatus = $sheet->getCell("E{$row}")->getDataValidation();
+                    $validationStatus->setType(DataValidation::TYPE_LIST);
+                    $validationStatus->setErrorStyle(DataValidation::STYLE_STOP);
+                    $validationStatus->setAllowBlank(true);
+                    $validationStatus->setShowDropDown(true);
+                    $validationStatus->setFormula1('"' . implode(',', $statusOptions) . '"');
+
+                    // Kolom F = jenis_kelamin
+                    $validationJenisKelamin = $sheet->getCell("F{$row}")->getDataValidation();
                     $validationJenisKelamin->setType(DataValidation::TYPE_LIST);
                     $validationJenisKelamin->setErrorStyle(DataValidation::STYLE_STOP);
                     $validationJenisKelamin->setAllowBlank(true);
                     $validationJenisKelamin->setShowDropDown(true);
                     $validationJenisKelamin->setFormula1('"' . implode(',', $jenisKelaminOptions) . '"');
 
-                    // Kolom I = agama
-                    $validationAgama = $sheet->getCell("I{$row}")->getDataValidation();
+                    // Kolom H = agama
+                    $validationAgama = $sheet->getCell("H{$row}")->getDataValidation();
                     $validationAgama->setType(DataValidation::TYPE_LIST);
                     $validationAgama->setErrorStyle(DataValidation::STYLE_STOP);
                     $validationAgama->setAllowBlank(true);
                     $validationAgama->setShowDropDown(true);
                     $validationAgama->setFormula1('"' . implode(',', $agamaOptions) . '"');
-
-                    // Kolom F = status
-                    $validationStatus = $sheet->getCell("F{$row}")->getDataValidation();
-                    $validationStatus->setType(DataValidation::TYPE_LIST);
-                    $validationStatus->setErrorStyle(DataValidation::STYLE_STOP);
-                    $validationStatus->setAllowBlank(true);
-                    $validationStatus->setShowDropDown(true);
-                    $validationStatus->setFormula1('"' . implode(',', $statusOptions) . '"');
                 }
             },
         ];
