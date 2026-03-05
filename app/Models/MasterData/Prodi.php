@@ -17,22 +17,15 @@ class Prodi extends Model
     protected $fillable = [
         'kode_prodi',
         'nama_prodi',
-        'id_jenjang_pendidikan',
+        'jenjang_pendidikan',
         'akreditasi',
         'tahun_berdiri',
-        'kuota',
         'gelar_lulusan',
         'id_kaprodi',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
-
-    // Relasi ke JenjangPendidikan
-    public function jenjang(): BelongsTo
-    {
-        return $this->belongsTo(JenjangPendidikan::class, 'id_jenjang_pendidikan');
-    }
 
     // Relasi ke Dosen (sebagai Kaprodi)
     public function kaprodi(): BelongsTo
@@ -58,10 +51,10 @@ class Prodi extends Model
         return $this->hasMany(Kurikulum::class, 'id_prodi');
     }
 
-    // Relasi ke Kelas Pararel
-    public function kelasPararel(): HasMany
+    // Relasi ke matakuliah
+    public function matakuliah(): HasMany
     {
-        return $this->hasMany(KelasPararel::class, 'id_prodi');
+        return $this->hasMany(MataKuliah::class, 'id_prodi');
     }
 
     // Relasi ke Prestasi

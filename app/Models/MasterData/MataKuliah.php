@@ -2,11 +2,12 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MataKuliah extends Model
 {
@@ -18,31 +19,35 @@ class MataKuliah extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id_kurikulum',
+        'id_prodi',
         'kode_mk',
         'nama_mk',
         'sks',
-        'semester_rekomendasi',
-        'teori',
-        'praktikum',
-        'klinik',
+        'sks_tatap_muka',
+        'sks_praktikum',
+        'sks_praktek_lapangan',
+        'sks_simulasi',
+        'jenis_mk',
+        'kelompok_mk',
     ];
 
-    // Relasi ke Kurikulum
-    public function kurikulum(): BelongsTo
+    // Relasi ke Prodi
+    public function prodi(): BelongsTo
     {
-        return $this->belongsTo(Kurikulum::class, 'id_kurikulum');
+        return $this->belongsTo(Prodi::class, 'id_prodi');
     }
 
-    // Relasi ke Kelas MK
-    public function kelasMk(): HasMany
+    public function kurikulum(): BelongsToMany
     {
-        return $this->hasMany(KelasMk::class, 'id_mk');
-    }
-
-    // Relasi ke KHS Detail
-    public function khsDetail(): HasMany
-    {
-        return $this->hasMany(KhsDetail::class, 'id_mk');
+        return $this->belongsToMany(
+            Kurikulum::class,
+            'kurikulum_mata_kuliah',
+            'id_mata_kuliah',
+            'id_kurikulum'
+        )->withPivot([
+            'semester_ke',
+            'status_mk',
+            'is_wajib',
+        ]);
     }
 }

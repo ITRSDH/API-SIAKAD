@@ -13,7 +13,7 @@ class Dosen extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $table = 'dosen'; // Singular
+    protected $table = 'dosen';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -27,15 +27,10 @@ class Dosen extends Model
         'tanggal_lahir',
         'alamat',
         'no_hp',
-        // 'email',
-        // 'jabatan_akademik',
-        // 'pangkat_golongan',
-        // 'status_aktif',
     ];
 
     protected $casts = [
         'tanggal_lahir' => 'date',
-        // 'status_aktif' => 'boolean',
     ];
 
     // Relasi ke Prodi
@@ -44,34 +39,10 @@ class Dosen extends Model
         return $this->belongsTo(Prodi::class, 'id_prodi');
     }
 
-    // Relasi ke Jadwal Kuliah
-    public function jadwalKuliah(): HasMany
-    {
-        return $this->hasMany(JadwalKuliah::class, 'id_dosen');
-    }
-
     // Relasi ke Mahasiswa (sebagai wali)
     public function mahasiswaWali(): HasMany
     {
         return $this->hasMany(Mahasiswa::class, 'id_dosen');
-    }
-
-    // Relasi ke Beban Ajar Dosen
-    public function bebanAjar(): HasMany
-    {
-        return $this->hasMany(BebanAjarDosen::class, 'id_dosen');
-    }
-
-    // Relasi ke Dosen Kelas MK
-    public function dosenKelasMk(): HasMany
-    {
-        return $this->hasMany(DosenKelasMk::class, 'id_dosen');
-    }
-
-    // Relasi ke Perwalian
-    public function perwalian(): HasMany
-    {
-        return $this->hasMany(Perwalian::class, 'id_dosen');
     }
 
     public function user(): BelongsTo

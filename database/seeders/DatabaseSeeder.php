@@ -24,18 +24,18 @@ class DatabaseSeeder extends Seeder
             // role permission
             RolePermissionSeeder::class,
             // Data Master
-            JenjangPendidikanSeeder::class,
+            // JenjangPendidikanSeeder::class,
             ProdiSeeder::class,
             TahunAkademikSeeder::class,
-            JenisKelasSeeder::class,
-            RuangSeeder::class,
-            JenisPembayaranSeeder::class,
+            // JenisKelasSeeder::class,
+            // RuangSeeder::class,
+            // JenisPembayaranSeeder::class,
 
             // Logika Bisnis
             SemesterSeeder::class,
-            KurikulumSeeder::class,
+            // KurikulumSeeder::class,
             // MataKuliahSeeder::class,
-            KelasPararelSeeder::class,
+            // KelasPararelSeeder::class,
             // DosenSeeder::class,
             // MahasiswaSeeder::class,
             // KelasMkSeeder::class,

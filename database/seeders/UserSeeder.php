@@ -40,9 +40,6 @@ class UserSeeder extends Seeder
         // $prodiId = \App\Models\MasterData\Prodi::first()->id;
         $prodiD3KBD = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
 
-        // Ambil kelas pararel (pastikan sudah ada data kelas pararel)
-        $kelasPararelA = DB::table('kelas_pararel')->where('nama_kelas', 'A')->where('id_prodi', $prodiD3KBD)->value('id');
-
         // --- Buat User Kaprodi terlebih dahulu ---
         $kaprodiUser = User::create([
             'name' => 'Kaprodi User',
@@ -137,18 +134,12 @@ class UserSeeder extends Seeder
         $mahasiswa = Mahasiswa::create([
             'user_id' => $mahasiswaUser->id, // Hubungkan user_id saat insert
             'id_prodi' => $prodiD3KBD,
-            'id_kelas_pararel' => $kelasPararelA,
             'id_dosen' => $dosenWaliId,
             'nim' => '2023001',
             'nama_mahasiswa' => 'Mahasiswa Contoh',
             'jenis_kelamin' => 'P',
             'tanggal_lahir' => '2005-03-20',
             'alamat' => 'Alamat Mahasiswa',
-            'no_hp' => '081234567893',
-            // 'email' => 'mahasiswa@example.com',
-            'asal_sekolah' => 'SMA Contoh',
-            'nama_orang_tua' => 'Orang Tua Mahasiswa',
-            'no_hp_orang_tua' => '081234567894',
             'status' => 'Aktif',
             'angkatan' => 2023,
         ]);

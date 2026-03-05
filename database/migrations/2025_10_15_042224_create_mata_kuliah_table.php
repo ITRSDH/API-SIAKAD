@@ -13,21 +13,22 @@ return new class extends Migration
     {
         Schema::create('mata_kuliah', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('id_kurikulum')->constrained('kurikulum', 'id');
-            $table->string('kode_mk')->unique();
+            $table->foreignUuid('id_prodi')->constrained('prodi');
+            $table->string('kode_mk', 20);
             $table->string('nama_mk');
 
-            // TOTAL SKS (Jumlah)
-            $table->unsignedTinyInteger('sks');
+            $table->unsignedTinyInteger('sks')->nullable()->default(0);
 
-            // Distribusi SKS
-            $table->unsignedTinyInteger('teori')->default(0);            // T
-            $table->unsignedTinyInteger('praktikum')->default(0);        // P
-            $table->unsignedTinyInteger('klinik')->default(0);   // K
+            $table->unsignedTinyInteger('sks_tatap_muka')->nullable()->default(0);
+            $table->unsignedTinyInteger('sks_praktikum')->nullable()->default(0);
+            $table->unsignedTinyInteger('sks_praktek_lapangan')->nullable()->default(0);
+            $table->unsignedTinyInteger('sks_simulasi')->nullable()->default(0);
 
-            $table->unsignedTinyInteger('semester_rekomendasi');
+            $table->enum('jenis_mk', ['wajib_prodi', 'wajib_nasional', 'pilihan', 'peminatan', 'tugas_akhir/skripsi/tesis/disertasi']);
+            $table->enum('kelompok_mk', ['MPK', 'MKK', 'MKB', 'MPB', 'MBB', 'MKDK']);
 
             $table->timestamps();
+            $table->unique(['id_prodi', 'kode_mk']);
         });
     }
 

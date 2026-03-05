@@ -4,213 +4,128 @@ namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\MataKuliah;
-use App\Models\MasterData\TahunAkademik;
 use Illuminate\Validation\ValidationException;
+use App\Imports\MataKuliahImport;
+use App\Exports\MataKuliahExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MataKuliahController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(): JsonResponse
+    public function index(Request $request, $id_prodi): JsonResponse
     {
         try {
-            // Ambil tahun akademik aktif
-            $tahunAkademikAktif = TahunAkademik::where('status_aktif', true)->first();
 
-            // Ambil semua mata kuliah beserta relasi kurikulum dan prodi
-            $mataKuliahs = MataKuliah::with(['kurikulum.prodi'])->get();
+            // Parameter default DataTables
+            $draw   = intval($request->input('draw', 1));
+            $start  = intval($request->input('start', 0));
+            $length = intval($request->input('length', 10));
+            $search = $request->input('search.value');
 
-            // Kelompokkan berdasarkan prodi, lalu kurikulum, lalu semester
-            $grouped = $mataKuliahs->groupBy([
-                function ($mk) {
-                    return $mk->kurikulum->prodi->id ?? null;
-                }, // Grup berdasarkan ID Prodi
-                function ($mk) {
-                    return $mk->kurikulum->id ?? null;
-                }, // Grup berdasarkan ID Kurikulum
-                'semester_rekomendasi' // Grup berdasarkan semester
-            ]);
+            // Base query
+            $baseQuery = MataKuliah::where('id_prodi', $id_prodi);
 
-            $result = [];
+            // Total tanpa filter
+            $recordsTotal = $baseQuery->count();
 
-            foreach ($grouped as $idProdi => $kurikulums) {
-                foreach ($kurikulums as $idKurikulum => $semesters) {
-                    $prodi = null;
-                    $kurikulum = null;
+            // Clone query untuk filter
+            $query = clone $baseQuery;
 
-                    $semesterData = [];
-
-                    foreach ($semesters as $semester => $mataKuliah) {
-                        $semesterData[] = [
-                            'semester' => $semester,
-                            'mata_kuliah' => $mataKuliah->map(function ($mk) {
-                                return [
-                                    'id' => $mk->id,
-                                    'kode_mk' => $mk->kode_mk,
-                                    'nama_mk' => $mk->nama_mk,
-                                    'sks' => $mk->sks,
-                                    'teori' => $mk->teori,
-                                    'praktikum' => $mk->praktikum,
-                                    'klinik' => $mk->klinik,
-                                ];
-                            })->toArray()
-                        ];
-
-                        // Ambil data prodi dan kurikulum dari item mata kuliah pertama dalam semester
-                        if (!$prodi) {
-                            $prodi = [
-                                'id' => $mataKuliah->first()->kurikulum->prodi->id,
-                                'nama_prodi' => $mataKuliah->first()->kurikulum->prodi->nama_prodi
-                            ];
-                        }
-
-                        if (!$kurikulum) {
-                            $kurikulum = [
-                                'id' => $mataKuliah->first()->kurikulum->id,
-                                'nama_kurikulum' => $mataKuliah->first()->kurikulum->nama_kurikulum,
-                            ];
-                        }
-                    }
-
-                    $kurikulum['semesters'] = $semesterData;
-
-                    $result[] = [
-                        'tahun_akademik_aktif' => $tahunAkademikAktif ? [
-                            'id' => $tahunAkademikAktif->id,
-                            'tahun_akademik' => $tahunAkademikAktif->tahun_akademik,
-                            'status_aktif' => $tahunAkademikAktif->status_aktif,
-                        ] : null,
-                        'prodi' => $prodi,
-                        'kurikulum' => $kurikulum,
-                    ];
-                }
+            // Searching
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('kode_mk', 'like', "%{$search}%")
+                        ->orWhere('nama_mk', 'like', "%{$search}%");
+                });
             }
 
+            $recordsFiltered = $query->count();
+
+            // Ambil data dengan pagination
+            $data = $query
+                ->orderBy('kode_mk', 'asc')
+                ->skip($start)
+                ->take($length > 0 ? $length : 10)
+                ->get([
+                    'id',
+                    'kode_mk',
+                    'nama_mk',
+                    'sks',
+                    'kelompok_mk',
+                    'jenis_mk',
+                ]);
+
             return response()->json([
-                'success' => true,
-                'message' => 'Data master berhasil diambil',
-                'data' => $result
+                "draw" => $draw,
+                "recordsTotal" => $recordsTotal,
+                "recordsFiltered" => $recordsFiltered,
+                "data" => $data
             ], 200);
         } catch (Exception $e) {
+
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data master.',
-                'error' => $e->getMessage()
+                'status'  => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): JsonResponse
-    {
-        try {
-            $prodi = Prodi::all(['id', 'nama_prodi']);
-            $kurikulum = Kurikulum::with('prodi')->get(['id', 'id_prodi', 'nama_kurikulum']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data master untuk membuat mata kuliah',
-                'data' => [
-                    'prodi' => $prodi,
-                    'kurikulum' => $kurikulum
-                ]
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data master.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, $id_prodi): JsonResponse
     {
         try {
-            $request->validate([
-                'id_prodi' => 'required|exists:prodi,id',
-                'id_kurikulum' => 'required|exists:kurikulum,id',
-                'semester_rekomendasi' => 'required|integer|min:1|max:14',
-                'mata_kuliah' => 'required|array|min:1',
-                'mata_kuliah.*.kode_mk' => 'required|string|max:20|unique:mata_kuliah,kode_mk',
-                'mata_kuliah.*.nama_mk' => 'required|string|max:255',
-                'mata_kuliah.*.teori' => 'required|integer|min:0',
-                'mata_kuliah.*.praktikum' => 'required|integer|min:0',
-                'mata_kuliah.*.klinik' => 'required|integer|min:0',
+            // Validasi bahwa prodi ada
+            $prodi = Prodi::findOrFail($id_prodi);
+
+            $validatedData = $request->validate([
+                'kode_mk' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('mata_kuliah')
+                        ->where('id_prodi', $id_prodi)
+                ],
+                'nama_mk' => 'required|string|max:255',
+                'sks_tatap_muka' => 'nullable|integer|min:0',
+                'sks_praktikum' => 'nullable|integer|min:0',
+                'sks_praktek_lapangan' => 'nullable|integer|min:0',
+                'sks_simulasi' => 'nullable|integer|min:0',
+                'jenis_mk' => 'required|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
+                'kelompok_mk' => 'required|in:MPK,MKK,MKB,MPB,MBB,MKDK',
             ]);
 
-            // Opsional: Validasi bahwa kurikulum terkait dengan prodi
-            $kurikulum = Kurikulum::where('id', $request->id_kurikulum)
-                ->where('id_prodi', $request->id_prodi)
-                ->first();
+            // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
+            $totalSks = ($validatedData['sks_tatap_muka'] ?? 0) +
+                ($validatedData['sks_praktikum'] ?? 0) +
+                ($validatedData['sks_praktek_lapangan'] ?? 0) +
+                ($validatedData['sks_simulasi'] ?? 0);
 
-            if (!$kurikulum) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kurikulum tidak sesuai dengan prodi yang dipilih.'
-                ], 422);
-            }
+            // Tambahkan total SKS dan id_prodi otomatis ke dalam data yang akan disimpan
+            $validatedData['sks'] = $totalSks;
+            $validatedData['id_prodi'] = $id_prodi;
 
-            $createdMataKuliah = [];
-            $totalSKSSemester = 0;
-
-            foreach ($request->mata_kuliah as $mk) {
-                // Hitung SKS per mata kuliah
-                $sks = (int)$mk['teori'] + (int)$mk['praktikum'] + (int)$mk['klinik'];
-
-                // Validasi: Total SKS per mata kuliah minimal 1
-                if ($sks < 1) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Total SKS per mata kuliah (teori + praktikum + klinik) harus minimal 1.'
-                    ], 422);
-                }
-
-                // Tambahkan semester_rekomendasi dan id_kurikulum
-                $mataKuliahData = [
-                    'kode_mk' => $mk['kode_mk'],
-                    'nama_mk' => $mk['nama_mk'],
-                    'teori' => $mk['teori'],
-                    'praktikum' => $mk['praktikum'],
-                    'klinik' => $mk['klinik'],
-                    'sks' => $sks,
-                    'semester_rekomendasi' => $request->semester_rekomendasi,
-                    'id_kurikulum' => $request->id_kurikulum,
-                ];
-
-                $mataKuliah = MataKuliah::create($mataKuliahData);
-                $createdMataKuliah[] = $mataKuliah;
-                $totalSKSSemester += $sks;
-            }
+            $mataKuliah = MataKuliah::create($validatedData);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Mata Kuliah berhasil dibuat.',
-                'data' => $createdMataKuliah,
-                'total_sks_semester' => $totalSKSSemester
+                'status' => 'success',
+                'data' => $mataKuliah,
             ], 201);
-        } catch (ValidationException $e) {
+        } catch (ValidationException $ve) {
             return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'status' => 'error',
+                'errors' => $ve->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat membuat mata kuliah.',
-                'error' => $e->getMessage()
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -221,7 +136,19 @@ class MataKuliahController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $mataKuliah = MataKuliah::with(['kurikulum.prodi'])->find($id);
+            $mataKuliah = MataKuliah::select([
+                'id',
+                'id_prodi',
+                'kode_mk',
+                'nama_mk',
+                'sks_tatap_muka',
+                'sks_praktikum',
+                'sks_praktek_lapangan',
+                'sks_simulasi',
+                'sks',
+                'jenis_mk',
+                'kelompok_mk',
+            ])->with('prodi:id,kode_prodi,jenjang_pendidikan,nama_prodi,akreditasi,tahun_berdiri,gelar_lulusan')->findOrFail($id);
 
             if (!$mataKuliah) {
                 return response()->json([
@@ -231,286 +158,181 @@ class MataKuliahController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Data mata kuliah berhasil diambil.',
-                'data' => [
-                    'mata_kuliah' => [
-                        'id' => $mataKuliah->id,
-                        'id_kurikulum' => $mataKuliah->id_kurikulum,
-                        'kode_mk' => $mataKuliah->kode_mk,
-                        'nama_mk' => $mataKuliah->nama_mk,
-                        'sks' => $mataKuliah->sks,
-                        'teori' => $mataKuliah->teori,
-                        'praktikum' => $mataKuliah->praktikum,
-                        'klinik' => $mataKuliah->klinik,
-                        'semester_rekomendasi' => $mataKuliah->semester_rekomendasi,
-                        'prodi_nama' => $mataKuliah->kurikulum->prodi->nama_prodi ?? null,
-                        'kurikulum_nama' => $mataKuliah->kurikulum->nama_kurikulum ?? null
-                    ]
-                ]
+                'status' => 'success',
+                'data' => $mataKuliah,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data mata kuliah.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Request $request, $semester): JsonResponse
-    {
-        try {
-            $idKurikulum = $request->query('id_kurikulum');
-
-            if (!$idKurikulum) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID Kurikulum wajib disertakan.'
-                ], 422);
-            }
-
-            // Ambil data kurikulum untuk mendapatkan id_prodi
-            $kurikulum = Kurikulum::find($idKurikulum);
-            if (!$kurikulum) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kurikulum tidak ditemukan.'
-                ], 404);
-            }
-
-            // Ambil mata kuliah berdasarkan semester dan kurikulum
-            $mataKuliah = MataKuliah::where('semester_rekomendasi', $semester)
-                ->where('id_kurikulum', $idKurikulum)
-                ->get(['id', 'kode_mk', 'nama_mk', 'teori', 'praktikum', 'klinik', 'sks']);
-
-            if ($mataKuliah->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada mata kuliah ditemukan untuk semester ini.'
-                ], 404);
-            }
-
-            // Ambil data prodi dan kurikulum untuk dropdown
-            $prodi = Prodi::all(['id', 'nama_prodi']);
-            $kurikulumList = Kurikulum::where('id_prodi', $kurikulum->id_prodi)->get(['id', 'id_prodi', 'nama_kurikulum']);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'mata_kuliah' => $mataKuliah,
-                    'prodi' => $prodi,
-                    'kurikulum' => $kurikulumList,
-                    'selected_prodi' => $kurikulum->id_prodi,
-                    'selected_kurikulum' => $idKurikulum,
-                    'semester' => $semester
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data.',
-                'error' => $e->getMessage()
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Update the specified resource in storage.
-     * Bisa digunakan untuk mengupdate dan membuat data baru.
      */
-    public function update(Request $request, $semester): JsonResponse
+    public function update(Request $request, string $id, $id_prodi): JsonResponse
     {
         try {
-            $request->validate([
-                'id_prodi' => 'required|exists:prodi,id',
-                'id_kurikulum' => 'required|exists:kurikulum,id',
-                'semester_rekomendasi' => 'required|integer|min:1|max:14',
-                'mata_kuliah' => 'required|array|min:1',
-                'mata_kuliah.*.id' => 'nullable|exists:mata_kuliah,id', // ID boleh null untuk create
-                'mata_kuliah.*.kode_mk' => 'required|string|max:20',
-                'mata_kuliah.*.nama_mk' => 'required|string|max:255',
-                'mata_kuliah.*.teori' => 'required|integer|min:0',
-                'mata_kuliah.*.praktikum' => 'required|integer|min:0',
-                'mata_kuliah.*.klinik' => 'required|integer|min:0',
-            ]);
+            // Validasi bahwa prodi ada
+            $prodi = Prodi::findOrFail($id_prodi);
 
-            // Opsional: Validasi bahwa kurikulum terkait dengan prodi
-            $kurikulum = Kurikulum::where('id', $request->id_kurikulum)
-                ->where('id_prodi', $request->id_prodi)
-                ->first();
+            $mataKuliah = MataKuliah::findOrFail($id);
 
-            if (!$kurikulum) {
+            if (!$mataKuliah) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Kurikulum tidak sesuai dengan prodi yang dipilih.'
-                ], 422);
-            }
-
-            $updatedMataKuliah = [];
-            $createdMataKuliah = [];
-            $totalSKSSemester = 0;
-
-            foreach ($request->mata_kuliah as $mk) {
-                // Hitung SKS
-                $sks = (int)$mk['teori'] + (int)$mk['praktikum'] + (int)$mk['klinik'];
-
-                // Validasi SKS
-                if ($sks < 1) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Total SKS per mata kuliah (teori + praktikum + klinik) harus minimal 1.'
-                    ], 422);
-                }
-
-                if (isset($mk['id']) && !empty($mk['id'])) {
-                    // Update existing record
-                    $mataKuliah = MataKuliah::find($mk['id']);
-
-                    if (!$mataKuliah) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Mata Kuliah dengan ID ' . $mk['id'] . ' tidak ditemukan.'
-                        ], 404);
-                    }
-
-                    // Pastikan mata kuliah ini benar-benar milik kurikulum ini
-                    if ($mataKuliah->id_kurikulum !== $request->id_kurikulum) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Akses ditolak: Mata Kuliah tidak sesuai dengan kurikulum yang dipilih.'
-                        ], 403);
-                    }
-
-                    $mataKuliah->update([
-                        'kode_mk' => $mk['kode_mk'],
-                        'nama_mk' => $mk['nama_mk'],
-                        'teori' => $mk['teori'],
-                        'praktikum' => $mk['praktikum'],
-                        'klinik' => $mk['klinik'],
-                        'sks' => $sks,
-                        'semester_rekomendasi' => $request->semester_rekomendasi,
-                    ]);
-
-                    $updatedMataKuliah[] = $mataKuliah;
-                } else {
-                    // Create new record
-                    $mataKuliahData = [
-                        'kode_mk' => $mk['kode_mk'],
-                        'nama_mk' => $mk['nama_mk'],
-                        'teori' => $mk['teori'],
-                        'praktikum' => $mk['praktikum'],
-                        'klinik' => $mk['klinik'],
-                        'sks' => $sks,
-                        'semester_rekomendasi' => $request->semester_rekomendasi,
-                        'id_kurikulum' => $request->id_kurikulum,
-                    ];
-
-                    // Validasi unique kode_mk untuk create
-                    $existing = MataKuliah::where('kode_mk', $mataKuliahData['kode_mk'])->first();
-                    if ($existing) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Kode MK ' . $mataKuliahData['kode_mk'] . ' sudah digunakan.'
-                        ], 422);
-                    }
-
-                    $mataKuliah = MataKuliah::create($mataKuliahData);
-                    $createdMataKuliah[] = $mataKuliah;
-                }
-
-                $totalSKSSemester += $sks;
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Mata Kuliah semester berhasil diperbarui dan/atau ditambahkan.',
-                'data' => [
-                    'updated' => $updatedMataKuliah,
-                    'created' => $createdMataKuliah,
-                ],
-                'total_sks_semester' => $totalSKSSemester
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui atau menambahkan mata kuliah.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Remove the specified resource(s) from storage.
-     * Bisa menghapus semua mata kuliah dalam semester tertentu dari kurikulum tertentu.
-     */
-    public function destroy(Request $request, $semester): JsonResponse
-    {
-        try {
-            $request->validate([
-                'id_kurikulum' => 'required|exists:kurikulum,id',
-            ]);
-
-            $deletedCount = MataKuliah::where('semester_rekomendasi', $semester)
-                ->where('id_kurikulum', $request->id_kurikulum)
-                ->delete();
-
-            if ($deletedCount === 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada mata kuliah ditemukan untuk semester ' . $semester . ' pada kurikulum ini.'
+                    'status' => 'error',
+                    'message' => 'Mata Kuliah tidak ditemukan.',
                 ], 404);
             }
 
+            $validatedData = $request->validate([
+                'kode_mk' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('mata_kuliah')->where('id_prodi', $id_prodi)->ignore($id)
+                ],
+                'nama_mk' => 'required|string|max:255',
+                'sks_tatap_muka' => 'nullable|integer|min:0',
+                'sks_praktikum' => 'nullable|integer|min:0',
+                'sks_praktek_lapangan' => 'nullable|integer|min:0',
+                'sks_simulasi' => 'nullable|integer|min:0',
+                'jenis_mk' => 'required|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
+                'kelompok_mk' => 'required|in:MPK,MKK,MKB,MPB,MBB,MKDK',
+            ]);
+
+            // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
+            $totalSks = ($validatedData['sks_tatap_muka'] ?? 0) +
+                ($validatedData['sks_praktikum'] ?? 0) +
+                ($validatedData['sks_praktek_lapangan'] ?? 0) +
+                ($validatedData['sks_simulasi'] ?? 0);
+
+            // Tambahkan total SKS dan id_prodi otomatis ke dalam data yang akan diupdate
+            $validatedData['sks'] = $totalSks;
+            $validatedData['id_prodi'] = $id_prodi;
+
+            // Update data mata kuliah
+            $mataKuliah->update($validatedData);
+
+            // Refresh data setelah update
+            $mataKuliah->refresh();
+
             return response()->json([
-                'success' => true,
-                'message' => 'Berhasil menghapus ' . $deletedCount . ' mata kuliah dari semester ' . $semester . '.'
+                'status' => 'success',
+                'data' => $mataKuliah,
             ], 200);
+        } catch (ValidationException $ve) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $ve->errors(),
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus mata kuliah.',
-                'error' => $e->getMessage()
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroysigle(string $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         try {
-            $mataKuliah = MataKuliah::find($id);
+            $mk = MataKuliah::findOrFail($id);
 
-            if (!$mataKuliah) {
+            if (!$mk) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Mata Kuliah tidak ditemukan.'
                 ], 404);
             }
 
-            $mataKuliah->delete();
+            $mk->delete();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Mata Kuliah berhasil dihapus.'
+                'status' => 'success',
+                'message' => 'Mata Kuliah deleted successfully.',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus mata kuliah.',
-                'error' => $e->getMessage()
+                'status' => 'error',
+                'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Import mata kuliah dari Excel
+     */
+    public function import(Request $request, $id_prodi): JsonResponse
+    {
+        try {
+            // Validasi bahwa prodi ada
+            $prodi = Prodi::findOrFail($id_prodi);
+
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Max 10MB
+            ]);
+
+            $file = $request->file('file');
+
+            // Import data
+            $import = new MataKuliahImport($id_prodi);
+            Excel::import($import, $file);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data mata kuliah berhasil diimport',
+            ], 200);
+        } catch (ValidationException $ve) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $ve->errors(),
+            ], 422);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan pada file import',
+                'errors' => $e->failures(),
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Export mata kuliah ke Excel
+     */
+    public function export(Request $request, $id_prodi)
+    {
+        try {
+            // Validasi bahwa prodi ada
+            $prodi = Prodi::findOrFail($id_prodi);
+
+            $isDummy = $request->query('dummy', false);
+            
+            $filename = $isDummy 
+                ? 'format_import_mata_kuliah.xlsx' 
+                : 'data_mata_kuliah_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download(new MataKuliahExport($id_prodi, $isDummy), $filename);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Download format import
+     */
+    public function downloadFormat($id_prodi)
+    {
+        return $this->export(request()->merge(['dummy' => true]), $id_prodi);
     }
 }

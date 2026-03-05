@@ -22,10 +22,6 @@ return new class extends Migration
             $table->date('tanggal_lahir')->nullable();
             $table->text('alamat')->nullable();
             $table->string('no_hp')->nullable();
-            // $table->string('email')->unique()->nullable();
-            // $table->string('jabatan_akademik')->nullable(); // Asisten Ahli, Lektor, dll
-            // $table->string('pangkat_golongan')->nullable();
-            // $table->boolean('status_aktif')->default(true);
             $table->timestamps();
         });
     }

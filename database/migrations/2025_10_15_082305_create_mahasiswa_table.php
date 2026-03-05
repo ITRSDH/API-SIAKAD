@@ -14,21 +14,19 @@ return new class extends Migration
         Schema::create('mahasiswa', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('id_prodi')->constrained('prodi', 'id');
-            $table->foreignUuid('id_kelas_pararel')->nullable()->constrained('kelas_pararel', 'id'); // bisa null saat belum masuk kelas
-            $table->foreignUuid('id_dosen')->nullable()->constrained('dosen', 'id'); // dosen wali
+            $table->foreignUuid('id_dosen')->nullable()->constrained('dosen', 'id');
             $table->foreignUuid('user_id')->nullable()->constrained('users', 'id');
-            $table->string('nim')->unique();
+            $table->string('nim')->unique()->nullable();
+            $table->string('nik')->unique()->nullable();
             $table->string('nama_mahasiswa');
-            $table->enum('jenis_kelamin', ['L', 'P']);
+            $table->enum('jenis_kelamin', ['L', 'P'])->nullable();
+            $table->string('tempat_lahir')->nullable();
             $table->date('tanggal_lahir')->nullable();
+            $table->date('tanggal_masuk')->nullable();
             $table->text('alamat')->nullable();
-            $table->string('no_hp')->nullable();
-            // $table->string('email')->unique()->nullable();
-            $table->string('asal_sekolah')->nullable();
-            $table->string('nama_orang_tua')->nullable();
-            $table->string('no_hp_orang_tua')->nullable();
-            $table->enum('status', ['Aktif', 'Cuti', 'DO', 'Lulus'])->default('Aktif');
-            $table->integer('angkatan');
+            $table->enum('agama', ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'])->nullable();
+            $table->enum('status', ['Aktif', 'Cuti', 'DO', 'Lulus'])->default('Aktif')->nullable();
+            $table->integer('angkatan')->nullable();
             $table->timestamps();
         });
     }
