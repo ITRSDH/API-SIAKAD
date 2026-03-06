@@ -40,7 +40,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/change-password', [AuthController::class, 'changePassword']);
         });
     });
-    // , 'check.role.permission'
+
     Route::middleware(['jwt.token', 'check.role.permission'])->group(function () {
 
         // Route::get('dashboard', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard');
