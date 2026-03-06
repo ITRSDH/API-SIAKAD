@@ -94,10 +94,14 @@ class MahasiswaController extends Controller
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
             $result = DB::transaction(function () use ($request) {
                 // 1. Buat User terlebih dahulu
+                $password = $request->filled('password')
+                    ? Hash::make($request->password)
+                    : Hash::make($request->tanggal_lahir ? date('dmY', strtotime($request->tanggal_lahir)) : 'password');
+
                 $user = User::create([
                     'name' => $request->nama_mahasiswa,
                     'email' => $request->email,
-                    'password' => Hash::make($request->password),
+                    'password' => $password,
                     'status' => $request->status === 'Aktif' ? 'aktif' : 'tidak-aktif'
                 ]);
 
@@ -163,8 +167,8 @@ class MahasiswaController extends Controller
                 'alamat' => 'nullable|string',
                 'agama' => 'sometimes|in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu',
                 'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
-                // 'angkatan' => 'sometimes|integer|min:1900|max:' . (date('Y') + 10),
-                'email' => 'sometimes|email|unique:users,email,' . $mahasiswa->user_id,
+                'angkatan' => 'nullable|integer|min:1900|max:' . (date('Y') + 10),
+                'email' => 'nullable|email|unique:users,email,' . $mahasiswa->user_id,
                 'password' => 'nullable|string|min:6'
             ]);
 

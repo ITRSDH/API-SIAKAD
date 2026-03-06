@@ -215,6 +215,65 @@ class AuthController extends Controller
         }
     }
 
+    public function changePassword(Request $request)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Validasi input
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required',
+                'new_password' => 'required|min:6|confirmed',
+            ], [
+                'current_password.required' => 'Password saat ini wajib diisi.',
+                'new_password.required' => 'Password baru wajib diisi.',
+                'new_password.min' => 'Password baru minimal 6 karakter.',
+                'new_password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Verifikasi password saat ini
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password saat ini salah.'
+                ], 400);
+            }
+
+            // Update password baru
+            $user->update([
+                'password' => Hash::make($request->new_password)
+            ]);
+
+            // Logout dari semua device (opsional, uncomment jika diperlukan)
+            // RefreshTokenModel::where('user_id', $user->id)->update(['revoked' => true, 'revoked_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password berhasil diubah.'
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah password.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function createRefreshToken($userId, $request)
     {
         $refreshToken = Str::random(128);
