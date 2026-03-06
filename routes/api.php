@@ -120,6 +120,8 @@ Route::prefix('v1')->group(function () {
 
         // Import/Export Mahasiswa
         Route::get('mahasiswa/export', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'export'])->name('mahasiswa.export');
+        Route::post('mahasiswa/import/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'import'])->name('mahasiswa.import');
+        Route::get('mahasiswa/template/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'exportTemplate'])->name('mahasiswa.template');
 
         Route::prefix('kurikulum')->group(function () {
             Route::get('/{id_kurikulum}/mata-kuliah-list', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'matakuliahByProdi'])->name('kurikulum.mata-kuliah-by-prodi');
@@ -130,9 +132,6 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}/mata-kuliah/{id_mk}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'hapusMataKuliah']);
         });
     });
-
-    Route::post('mahasiswa/import/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'import'])->name('mahasiswa.import');
-    Route::get('mahasiswa/template/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'exportTemplate'])->name('mahasiswa.template');
 
     // Public API Routes for Website Kampus
     Route::get('/landing/pengumuman', [GetApiController::class, 'pengumuman'])->name('landing.pengumuman');
