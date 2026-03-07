@@ -40,8 +40,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/change-password', [AuthController::class, 'changePassword']);
         });
     });
-
-    Route::middleware(['jwt.token', 'check.role.permission'])->group(function () {
+    // , 'check.role.permission'
+    Route::middleware(['jwt.token'])->group(function () {
 
         // Route::get('dashboard', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard');
 
@@ -72,17 +72,7 @@ Route::prefix('v1')->group(function () {
 
                     Route::apiResource('mahasiswa', \App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class);
 
-                    // CPL (Course Learning Outcomes)
-                    Route::get('cpl/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'index'])->name('cpl.index');
-                    Route::post('cpl/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'store'])->name('cpl.store');
-                    Route::get('cpl/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'show'])->name('cpl.show');
-                    Route::put('cpl/{id}/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'update'])->name('cpl.update');
-                    Route::delete('cpl/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'destroy'])->name('cpl.destroy');
-
-                    // CPL Indikator Kinerja Management
-                    Route::post('cpl/{id}/indikator-kinerja', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'addIndikatorKinerja'])->name('cpl.add-indikator-kinerja');
-                    Route::put('cpl/{id}/indikator-kinerja/{ik_id}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'updateIndikatorKinerja'])->name('cpl.update-indikator-kinerja');
-                    Route::delete('cpl/{id}/indikator-kinerja/{ik_id}', [\App\Http\Controllers\Api\Siakad\MasterData\CplController::class, 'deleteIndikatorKinerja'])->name('cpl.delete-indikator-kinerja');
+                    Route::apiResource('profile-lulusan', \App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class);
 
                     // Mahasiswa Baru
                     Route::get('mahasiswa-baru', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'index'])->name('mahasiswa-baru.index');
