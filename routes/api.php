@@ -72,7 +72,11 @@ Route::prefix('v1')->group(function () {
 
                     Route::apiResource('mahasiswa', \App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class);
 
-                    Route::apiResource('profile-lulusan', \App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class);
+                    Route::get('profile-lulusan/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'index'])->name('profile-lulusan.index');
+                    Route::post('profile-lulusan/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'store'])->name('profile-lulusan.store');
+                    Route::get('profile-lulusan/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'show'])->name('profile-lulusan.show');
+                    Route::put('profile-lulusan/{id}/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'update'])->name('profile-lulusan.update');
+                    Route::delete('profile-lulusan/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'destroy'])->name('profile-lulusan.destroy');
 
                     // Mahasiswa Baru
                     Route::get('mahasiswa-baru', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'index'])->name('mahasiswa-baru.index');

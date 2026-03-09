@@ -13,10 +13,12 @@ class ProfileLulusanController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(string $id_prodi): JsonResponse
     {
         try {
-            $profileLulusan = ProfileLulusan::with(['cpl'])->get();
+            $profileLulusan = ProfileLulusan::with(['cpl'])
+                ->where('id_prodi', $id_prodi)
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -35,11 +37,10 @@ class ProfileLulusanController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, string $id_prodi): JsonResponse
     {
         try {
             $request->validate([
-                'id_prodi' => 'required|string',
                 'kode_pl' => 'required|string|max:50|unique:profile_lulusan,kode_pl',
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
@@ -47,7 +48,10 @@ class ProfileLulusanController extends Controller
                 'profesi_lulusan' => 'nullable|string'
             ]);
 
-            $profileLulusan = ProfileLulusan::create($request->all());
+            $data = $request->all();
+            $data['id_prodi'] = $id_prodi;
+
+            $profileLulusan = ProfileLulusan::create($data);
 
             return response()->json([
                 'success' => true,
@@ -88,19 +92,19 @@ class ProfileLulusanController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(Request $request, string $id, string $id_prodi): JsonResponse
     {
         try {
-            $profileLulusan = ProfileLulusan::findOrFail($id);
-
             $request->validate([
-                'id_prodi' => 'required|string',
                 'kode_pl' => 'required|string|max:50|unique:profile_lulusan,kode_pl,' . $id,
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
                 'deskripsi_profile_lulusan_english' => 'nullable|string',
                 'profesi_lulusan' => 'nullable|string'
             ]);
+
+            $profileLulusan = ProfileLulusan::where('id_prodi', $id_prodi)
+                ->findOrFail($id);
 
             $profileLulusan->update($request->all());
 
@@ -125,6 +129,7 @@ class ProfileLulusanController extends Controller
     {
         try {
             $profileLulusan = ProfileLulusan::findOrFail($id);
+
             $profileLulusan->delete();
 
             return response()->json([
