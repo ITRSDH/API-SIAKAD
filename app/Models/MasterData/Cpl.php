@@ -20,7 +20,7 @@ class Cpl extends Model
     protected $fillable = [
         'id_prodi',
         'kode_cpl',
-        'cpl',
+        // 'cpl',
         'deskripsi_cpl_indonesia',
         'deskripsi_cpl_english',
         'kategori_cpl'
@@ -33,7 +33,7 @@ class Cpl extends Model
             ProfileLulusan::class,
             'pl_cpl',
             'id_cpl',
-            'id_pl'
+            'id_profile_lulusan'
         )->withPivot('bobot')
             ->withTimestamps();
     }
@@ -51,7 +51,7 @@ class Cpl extends Model
             MataKuliah::class,
             'cpl_mk',
             'id_cpl',
-            'id_mk'
+            'id_mata_kuliah'
         )->withPivot('bobot')
             ->withTimestamps();
     }

@@ -41,7 +41,7 @@ Route::prefix('v1')->group(function () {
         });
     });
     // , 'check.role.permission'
-    Route::middleware(['jwt.token'])->group(function () {
+    Route::middleware(['jwt.token', 'check.role.permission'])->group(function () {
 
         // Route::get('dashboard', [\App\Http\Controllers\Api\Siakad\ADMINISTRATOR\DashboardController::class, 'index'])->name('dashboard');
 
@@ -77,6 +77,27 @@ Route::prefix('v1')->group(function () {
                     Route::get('profile-lulusan/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'show'])->name('profile-lulusan.show');
                     Route::put('profile-lulusan/{id}/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'update'])->name('profile-lulusan.update');
                     Route::delete('profile-lulusan/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\ProfileLulusanController::class, 'destroy'])->name('profile-lulusan.destroy');
+
+                    Route::get('cpl/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CPLController::class, 'index'])->name('cpl.index');
+                    Route::post('cpl/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CPLController::class, 'store'])->name('cpl.store');
+                    Route::get('cpl/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\CPLController::class, 'show'])->name('cpl.show');
+                    Route::put('cpl/{id}/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\CPLController::class, 'update'])->name('cpl.update');
+                    Route::delete('cpl/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\CPLController::class, 'destroy'])->name('cpl.destroy');
+
+                    // Indikator Kinerja
+                    Route::get('indikator-kinerja/{id_cpl}', [\App\Http\Controllers\Api\Siakad\MasterData\IndikatorKinerjaController::class, 'index'])->name('indikator-kinerja.index');
+                    Route::post('indikator-kinerja/{id_cpl}', [\App\Http\Controllers\Api\Siakad\MasterData\IndikatorKinerjaController::class, 'store'])->name('indikator-kinerja.store');
+                    Route::get('indikator-kinerja/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\IndikatorKinerjaController::class, 'show'])->name('indikator-kinerja.show');
+                    Route::put('indikator-kinerja/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\IndikatorKinerjaController::class, 'update'])->name('indikator-kinerja.update');
+                    Route::delete('indikator-kinerja/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\IndikatorKinerjaController::class, 'destroy'])->name('indikator-kinerja.destroy');
+
+                    // Pemetaan PL & CPL
+                    Route::get('pemetaan-plcpl/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\PemetaanPLCPLController::class, 'index'])->name('pemetaan-pl-cpl.index');
+                    Route::post('pemetaan-plcpl', [\App\Http\Controllers\Api\Siakad\MasterData\PemetaanPLCPLController::class, 'store'])->name('pemetaan-pl-cpl.store');
+
+                    // Pemetaan CPL & MK
+                    Route::get('pemetaan-cplmk/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\PemetaanCPLMKController::class, 'index'])->name('pemetaan-cpl-mk.index');
+                    Route::post('pemetaan-cplmk', [\App\Http\Controllers\Api\Siakad\MasterData\PemetaanCPLMKController::class, 'store'])->name('pemetaan-cpl-mk.store');
 
                     // Mahasiswa Baru
                     Route::get('mahasiswa-baru', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'index'])->name('mahasiswa-baru.index');

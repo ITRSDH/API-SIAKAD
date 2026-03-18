@@ -11,7 +11,7 @@ class IndikatorKinerja extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $table = 'indikator_kinerja';
+    protected $table = 'indikator_kinerja_cpl';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -28,4 +28,5 @@ class IndikatorKinerja extends Model
     {
         return $this->belongsTo(Cpl::class, 'id_cpl');
     }
+
 }

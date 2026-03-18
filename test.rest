@@ -1,7 +1,7 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzE1NzA5MzAsImV4cCI6MTc3MTU3NDUzMCwibmJmIjoxNzcxNTcwOTMwLCJqdGkiOiJnZFB5R0FZMnl2ZWl0UjM2Iiwic3ViIjoiYTExZjI5NWQtODRiOS00OTYzLWJkMjUtOTcwNDgxN2IwMGUwIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.e44FG613djIiuGurFtuUeCKfnVHfmUD5CmBP951yRt0
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzM3MjE3ODAsImV4cCI6MTc3MzcyNTM4MCwibmJmIjoxNzczNzIxNzgwLCJqdGkiOiJURE9qSnBpT1F0YlIzUDN3Iiwic3ViIjoiYTE1MTZlNzctZTY1NC00ZmQwLTg5YzEtNTEyZDZlYjQ4NzUyIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.hrOU-so8gIaxriEqnrYWjogVIsRHgz8t9YEX5Yzyjc4
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
@@ -21,6 +21,14 @@ Authorization: Bearer {{ token }}
 
 ### Get user profile
 GET {{ base_url }}/auth/me
+Authorization: Bearer {{ token }}
+
+### Get list of Users
+GET {{ base_url }}/profile-lulusan/prodi/844f30ab-13e4-49ac-bcb0-c308e1c8ac7f
+Authorization: Bearer {{ token }}
+
+### Get list of Users
+GET {{ base_url }}/pemetaan-plcpl/2df32630-f21c-4ea9-857f-b6bea0b0e25a
 Authorization: Bearer {{ token }}
 
 ### Get list of Users

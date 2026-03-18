@@ -16,9 +16,7 @@ class ProfileLulusanController extends Controller
     public function index(string $id_prodi): JsonResponse
     {
         try {
-            $profileLulusan = ProfileLulusan::with(['cpl'])
-                ->where('id_prodi', $id_prodi)
-                ->get();
+            $profileLulusan = ProfileLulusan::where('id_prodi', $id_prodi)->get();
 
             return response()->json([
                 'success' => true,
@@ -73,7 +71,7 @@ class ProfileLulusanController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $profileLulusan = ProfileLulusan::with(['cpl'])->findOrFail($id);
+            $profileLulusan = ProfileLulusan::findOrFail($id);
 
             return response()->json([
                 'success' => true,

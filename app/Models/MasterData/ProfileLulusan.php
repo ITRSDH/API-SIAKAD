@@ -30,7 +30,7 @@ class ProfileLulusan extends Model
         return $this->belongsToMany(
             Cpl::class,
             'pl_cpl',
-            'id_pl',
+            'id_profile_lulusan',
             'id_cpl'
         )->withPivot('bobot')
             ->withTimestamps();

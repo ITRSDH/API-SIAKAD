@@ -15,10 +15,10 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('id_prodi')->constrained('prodi')->cascadeOnDelete();
             $table->string('kode_cpl', 100)->unique();
-            $table->string('cpl', 255);
+            // $table->string('cpl', 255);
             $table->text('deskripsi_cpl_indonesia');
             $table->text('deskripsi_cpl_english')->nullable();
-            $table->enum('kategori_cpl', ['S', 'P', 'KU', 'KK']);
+            $table->enum('kategori_cpl', ['S', 'P', 'KU', 'KK'])->nullable();
             $table->timestamps();
         });
     }
