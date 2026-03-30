@@ -15,7 +15,10 @@ use App\Models\Website\Berita;
 use App\Models\Website\Galeri;
 use App\Models\Website\Faq;
 use App\Models\Website\Ormawa;
+use App\Models\Website\PmbPendaftaran;
+use App\Models\Website\ProfileDosen;
 use App\Models\Website\ProfileKampus;
+use App\Models\Website\SertifikatAkreditasi;
 
 class GetApiController extends Controller
 {
@@ -353,6 +356,128 @@ class GetApiController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data profile kampus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function profileDosen()
+    {
+        try {
+            $profile = ProfileDosen::select('id', 'nama', 'nidn', 'status', 'foto')
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data profile dosen berhasil diambil',
+                'data' => $profile
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data profile kampus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function profileDosenLimit()
+    {
+        try {
+            $profile = ProfileDosen::select('id', 'nama', 'nidn', 'status', 'foto')
+                ->limit(3)
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data profile dosen berhasil diambil',
+                'data' => $profile
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data profile kampus',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function profileDosenDetail($id)
+    {
+         try {
+            $dosen = ProfileDosen::findOrFail($id);
+            $prodi = $dosen->prodi()->get();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Data dosen berdasarkan prodi',
+                'data' => [
+                    'prodi' => $prodi,
+                    'dosen' => $dosen
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dosen tidak ditemukan',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    public function sertifikatAkreditasi()
+    {
+        try {
+            $sertifikat = SertifikatAkreditasi::select('id','nama','deskripsi','foto_sertifikat',)
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data sertifikat akreditasi berhasil diambil',
+                'data' => $sertifikat
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data sertifikat akreditasi',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sertifikatAkreditasiDetail($id)
+    {
+         try {
+            $sertifikat = SertifikatAkreditasi::findOrFail($id);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Data sertifikat akreditasi',
+                'data' => $sertifikat
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sertifikat tidak ditemukan',
+                'error' => $e->getMessage()
+            ], 404);
+        }
+    }
+
+    public function pmbPendaftaran()
+    {
+         try {
+            $pmb = PmbPendaftaran::first();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data pmb pendaftaran berhasil diambil',
+                'data' => $pmb
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data pmb pendaftaran',
                 'error' => $e->getMessage()
             ], 500);
         }

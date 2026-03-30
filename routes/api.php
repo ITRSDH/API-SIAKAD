@@ -10,12 +10,14 @@ use App\Http\Controllers\Api\Website\BeasiswaController;
 use App\Http\Controllers\Api\Website\PrestasiController;
 use App\Http\Controllers\Api\Website\PengumumanController;
 use App\Http\Controllers\Api\Website\ProfileKampusController;
+use App\Http\Controllers\Api\Website\PmbPendaftaranController;
+use App\Http\Controllers\Api\Website\SertifikatAkreditasiController;
 use App\Http\Controllers\Api\Website\LandingContentController;
 use App\Http\Controllers\Api\ManagementPengguna\RoleController;
 use App\Http\Controllers\Api\ManagementPengguna\UserController;
 use App\Http\Controllers\Api\ManagementPengguna\PermissionController;
 use App\Http\Controllers\Api\Website\GetApiController;
-
+use App\Http\Controllers\Api\Website\ProfileDosenController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -133,6 +135,9 @@ Route::prefix('v1')->group(function () {
                 Route::apiResource('landing-content', LandingContentController::class);
                 Route::apiResource('ormawa', OrmawaController::class);
                 Route::apiResource('profile-kampus', ProfileKampusController::class);
+                Route::apiResource('profile-dosen', ProfileDosenController::class);
+                Route::apiResource('pmb-pendaftaran', PmbPendaftaranController::class)->only(['index', 'store', 'show']);
+                Route::apiResource('sertifikat-akreditasi', SertifikatAkreditasiController::class);
             });
         });
     });
@@ -179,4 +184,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/landing/prodi', [GetApiController::class, 'prodi'])->name('landing.prodi');
     Route::get('/landing/prodi/{id}', [GetApiController::class, 'prodiDetail'])->name('landing.prodi.detail');
     Route::get('/landing/prodi/{id}/prestasi', [GetApiController::class, 'prodiPrestasi'])->name('landing.prodi.prestasi');
+    Route::get('/landing/profile-dosen', [GetApiController::class, 'profileDosen'])->name('landing.profile-dosen');
+    Route::get('/landing/profile-dosen/limit', [GetApiController::class, 'profileDosenLimit'])->name('landing.profile-dosen.limit');
+    Route::get('/landing/profile-dosen/{id}', [GetApiController::class, 'profileDosenDetail'])->name('landing.profile-dosen.detail');
+    Route::get('/landing/sertifikat-akreditasi', [GetApiController::class, 'sertifikatAkreditasi'])->name('landing.sertifikat-akreditasi');
+    Route::get('/landing/sertifikat-akreditasi/{id}', [GetApiController::class, 'sertifikatAkreditasiDetail'])->name('landing.sertifikat-akreditasi.detail');
+    Route::get('/landing/pmb-pendaftaran', [GetApiController::class, 'pmbPendaftaran'])->name('landing.pmb-pendaftaran');
 });

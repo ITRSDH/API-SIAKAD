@@ -61,6 +61,7 @@ class DatabaseSeeder extends Seeder
             // Website
             ProfileKampusSeeder::class,
             LandingContentSeeder::class,
+            PmbPendaftaranSeeder::class,
         ]);
     }
 }

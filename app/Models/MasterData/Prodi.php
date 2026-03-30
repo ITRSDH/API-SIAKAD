@@ -62,4 +62,10 @@ class Prodi extends Model
     {
         return $this->hasMany(\App\Models\Website\Prestasi::class, 'id_prodi');
     }
+
+    // Relasi ke ProfileDosen
+    public function profileDosen(): HasMany
+    {
+        return $this->hasMany(\App\Models\Website\ProfileDosen::class, 'id_prodi');
+    }   
 }
