@@ -27,7 +27,7 @@ class PrestasiController extends Controller
                 'created_at',
                 'updated_at',
             ])
-                ->with('prodi:id,nama_prodi,id_jenjang_pendidikan') // ← Specify kolom yg diperlukan
+                ->with('prodi:id,nama_prodi') // ← Specify kolom yg diperlukan
                 ->orderBy('created_at', 'desc')->get();
 
             return response()->json(

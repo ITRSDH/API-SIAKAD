@@ -18,7 +18,7 @@ class UpdateProfileKampusRequest extends FormRequest
             'deskripsi' => 'sometimes|nullable|string',
             'visi' => 'sometimes|nullable|string',
             'misi' => 'sometimes|nullable|string',
-            'struktur_image' => 'sometimes|nullable|file|max:2048',
+            'struktur_image' => 'sometimes|nullable|mimes:jpeg,png,jpg,webp|max:2048',
             'fasilitas' => 'sometimes|nullable|string',
         ];
     }

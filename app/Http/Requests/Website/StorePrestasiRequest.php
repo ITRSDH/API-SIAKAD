@@ -20,7 +20,7 @@ class StorePrestasiRequest extends FormRequest
             'tingkat' => 'required|string|max:100',
             'tahun' => 'required|integer',
             'deskripsi' => 'nullable|string',
-            'gambar' => 'nullable|file|max:2048',
+            'gambar' => 'nullable|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 }

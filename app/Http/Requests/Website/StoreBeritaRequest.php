@@ -17,7 +17,7 @@ class StoreBeritaRequest extends FormRequest
             'judul' => 'required|string|max:255',
             'isi' => 'required|string',
             'kategori' => 'nullable|string|max:100',
-            'gambar' => 'nullable|file|max:2048',
+            'gambar' => 'nullable|mimes:jpeg,png,jpg,webp|max:2048',
             'tanggal' => 'nullable|date',
         ];
     }

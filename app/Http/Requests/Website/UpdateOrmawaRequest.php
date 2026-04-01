@@ -17,7 +17,7 @@ class UpdateOrmawaRequest extends FormRequest
             'nama' => 'sometimes|required|string|max:255',
             'kategori' => 'sometimes|required|string|max:100',
             'deskripsi' => 'nullable|string',
-            'gambar' => 'nullable|file|max:2048',
+            'gambar' => 'nullable|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 }

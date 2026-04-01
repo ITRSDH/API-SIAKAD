@@ -17,13 +17,13 @@ class PmbPendaftaranController extends Controller
 			
 			return response()->json([
 				'success' => true,
-				'message' => 'Data profile kampus',
+				'message' => 'Data PMB Pendaftaran',
 				'data' => $profile
 			], 200);
 		} catch (\Exception $e) {
 			return response()->json([
 				'success' => false,
-				'message' => 'Gagal mengambil data profile kampus',
+				'message' => 'Gagal mengambil data PMB Pendaftaran',
 				'error' => $e->getMessage()
 			], 500);
 		}
