@@ -9,6 +9,7 @@ use App\Http\Requests\Website\StorePrestasiRequest;
 use App\Http\Requests\Website\UpdatePrestasiRequest;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PrestasiController extends Controller
 {
@@ -53,28 +54,61 @@ class PrestasiController extends Controller
     public function store(StorePrestasiRequest $request, ImageService $imageService)
     {
         try {
+            Log::info('Start store prestasi', [
+                'request' => $request->all()
+            ]);
+    
             $data = $request->validated();
+    
             if ($request->hasFile('gambar')) {
-                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('gambar'), 75, 'prestasi');
+                Log::info('Upload gambar detected');
+    
+                $newStoragePath = $imageService->convertToWebpAndReplace(
+                    $request->file('gambar'),
+                    75,
+                    'prestasi'
+                );
+    
+                Log::info('Gambar berhasil diproses', [
+                    'path' => $newStoragePath
+                ]);
+    
                 $data['gambar'] = $newStoragePath;
             }
+    
             $prestasi = Prestasi::create($data);
+    
+            Log::info('Prestasi berhasil dibuat', [
+                'prestasi_id' => $prestasi->id,
+                'data' => $prestasi
+            ]);
+    
             return response()->json(
                 [
                     'success' => true,
                     'message' => 'Prestasi berhasil ditambahkan',
                     'data' => $prestasi,
                 ],
-                201,
+                201
             );
+    
         } catch (\Exception $e) {
+    
+            Log::error('Error store prestasi', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+    
             return response()->json(
                 [
                     'success' => false,
                     'message' => 'Gagal menambahkan prestasi',
                     'error' => $e->getMessage(),
                 ],
-                500,
+                500
             );
         }
     }
