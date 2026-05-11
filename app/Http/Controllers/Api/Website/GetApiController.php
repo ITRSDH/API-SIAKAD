@@ -25,7 +25,7 @@ class GetApiController extends Controller
     public function prestasi()
     {
         try {
-            $prestasi = Prestasi::with('prodi')->paginate(10);
+            $prestasi = Prestasi::with('prodi')->paginate(9);
             
             return response()->json([
                 'status' => 'success',
@@ -229,7 +229,7 @@ class GetApiController extends Controller
     public function ormawa()
     {
         try {
-            $ormawa = Ormawa::paginate(10);
+            $ormawa = Ormawa::paginate(9);
             
             return response()->json([
                 'status' => 'success',

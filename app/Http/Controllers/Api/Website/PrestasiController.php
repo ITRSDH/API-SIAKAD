@@ -140,7 +140,7 @@ class PrestasiController extends Controller
     public function update(UpdatePrestasiRequest $request, $id, ImageService $imageService)
     {
         try {
-            $prestasi = Prestasi::with('prodi:id,nama_prodi,id_jenjang_pendidikan')->findOrFail($id);
+            $prestasi = Prestasi::with('prodi:id,nama_prodi')->findOrFail($id);
             $data = $request->validated();
             if ($request->hasFile('gambar')) {
                 // Hapus gambar lama jika ada
