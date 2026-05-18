@@ -39,7 +39,7 @@ class ProfileLulusanController extends Controller
     {
         try {
             $request->validate([
-                'kode_pl' => 'required|string|max:50|unique:profile_lulusan,kode_pl',
+                'kode_pl' => 'required|string|max:100|unique:profile_lulusan,kode_pl',
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
                 'deskripsi_profile_lulusan_english' => 'nullable|string',
@@ -94,7 +94,7 @@ class ProfileLulusanController extends Controller
     {
         try {
             $request->validate([
-                'kode_pl' => 'required|string|max:50|unique:profile_lulusan,kode_pl,' . $id,
+                'kode_pl' => 'required|string|max:100|unique:profile_lulusan,kode_pl,' . $id,
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
                 'deskripsi_profile_lulusan_english' => 'nullable|string',

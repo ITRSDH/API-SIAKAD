@@ -44,6 +44,11 @@ class Kurikulum extends Model
         return $this->hasMany(KurikulumMataKuliah::class, 'id_kurikulum');
     }
 
+    public function riwayatMahasiswa(): HasMany
+    {
+        return $this->hasMany(RiwayatKurikulumMahasiswa::class, 'id_kurikulum');
+    }
+
     // Relasi ke Mata Kuliah
     public function mataKuliah(): BelongsToMany
     {

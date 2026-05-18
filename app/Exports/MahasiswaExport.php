@@ -115,7 +115,6 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
             $mahasiswa->tanggal_masuk
                 ? Date::dateTimeToExcel(Carbon::parse($mahasiswa->tanggal_masuk))
                 : null,
-
             $mahasiswa->status,
             $mahasiswa->jenis_kelamin,
 

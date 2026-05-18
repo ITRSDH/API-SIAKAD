@@ -9,10 +9,12 @@ use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\MataKuliah;
+use App\Models\MasterData\MataKuliahPrasyarat;
 use Illuminate\Validation\ValidationException;
 use App\Imports\MataKuliahImport;
 use App\Exports\MataKuliahExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
 
 class MataKuliahController extends Controller
 {
@@ -148,7 +150,10 @@ class MataKuliahController extends Controller
                 'sks',
                 'jenis_mk',
                 'kelompok_mk',
-            ])->with('prodi:id,kode_prodi,jenjang_pendidikan,nama_prodi,akreditasi,tahun_berdiri,gelar_lulusan')->findOrFail($id);
+            ])->with([
+                'prodi:id,kode_prodi,jenjang_pendidikan,nama_prodi,akreditasi,tahun_berdiri,gelar_lulusan',
+                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk'
+            ])->findOrFail($id);
 
             if (!$mataKuliah) {
                 return response()->json([
@@ -314,9 +319,9 @@ class MataKuliahController extends Controller
             $prodi = Prodi::findOrFail($id_prodi);
 
             $isDummy = $request->query('dummy', false);
-            
-            $filename = $isDummy 
-                ? 'format_import_mata_kuliah.xlsx' 
+
+            $filename = $isDummy
+                ? 'format_import_mata_kuliah.xlsx'
                 : 'data_mata_kuliah_' . date('Y-m-d_H-i-s') . '.xlsx';
 
             return Excel::download(new MataKuliahExport($id_prodi, $isDummy), $filename);
@@ -334,5 +339,90 @@ class MataKuliahController extends Controller
     public function downloadFormat($id_prodi)
     {
         return $this->export(request()->merge(['dummy' => true]), $id_prodi);
+    }
+
+    public function getPrasyarat(string $id): JsonResponse
+    {
+        try {
+            $mataKuliah = MataKuliah::with([
+                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk,sks'
+            ])->findOrFail($id);
+
+            $data = $mataKuliah->prasyarat->map(function (MataKuliahPrasyarat $item) {
+                return [
+                    'id' => $item->id,
+                    'id_mata_kuliah' => $item->id_mata_kuliah,
+                    'id_mata_kuliah_prasyarat' => $item->id_mata_kuliah_prasyarat,
+                    'min_bobot_nilai' => $item->min_bobot_nilai,
+                    'mata_kuliah_prasyarat' => $item->mataKuliahPrasyarat,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'mata_kuliah' => [
+                        'id' => $mataKuliah->id,
+                        'kode_mk' => $mataKuliah->kode_mk,
+                        'nama_mk' => $mataKuliah->nama_mk,
+                    ],
+                    'prasyarat' => $data,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function syncPrasyarat(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'prasyarat' => 'required|array',
+            'prasyarat.*.id_mata_kuliah_prasyarat' => 'required|uuid|exists:mata_kuliah,id',
+            'prasyarat.*.min_bobot_nilai' => 'nullable|numeric|min:0|max:4',
+        ]);
+
+        try {
+            $mataKuliah = MataKuliah::findOrFail($id);
+
+            DB::transaction(function () use ($validated, $mataKuliah) {
+                MataKuliahPrasyarat::where('id_mata_kuliah', $mataKuliah->id)->delete();
+
+                foreach ($validated['prasyarat'] as $item) {
+                    if ($item['id_mata_kuliah_prasyarat'] === $mataKuliah->id) {
+                        continue;
+                    }
+
+                    $mkPrasyarat = MataKuliah::find($item['id_mata_kuliah_prasyarat']);
+                    if (!$mkPrasyarat || $mkPrasyarat->id_prodi !== $mataKuliah->id_prodi) {
+                        continue;
+                    }
+
+                    MataKuliahPrasyarat::create([
+                        'id_mata_kuliah' => $mataKuliah->id,
+                        'id_mata_kuliah_prasyarat' => $item['id_mata_kuliah_prasyarat'],
+                        'min_bobot_nilai' => $item['min_bobot_nilai'] ?? 2.00,
+                    ]);
+                }
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Prasyarat mata kuliah berhasil diperbarui',
+            ]);
+        } catch (ValidationException $ve) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $ve->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

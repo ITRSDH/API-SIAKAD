@@ -61,11 +61,17 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // 🔐 Login tetap pakai email
-            if (!$token = Auth::guard('api')->attempt([
-                'email' => $user->email,
-                'password' => $password
-            ])) {
+            // 🔐 Login menggunakan credentials yang valid
+            $credentials = [];
+            if ($user->email) {
+                $credentials['email'] = $user->email;
+            } else {
+                // Fallback: gunakan ID jika email null
+                $credentials['id'] = $user->id;
+            }
+            $credentials['password'] = $password;
+
+            if (!$token = Auth::guard('api')->attempt($credentials)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Email / NIM / NUP atau password salah.'

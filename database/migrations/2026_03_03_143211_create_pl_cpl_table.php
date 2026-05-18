@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pl_cpl', function (Blueprint $table) {
-            // $table->uuid('id')->primary();
+            $table->uuid('id')->primary();
 
             $table->foreignUuid('id_profile_lulusan')
                 ->constrained('profile_lulusan')
@@ -23,7 +23,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             // Bobot 0–100 (bisa desimal)
-            $table->decimal('bobot', 5, 2)->default(0)->nullable()
+            $table->decimal('bobot', 5, 2)->default(0)
                 ->comment('Bobot kontribusi 0–100');
 
             $table->timestamps();

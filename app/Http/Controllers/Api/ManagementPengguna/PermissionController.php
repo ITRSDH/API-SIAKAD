@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\ManagementPengguna;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Illuminate\Support\Facades\Route;
 use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
@@ -34,28 +36,28 @@ class PermissionController extends Controller
     public function sync()
     {
         $routes = collect(Route::getRoutes())
-            ->filter(fn($route) => $route->getName()) // hanya route yang punya nama
+            ->filter(fn($route) => $route->getName())
             ->filter(function ($route) {
                 $uri = $route->uri();
                 $name = $route->getName();
 
-                // Cek apakah route memiliki middleware 'check.role.permission'
                 $middleware = $route->middleware();
                 if (!in_array('check.role.permission', $middleware)) {
                     return false;
                 }
 
-                // daftar yang ingin di-skip
                 $skip = ['sanctum', 'storage'];
 
-                // cek berdasarkan uri
-                foreach ($skip as $s) {
-                    if (str_contains($uri, $s)) return false;
+                foreach ($skip as $segment) {
+                    if (str_contains($uri, $segment)) {
+                        return false;
+                    }
                 }
 
-                // cek berdasarkan nama route
-                foreach ($skip as $s) {
-                    if (str_contains($name, $s)) return false;
+                foreach ($skip as $segment) {
+                    if (str_contains($name, $segment)) {
+                        return false;
+                    }
                 }
 
                 return true;
@@ -68,38 +70,36 @@ class PermissionController extends Controller
             ]);
 
         $existingPermissions = Permission::pluck('name')->toArray();
-
         $added = 0;
         $removed = 0;
 
-        // Tambahkan permission yang belum ada
-        foreach ($routes as $r) {
-            if (!in_array($r['name'], $existingPermissions)) {
+        foreach ($routes as $route) {
+            if (!in_array($route['name'], $existingPermissions)) {
                 Permission::updateOrCreate([
-                    'name' => $r['name'],
-                    'guard_name' => $r['guard_name']
+                    'name' => $route['name'],
+                    'guard_name' => $route['guard_name']
                 ]);
                 $added++;
             }
         }
 
-        // Hapus permission yang sudah tidak ada route-nya
         $routeNames = $routes->pluck('name')->toArray();
         $toDelete = Permission::whereNotIn('name', $routeNames)->get();
 
-        foreach ($toDelete as $perm) {
-            $perm->delete();
+        foreach ($toDelete as $permission) {
+            $permission->delete();
             $removed++;
         }
 
+        $this->assignDefaultRolePermissions();
+
         return response()->json([
-            'message' => "✅ Sinkronisasi selesai",
+            'message' => 'Sinkronisasi selesai',
             'added' => $added,
             'removed' => $removed,
             'total' => Permission::count(),
         ]);
     }
-
 
     public function store(Request $request)
     {
@@ -213,61 +213,58 @@ class PermissionController extends Controller
         try {
             $routes = Route::getRoutes();
             $sidebar = [];
-
-            // Daftar prefix route yang tidak ingin dimunculkan
             $blacklist = ['sanctum', 'api', 'storage'];
 
             foreach ($routes as $route) {
-
                 $name = $route->getName();
-                if (!$name) continue;
+                if (!$name) {
+                    continue;
+                }
 
-                // Abaikan route yg termasuk blacklist
                 $firstSegment = explode('.', $name)[0];
-                if (in_array($firstSegment, $blacklist)) continue;
+                if (in_array($firstSegment, $blacklist)) {
+                    continue;
+                }
 
                 $parts = explode('.', $name);
                 $count = count($parts);
 
-                if ($count < 2) continue;
+                if ($count < 2) {
+                    continue;
+                }
 
-                // Normalisasi label
-                $labels = array_map(fn($p) => ucfirst(str_replace('-', ' ', $p)), $parts);
-
+                $labels = array_map(fn($part) => ucfirst(str_replace('-', ' ', $part)), $parts);
                 $url = url($route->uri());
 
-                if ($count == 2) {
-                    // contoh: pengumuman.index
+                if ($count === 2) {
                     [$section, $item] = $labels;
 
                     $sidebar[$section][$section]['items'][] = [
                         'label' => "$section ($item)",
                         'route' => $name,
-                        'url'   => $url
+                        'url' => $url
                     ];
                     continue;
                 }
 
-                if ($count == 3) {
-                    // contoh: siakad.master.index
+                if ($count === 3) {
                     [$section, $menu, $item] = $labels;
 
                     $sidebar[$section][$menu]['items'][] = [
                         'label' => $item,
                         'route' => $name,
-                        'url'   => $url
+                        'url' => $url
                     ];
                     continue;
                 }
 
-                if ($count == 4) {
-                    // contoh: siakad.master.referensi.index
+                if ($count === 4) {
                     [$section, $menu, $sub, $item] = $labels;
 
                     $sidebar[$section][$menu]['sub'][$sub][] = [
                         'label' => "$sub ($item)",
                         'route' => $name,
-                        'url'   => $url
+                        'url' => $url
                     ];
                     continue;
                 }
@@ -278,33 +275,26 @@ class PermissionController extends Controller
                     $sidebar[$section][$menu]['sub'][$sub][] = [
                         'label' => "$item ($method)",
                         'route' => $name,
-                        'url'   => $url
+                        'url' => $url
                     ];
-                    continue;
                 }
             }
 
-            // Format final JSON
             $result = [];
 
             foreach ($sidebar as $section => $menus) {
-
                 $menuArr = [];
 
                 foreach ($menus as $menuName => $data) {
-
-                    // Jika tidak ada sub → langsung tampilkan items
                     if (isset($data['items'])) {
                         $menuArr[] = [
                             'title' => $menuName,
-                            'items' => $data['items']    // langsung, TANPA sub
+                            'items' => $data['items']
                         ];
                         continue;
                     }
 
-                    // Jika ada sub → tampilkan sub
                     if (isset($data['sub'])) {
-
                         $subArr = [];
 
                         foreach ($data['sub'] as $subName => $items) {
@@ -316,14 +306,14 @@ class PermissionController extends Controller
 
                         $menuArr[] = [
                             'title' => $menuName,
-                            'sub'   => $subArr
+                            'sub' => $subArr
                         ];
                     }
                 }
 
                 $result[] = [
                     'section' => $section,
-                    'menus'   => $menuArr
+                    'menus' => $menuArr
                 ];
             }
 
@@ -332,12 +322,55 @@ class PermissionController extends Controller
                 'menu' => $result
             ]);
         } catch (\Throwable $e) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membentuk sidebar.',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    private function assignDefaultRolePermissions(): void
+    {
+        $defaultPermissionsByRole = [
+            'dosen' => [
+                'siakad.master.refrensi.kelas-kuliah.',
+                'akademik.pertemuan.',
+                'akademik.presensi.',
+                'akademik.penilaian.',
+                'akademik.krs-dosen.',
+            ],
+            'mahasiswa' => [
+                'akademik.krs-mahasiswa.',
+                'akademik.khs.',
+                'akademik.transkrip.',
+            ],
+        ];
+
+        foreach ($defaultPermissionsByRole as $roleName => $prefixes) {
+            $role = Role::where('name', $roleName)
+                ->where('guard_name', 'api')
+                ->first();
+
+            if (!$role) {
+                continue;
+            }
+
+            $permissions = Permission::where('guard_name', 'api')
+                ->get()
+                ->filter(function (Permission $permission) use ($prefixes) {
+                    foreach ($prefixes as $prefix) {
+                        if (Str::startsWith($permission->name, $prefix)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+
+            if ($permissions->isNotEmpty()) {
+                $role->givePermissionTo($permissions);
+            }
         }
     }
 }

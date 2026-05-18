@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
+use App\Models\Akademik\KRS;
 use App\Models\User;
 use App\Models\MasterData\Prodi;
 use App\Models\MasterData\Dosen;
+use App\Models\MasterData\Kurikulum;
+use App\Models\MasterData\RiwayatKurikulumMahasiswa;
+use App\Models\MasterData\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Mahasiswa;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Exports\MahasiswaExport;
@@ -23,9 +28,12 @@ class MahasiswaController extends Controller
     {
         try {
             // Memuat relasi yang relevan termasuk user
-            $mahasiswas = Mahasiswa::with(['prodi', 'dosenWali', 'user'])->where('status', '!=', 'PMB')->get();
+            $mahasiswas = Mahasiswa::with(['prodi', 'kurikulum', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
+                ->where('status', '!=', 'PMB')
+                ->get();
             $dataprodi = Prodi::all();
             $datadosen = Dosen::all();
+            $datakurikulum = Kurikulum::with(['prodi', 'semesterMulai.tahunAkademik'])->get();
 
             return response()->json([
                 'success' => true,
@@ -34,6 +42,7 @@ class MahasiswaController extends Controller
                     'mahasiswa'     => $mahasiswas,
                     'prodi'         => $dataprodi,
                     'dosen'         => $datadosen,
+                    'kurikulum'     => $datakurikulum,
                 ]
             ], 200);
         } catch (Exception $e) {
@@ -48,7 +57,13 @@ class MahasiswaController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $mahasiswa = Mahasiswa::with(['prodi', 'dosenWali', 'user'])->find($id);
+            $mahasiswa = Mahasiswa::with([
+                'prodi',
+                'kurikulum',
+                'dosenWali',
+                'user',
+                'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
+            ])->find($id);
 
             if (!$mahasiswa) {
                 return response()->json([
@@ -76,6 +91,7 @@ class MahasiswaController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
+                'id_kurikulum' => 'nullable|exists:kurikulum,id',
                 'nim' => 'required|string|max:20|unique:mahasiswa,nim',
                 'nik' => 'nullable|string|max:20|unique:mahasiswa,nik',
                 'nama_mahasiswa' => 'required|string|max:255',
@@ -93,6 +109,19 @@ class MahasiswaController extends Controller
 
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
             $result = DB::transaction(function () use ($request) {
+                $resolvedKurikulumId = $this->resolveKurikulumId(
+                    $request->input('id_kurikulum'),
+                    $request->input('id_prodi'),
+                    $request->input('angkatan'),
+                    $request->input('tanggal_masuk')
+                );
+
+                if (!$resolvedKurikulumId) {
+                    throw ValidationException::withMessages([
+                        'id_kurikulum' => ['Kurikulum untuk program studi ini belum tersedia. Pilih atau buat kurikulum terlebih dahulu.'],
+                    ]);
+                }
+
                 // 1. Buat User terlebih dahulu
                 $password = $request->filled('password')
                     ? Hash::make($request->password)
@@ -109,10 +138,17 @@ class MahasiswaController extends Controller
                 $user->assignRole('mahasiswa');
 
                 // 3. Buat Mahasiswa dengan menghubungkan ke user yang baru dibuat
-                $mahasiswaData = $request->except(['email', 'password']);
+                $mahasiswaData = $this->buildMahasiswaPayload($request);
                 $mahasiswaData['user_id'] = $user->id;
+                $mahasiswaData['id_kurikulum'] = $resolvedKurikulumId;
 
                 $mahasiswa = Mahasiswa::create($mahasiswaData);
+                $this->syncActiveKurikulumHistory(
+                    $mahasiswa,
+                    $resolvedKurikulumId,
+                    $request->input('tanggal_masuk'),
+                    'Kurikulum awal mahasiswa'
+                );
 
                 return [
                     'user' => $user,
@@ -157,6 +193,7 @@ class MahasiswaController extends Controller
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
+                'id_kurikulum' => 'nullable|exists:kurikulum,id',
                 'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
                 'nik' => 'sometimes|string|max:20|unique:mahasiswa,nik,' . $id,
                 'nama_mahasiswa' => 'sometimes|string|max:255',
@@ -175,8 +212,47 @@ class MahasiswaController extends Controller
             // Gunakan transaksi untuk memastikan kedua data terupdate atau gagal bersama
             $result = DB::transaction(function () use ($request, $mahasiswa) {
                 // 1. Update Mahasiswa
-                $mahasiswaData = $request->except(['email', 'password']);
+                $mahasiswaData = $this->buildMahasiswaPayload($request);
+
+                $targetProdiId = $request->input('id_prodi', $mahasiswa->id_prodi);
+                if (
+                    $request->has('id_kurikulum')
+                    || $request->has('id_prodi')
+                    || $request->has('angkatan')
+                    || $request->has('tanggal_masuk')
+                ) {
+                    $resolvedKurikulumId = $this->resolveKurikulumId(
+                        $request->input('id_kurikulum'),
+                        $targetProdiId,
+                        $request->input('angkatan', $mahasiswa->angkatan),
+                        $request->input('tanggal_masuk', $mahasiswa->tanggal_masuk)
+                    );
+
+                    if (!$resolvedKurikulumId) {
+                        throw ValidationException::withMessages([
+                            'id_kurikulum' => ['Kurikulum untuk program studi ini belum tersedia. Pilih atau buat kurikulum terlebih dahulu.'],
+                        ]);
+                    }
+
+                    $isChangingKurikulum = $mahasiswa->id_kurikulum !== $resolvedKurikulumId;
+                    $isChangingProdi = $mahasiswa->id_prodi !== $targetProdiId;
+
+                    if (($isChangingKurikulum || $isChangingProdi) && $this->hasAcademicHistory($mahasiswa)) {
+                        throw ValidationException::withMessages([
+                            'id_kurikulum' => ['Kurikulum atau program studi mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'],
+                        ]);
+                    }
+
+                    $mahasiswaData['id_kurikulum'] = $resolvedKurikulumId;
+                }
+
                 $mahasiswa->update($mahasiswaData);
+                $this->syncActiveKurikulumHistory(
+                    $mahasiswa->fresh(),
+                    $mahasiswaData['id_kurikulum'] ?? $mahasiswa->id_kurikulum,
+                    $mahasiswaData['tanggal_masuk'] ?? $mahasiswa->tanggal_masuk,
+                    'Sinkronisasi kurikulum aktif mahasiswa'
+                );
 
                 // 2. Update User jika ada perubahan
                 if ($mahasiswa->user) {
@@ -342,5 +418,406 @@ class MahasiswaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function riwayatKurikulum(string $id): JsonResponse
+    {
+        $mahasiswa = Mahasiswa::with([
+            'prodi',
+            'kurikulum',
+            'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
+            'riwayatKurikulum.createdBy:id,name',
+        ])->find($id);
+
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'mahasiswa' => $mahasiswa,
+                'riwayat_kurikulum' => $mahasiswa->riwayatKurikulum,
+            ],
+        ]);
+    }
+
+    public function migrateKurikulum(Request $request, string $id): JsonResponse
+    {
+        $mahasiswa = Mahasiswa::with(['riwayatKurikulum'])->find($id);
+
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa tidak ditemukan.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'id_kurikulum_tujuan' => 'required|uuid|exists:kurikulum,id',
+            'tanggal_mulai' => 'nullable|date',
+            'catatan' => 'nullable|string',
+        ]);
+
+        $targetKurikulum = Kurikulum::with('semesterMulai.tahunAkademik')
+            ->where('id', $validated['id_kurikulum_tujuan'])
+            ->where('id_prodi', $mahasiswa->id_prodi)
+            ->first();
+
+        if (!$targetKurikulum) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kurikulum tujuan tidak sesuai dengan program studi mahasiswa.',
+            ], 422);
+        }
+
+        if ($mahasiswa->id_kurikulum === $targetKurikulum->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa sudah menggunakan kurikulum tersebut.',
+            ], 422);
+        }
+
+        if ($this->hasOpenKrsProcess($mahasiswa)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Migrasi kurikulum tidak dapat dilakukan karena mahasiswa masih memiliki proses KRS yang belum final.',
+            ], 422);
+        }
+
+        $tanggalMulai = $validated['tanggal_mulai'] ?? now()->toDateString();
+        $catatan = $validated['catatan'] ?? sprintf(
+            'Migrasi kurikulum dari %s ke %s',
+            $mahasiswa->id_kurikulum,
+            $targetKurikulum->id
+        );
+
+        $result = DB::transaction(function () use ($mahasiswa, $targetKurikulum, $tanggalMulai, $catatan, $request) {
+            RiwayatKurikulumMahasiswa::query()
+                ->where('id_mahasiswa', $mahasiswa->id)
+                ->where('is_active', true)
+                ->update([
+                    'is_active' => false,
+                    'tanggal_selesai' => $tanggalMulai,
+                    'updated_at' => now(),
+                ]);
+
+            $mahasiswa->update([
+                'id_kurikulum' => $targetKurikulum->id,
+            ]);
+
+            RiwayatKurikulumMahasiswa::create([
+                'id_mahasiswa' => $mahasiswa->id,
+                'id_kurikulum' => $targetKurikulum->id,
+                'tanggal_mulai' => $tanggalMulai,
+                'tanggal_selesai' => null,
+                'is_active' => true,
+                'catatan' => $catatan,
+                'created_by' => $request->user()?->id,
+            ]);
+
+            return $mahasiswa->fresh([
+                'prodi',
+                'kurikulum',
+                'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
+                'riwayatKurikulum.createdBy:id,name',
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrasi kurikulum mahasiswa berhasil diproses.',
+            'data' => $result,
+        ]);
+    }
+
+    private function resolveKurikulumId(
+        ?string $requestedKurikulumId,
+        string $prodiId,
+        $angkatan = null,
+        $tanggalMasuk = null
+    ): ?string
+    {
+        if (filled($requestedKurikulumId)) {
+            $kurikulum = Kurikulum::where('id', $requestedKurikulumId)
+                ->where('id_prodi', $prodiId)
+                ->first();
+
+            if (!$kurikulum) {
+                throw ValidationException::withMessages([
+                    'id_kurikulum' => ['Kurikulum yang dipilih tidak sesuai dengan program studi mahasiswa.'],
+                ]);
+            }
+
+            return $kurikulum->id;
+        }
+
+        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
+        $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
+            ->where('id_prodi', $prodiId)
+            ->get();
+
+        if ($kurikulums->isEmpty()) {
+            return null;
+        }
+
+        $sortedKurikulums = $kurikulums->sortByDesc(function (Kurikulum $kurikulum) {
+            return $this->buildKurikulumSortKey($kurikulum);
+        })->values();
+
+        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan, $tanggalMasuk);
+
+        if ($cohortSortKey !== null) {
+            $eligibleKurikulums = $sortedKurikulums->filter(function (Kurikulum $kurikulum) use ($cohortSortKey) {
+                $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
+
+                return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
+            })->values();
+
+            if ($eligibleKurikulums->isNotEmpty()) {
+                $matchedKurikulum = $this->resolvePreferredKurikulumCandidate(
+                    $eligibleKurikulums,
+                    $preferredSemesterOrder
+                );
+
+                return $matchedKurikulum->id;
+            }
+        }
+
+        return $this->resolvePreferredKurikulumCandidate(
+            $sortedKurikulums,
+            $preferredSemesterOrder
+        )?->id;
+    }
+
+    private function hasAcademicHistory(Mahasiswa $mahasiswa): bool
+    {
+        return KRS::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->exists();
+    }
+
+    private function hasOpenKrsProcess(Mahasiswa $mahasiswa): bool
+    {
+        return KRS::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where(function ($query) {
+                $query->where('is_locked', false)
+                    ->orWhereIn('status_approval', [
+                        KRS::STATUS_PENDING,
+                        KRS::STATUS_REVISED,
+                    ]);
+            })
+            ->exists();
+    }
+
+    private function resolveCohortSortKey($angkatan = null, $tanggalMasuk = null): ?int
+    {
+        try {
+            if (!blank($tanggalMasuk)) {
+                $timestamp = strtotime((string) $tanggalMasuk);
+                if ($timestamp !== false) {
+                    $year = (int) date('Y', $timestamp);
+                    $month = (int) date('n', $timestamp);
+                    $semesterOrder = $month >= 7 ? 1 : 2;
+                    $academicStartYear = $semesterOrder === 1 ? $year : $year - 1;
+
+                    return ($academicStartYear * 10) + $semesterOrder;
+                }
+            }
+        } catch (Exception) {
+        }
+
+        if (filled($angkatan)) {
+            return ((int) $angkatan * 10) + 1;
+        }
+
+        return null;
+    }
+
+    private function extractKurikulumStartYear(Kurikulum $kurikulum): ?int
+    {
+        $tahunAkademik = $kurikulum->semesterMulai?->tahunAkademik?->tahun_akademik;
+
+        if (!$tahunAkademik) {
+            return null;
+        }
+
+        return (int) substr((string) $tahunAkademik, 0, 4);
+    }
+
+    private function buildKurikulumSortKey(Kurikulum $kurikulum): ?int
+    {
+        $tahunMulai = $this->extractKurikulumStartYear($kurikulum);
+        if ($tahunMulai === null) {
+            return null;
+        }
+
+        $semesterOrder = $this->resolveSemesterOrder($kurikulum->semesterMulai?->kode_semester, $kurikulum->semesterMulai?->nama_semester);
+
+        return ($tahunMulai * 10) + $semesterOrder;
+    }
+
+    private function resolveSemesterOrder(?string $kodeSemester = null, ?string $namaSemester = null): int
+    {
+        $normalizedKode = strtolower(trim((string) $kodeSemester));
+        $normalizedNama = strtolower(trim((string) $namaSemester));
+
+        if (str_contains($normalizedKode, 'ganjil') || str_contains($normalizedNama, 'ganjil') || $normalizedKode === '1') {
+            return 1;
+        }
+
+        if (str_contains($normalizedKode, 'genap') || str_contains($normalizedNama, 'genap') || $normalizedKode === '2') {
+            return 2;
+        }
+
+        return 9;
+    }
+
+    private function resolvePreferredKurikulumCandidate(
+        Collection $kurikulums,
+        ?int $preferredSemesterOrder
+    ): ?Kurikulum {
+        if ($kurikulums->isEmpty()) {
+            return null;
+        }
+
+        if ($preferredSemesterOrder !== null) {
+            $preferred = $kurikulums->first(function (Kurikulum $kurikulum) use ($preferredSemesterOrder) {
+                return $this->resolveSemesterOrder(
+                    $kurikulum->semesterMulai?->kode_semester,
+                    $kurikulum->semesterMulai?->nama_semester
+                ) === $preferredSemesterOrder;
+            });
+
+            if ($preferred) {
+                return $preferred;
+            }
+        }
+
+        return $kurikulums->first();
+    }
+
+    private function resolvePreferredSemesterOrder($angkatan = null, $tanggalMasuk = null): ?int
+    {
+        $resolvedAngkatan = filled($angkatan) ? (int) $angkatan : $this->resolveAngkatanFromTanggalMasuk($tanggalMasuk);
+
+        if ($resolvedAngkatan !== null) {
+            $semesterBerjalan = $this->resolveSemesterBerjalanPadaAkademikAktif($resolvedAngkatan);
+
+            if ($semesterBerjalan !== null) {
+                return $semesterBerjalan % 2 === 1 ? 1 : 2;
+            }
+        }
+
+        $cohortSortKey = $this->resolveCohortSortKey($resolvedAngkatan, $tanggalMasuk);
+
+        return $cohortSortKey !== null ? (int) substr((string) $cohortSortKey, -1) : null;
+    }
+
+    private function resolveSemesterBerjalanPadaAkademikAktif(int $angkatan): ?int
+    {
+        $semesterAktif = $this->getActiveSemester();
+        if (!$semesterAktif) {
+            return null;
+        }
+
+        $tahunMulaiAktif = (int) substr((string) $semesterAktif->tahunAkademik?->tahun_akademik, 0, 4);
+        if ($tahunMulaiAktif <= 0) {
+            return null;
+        }
+
+        $semesterOrder = $this->resolveSemesterOrder(
+            $semesterAktif->kode_semester,
+            $semesterAktif->nama_semester
+        );
+
+        return max(1, (($tahunMulaiAktif - $angkatan) * 2) + $semesterOrder);
+    }
+
+    private function resolveAngkatanFromTanggalMasuk($tanggalMasuk = null): ?int
+    {
+        try {
+            if (!blank($tanggalMasuk)) {
+                $timestamp = strtotime((string) $tanggalMasuk);
+
+                if ($timestamp !== false) {
+                    return (int) date('Y', $timestamp);
+                }
+            }
+        } catch (Exception) {
+        }
+
+        return null;
+    }
+
+    private function getActiveSemester(): ?Semester
+    {
+        return Semester::with('tahunAkademik:id,tahun_akademik,status_aktif')
+            ->select('id', 'id_tahun_akademik', 'nama_semester', 'kode_semester', 'tanggal_mulai', 'tanggal_selesai', 'status')
+            ->where('status', 'Aktif')
+            ->first();
+    }
+
+    private function buildMahasiswaPayload(Request $request): array
+    {
+        $payload = $request->only([
+            'id_prodi',
+            'id_dosen',
+            'nim',
+            'nik',
+            'nama_mahasiswa',
+            'jenis_kelamin',
+            'tempat_lahir',
+            'tanggal_lahir',
+            'tanggal_masuk',
+            'alamat',
+            'agama',
+            'status',
+            'angkatan',
+        ]);
+
+        return $payload;
+    }
+
+    private function syncActiveKurikulumHistory(
+        Mahasiswa $mahasiswa,
+        ?string $kurikulumId,
+        $tanggalMulai = null,
+        ?string $catatan = null
+    ): void {
+        if (!$kurikulumId) {
+            return;
+        }
+
+        $existingActive = RiwayatKurikulumMahasiswa::query()
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('is_active', true)
+            ->first();
+
+        if ($existingActive) {
+            if ($existingActive->id_kurikulum !== $kurikulumId) {
+                $existingActive->update([
+                    'id_kurikulum' => $kurikulumId,
+                    'tanggal_mulai' => $tanggalMulai ?: $existingActive->tanggal_mulai ?: $mahasiswa->tanggal_masuk ?: now()->toDateString(),
+                    'catatan' => $catatan ?: $existingActive->catatan,
+                ]);
+            }
+
+            return;
+        }
+
+        RiwayatKurikulumMahasiswa::create([
+            'id_mahasiswa' => $mahasiswa->id,
+            'id_kurikulum' => $kurikulumId,
+            'tanggal_mulai' => $tanggalMulai ?: $mahasiswa->tanggal_masuk ?: now()->toDateString(),
+            'tanggal_selesai' => null,
+            'is_active' => true,
+            'catatan' => $catatan,
+            'created_by' => null,
+        ]);
     }
 }

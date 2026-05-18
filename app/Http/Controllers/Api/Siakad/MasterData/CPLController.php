@@ -71,7 +71,7 @@ class CPLController extends Controller
     {
         try {
             $request->validate([
-                'kode_cpl' => 'required|string|max:50|unique:cpl,kode_cpl',
+                'kode_cpl' => 'required|string|max:100|unique:cpl,kode_cpl',
                 // 'cpl' => 'required|string|max:255',
                 'deskripsi_cpl_indonesia' => 'required|string',
                 'deskripsi_cpl_english' => 'nullable|string',
@@ -126,7 +126,7 @@ class CPLController extends Controller
     {
         try {
             $request->validate([
-                'kode_cpl' => 'required|string|max:50|unique:cpl,kode_cpl,' . $id,
+                'kode_cpl' => 'required|string|max:100|unique:cpl,kode_cpl,' . $id,
                 // 'cpl' => 'required|string|max:255',
                 'deskripsi_cpl_indonesia' => 'required|string',
                 'deskripsi_cpl_english' => 'nullable|string',

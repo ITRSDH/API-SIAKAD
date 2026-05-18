@@ -3,8 +3,9 @@
 namespace App\Imports;
 
 use App\Models\MasterData\Mahasiswa;
+use App\Models\MasterData\Kurikulum;
+use App\Models\MasterData\RiwayatKurikulumMahasiswa;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -77,12 +78,19 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             }
 
             // Generate password default (NIM atau tanggal lahir)
-            $password = $nim;
-            if (!empty($parsedTanggalLahir)) {
-                $password = $parsedTanggalLahir->format('dmY');
-            }
+            $password = '12345678';
+            // if (!empty($parsedTanggalLahir)) {
+            //     $password = $parsedTanggalLahir->format('dmY');
+            // }
 
-            DB::transaction(function () use ($nim, $nik, $namaMahasiswa, $status, $tempatLahir, $parsedTanggalLahir, $tanggalMasuk, $password, $jenisKelamin, $agama, $alamat) {
+            DB::transaction(function () use ($nim, $nik, $namaMahasiswa, $status, $tempatLahir, $parsedTanggalLahir, $tanggalMasuk, $password, $jenisKelamin, $agama, $alamat, $row) {
+                $angkatan = $this->resolveAngkatan($row, $tanggalMasuk);
+                $resolvedKurikulumId = $this->resolveKurikulumId($this->idProdi, $angkatan, $tanggalMasuk);
+
+                if (!$resolvedKurikulumId) {
+                    throw new \RuntimeException('Kurikulum aktif untuk program studi mahasiswa belum tersedia.');
+                }
+
                 // 1. Buat User terlebih dahulu
                 $user = User::create([
                     'name' => $namaMahasiswa,
@@ -96,8 +104,8 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                 $user->assignRole('mahasiswa');
 
                 // 3. Buat Mahasiswa dengan menghubungkan ke user yang baru dibuat
-                Mahasiswa::create([
-                    'id' => (string) Str::uuid(),
+                $mahasiswa = Mahasiswa::create([
+                    // 'id' => (string) Str::uuid(),
                     'nim' => $nim,
                     'nik' => $nik,
                     'nama_mahasiswa' => $namaMahasiswa,
@@ -108,8 +116,19 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                     'alamat' => $alamat,
                     'agama' => $agama,
                     'status' => $status,
+                    'angkatan' => $angkatan,
                     'id_prodi' => $this->idProdi,
+                    'id_kurikulum' => $resolvedKurikulumId,
                     'user_id' => $user->id,
+                ]);
+                RiwayatKurikulumMahasiswa::create([
+                    'id_mahasiswa' => $mahasiswa->id,
+                    'id_kurikulum' => $resolvedKurikulumId,
+                    'tanggal_mulai' => $tanggalMasuk?->toDateString() ?? now()->toDateString(),
+                    'tanggal_selesai' => null,
+                    'is_active' => true,
+                    'catatan' => 'Kurikulum awal mahasiswa hasil import',
+                    'created_by' => null,
                 ]);
             });
 
@@ -219,5 +238,139 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     public function getRowCount()
     {
         return $this->rowCount;
+    }
+
+    private function resolveAngkatan(array $row, $tanggalMasuk): ?int
+    {
+        if (!empty($row['angkatan']) && is_numeric($row['angkatan'])) {
+            return (int) $row['angkatan'];
+        }
+
+        if ($tanggalMasuk instanceof \Carbon\Carbon) {
+            return (int) $tanggalMasuk->format('Y');
+        }
+
+        return null;
+    }
+
+    private function resolveKurikulumId(?string $prodiId, ?int $angkatan, $tanggalMasuk): ?string
+    {
+        if (!$prodiId) {
+            return null;
+        }
+
+        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
+
+        $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
+            ->where('id_prodi', $prodiId)
+            ->get();
+
+        if ($kurikulums->isEmpty()) {
+            return null;
+        }
+
+        $sorted = $kurikulums->sortByDesc(fn(Kurikulum $kurikulum) => $this->buildKurikulumSortKey($kurikulum) ?? 0)
+            ->values();
+
+        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan, $tanggalMasuk);
+
+        if ($cohortSortKey !== null) {
+            $matched = $sorted->first(function (Kurikulum $kurikulum) use ($cohortSortKey) {
+                $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
+
+                return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
+            });
+
+            if ($matched) {
+                $eligible = $sorted->filter(function (Kurikulum $kurikulum) use ($cohortSortKey) {
+                    $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
+
+                    return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
+                })->values();
+
+                return $this->resolvePreferredKurikulumCandidate($eligible, $preferredSemesterOrder)?->id;
+            }
+        }
+
+        return $this->resolvePreferredKurikulumCandidate($sorted, $preferredSemesterOrder)?->id;
+    }
+
+    private function resolveCohortSortKey(?int $angkatan, $tanggalMasuk): ?int
+    {
+        if ($tanggalMasuk instanceof \Carbon\Carbon) {
+            $year = (int) $tanggalMasuk->format('Y');
+            $month = (int) $tanggalMasuk->format('n');
+            $semesterOrder = $month >= 7 ? 1 : 2;
+            $academicStartYear = $semesterOrder === 1 ? $year : $year - 1;
+
+            return ($academicStartYear * 10) + $semesterOrder;
+        }
+
+        if ($angkatan !== null) {
+            return ($angkatan * 10) + 1;
+        }
+
+        return null;
+    }
+
+    private function resolvePreferredKurikulumCandidate($kurikulums, ?int $preferredSemesterOrder): ?Kurikulum
+    {
+        if ($kurikulums->isEmpty()) {
+            return null;
+        }
+
+        if ($preferredSemesterOrder !== null) {
+            $preferred = $kurikulums->first(function (Kurikulum $kurikulum) use ($preferredSemesterOrder) {
+                return $this->resolveSemesterOrder(
+                    $kurikulum->semesterMulai?->kode_semester,
+                    $kurikulum->semesterMulai?->nama_semester
+                ) === $preferredSemesterOrder;
+            });
+
+            if ($preferred) {
+                return $preferred;
+            }
+        }
+
+        return $kurikulums->first();
+    }
+
+    private function resolvePreferredSemesterOrder(?int $angkatan, $tanggalMasuk): ?int
+    {
+        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
+
+        return $cohortSortKey !== null ? (int) substr((string) $cohortSortKey, -1) : null;
+    }
+
+    private function buildKurikulumSortKey(Kurikulum $kurikulum): ?int
+    {
+        $tahunAkademik = $kurikulum->semesterMulai?->tahunAkademik?->tahun_akademik;
+        if (!$tahunAkademik) {
+            return null;
+        }
+
+        $tahunMulai = (int) substr((string) $tahunAkademik, 0, 4);
+        $semesterOrder = $this->resolveSemesterOrder(
+            $kurikulum->semesterMulai?->kode_semester,
+            $kurikulum->semesterMulai?->nama_semester
+        );
+
+        return ($tahunMulai * 10) + $semesterOrder;
+    }
+
+    private function resolveSemesterOrder(?string $kodeSemester = null, ?string $namaSemester = null): int
+    {
+        $normalizedKode = strtolower(trim((string) $kodeSemester));
+        $normalizedNama = strtolower(trim((string) $namaSemester));
+
+        if (str_contains($normalizedKode, 'ganjil') || str_contains($normalizedNama, 'ganjil') || $normalizedKode === '1') {
+            return 1;
+        }
+
+        if (str_contains($normalizedKode, 'genap') || str_contains($normalizedNama, 'genap') || $normalizedKode === '2') {
+            return 2;
+        }
+
+        return 9;
     }
 }

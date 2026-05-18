@@ -2,11 +2,20 @@
 
 namespace App\Models\MasterData;
 
+use App\Models\Akademik\KHS;
+use App\Models\Akademik\Kelulusan;
+use App\Models\Akademik\PesertaWisuda;
+use App\Models\Akademik\PeriodeWisuda;
+use App\Models\Akademik\TugasAkhir;
+use App\Models\Akademik\Transkrip;
+use App\Models\Akademik\Yudisium;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Mahasiswa extends Model
 {
@@ -18,6 +27,7 @@ class Mahasiswa extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'id_prodi',
+        'id_kurikulum',
         'id_dosen',
         'user_id',
         'nim',
@@ -33,10 +43,79 @@ class Mahasiswa extends Model
         'angkatan',
     ];
 
+    protected $casts = [
+        'tanggal_lahir' => 'date',
+        'tanggal_masuk' => 'date',
+        'angkatan' => 'integer',
+    ];
+
     // Relasi ke Prodi
     public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class, 'id_prodi');
+    }
+
+    public function kurikulum(): BelongsTo
+    {
+        return $this->belongsTo(Kurikulum::class, 'id_kurikulum');
+    }
+
+    public function riwayatKurikulum(): HasMany
+    {
+        return $this->hasMany(RiwayatKurikulumMahasiswa::class, 'id_mahasiswa')
+            ->orderByDesc('tanggal_mulai')
+            ->orderByDesc('created_at');
+    }
+
+    public function riwayatKurikulumAktif(): HasOne
+    {
+        return $this->hasOne(RiwayatKurikulumMahasiswa::class, 'id_mahasiswa')
+            ->where('is_active', true)
+            ->latest('tanggal_mulai')
+            ->latest('created_at');
+    }
+
+    public function getActiveKurikulumId(): ?string
+    {
+        if (filled($this->id_kurikulum)) {
+            return $this->id_kurikulum;
+        }
+
+        if ($this->relationLoaded('riwayatKurikulumAktif')) {
+            return $this->riwayatKurikulumAktif?->id_kurikulum;
+        }
+
+        if ($this->relationLoaded('riwayatKurikulum')) {
+            return $this->riwayatKurikulum
+                ->firstWhere('is_active', true)?->id_kurikulum;
+        }
+
+        return $this->riwayatKurikulumAktif()->value('id_kurikulum');
+    }
+
+    public function getActiveKurikulum(): ?Kurikulum
+    {
+        $activeKurikulumId = $this->getActiveKurikulumId();
+        if (!$activeKurikulumId) {
+            return null;
+        }
+
+        if ($this->relationLoaded('kurikulum') && $this->kurikulum?->id === $activeKurikulumId) {
+            return $this->kurikulum;
+        }
+
+        if ($this->relationLoaded('riwayatKurikulumAktif') && $this->riwayatKurikulumAktif?->kurikulum?->id === $activeKurikulumId) {
+            return $this->riwayatKurikulumAktif->kurikulum;
+        }
+
+        if ($this->relationLoaded('riwayatKurikulum')) {
+            $activeHistory = $this->riwayatKurikulum->firstWhere('is_active', true);
+            if ($activeHistory?->kurikulum?->id === $activeKurikulumId) {
+                return $activeHistory->kurikulum;
+            }
+        }
+
+        return Kurikulum::find($activeKurikulumId);
     }
 
     // Relasi ke Dosen (Wali)
@@ -48,5 +127,35 @@ class Mahasiswa extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function khs(): HasMany
+    {
+        return $this->hasMany(KHS::class, 'id_mahasiswa');
+    }
+
+    public function transkrip(): HasMany
+    {
+        return $this->hasMany(Transkrip::class, 'id_mahasiswa');
+    }
+
+    public function yudisium(): HasMany
+    {
+        return $this->hasMany(Yudisium::class, 'id_mahasiswa');
+    }
+
+    public function kelulusan(): HasMany
+    {
+        return $this->hasMany(Kelulusan::class, 'id_mahasiswa');
+    }
+
+    public function tugasAkhir(): HasMany
+    {
+        return $this->hasMany(TugasAkhir::class, 'id_mahasiswa');
+    }
+
+    public function pesertaWisuda(): HasMany
+    {
+        return $this->hasMany(PesertaWisuda::class, 'id_mahasiswa');
     }
 }

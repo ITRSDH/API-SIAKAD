@@ -1,14 +1,14 @@
 ###
 @base_url = http://localhost:8001/api/v1
 ###
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzM3MjE3ODAsImV4cCI6MTc3MzcyNTM4MCwibmJmIjoxNzczNzIxNzgwLCJqdGkiOiJURE9qSnBpT1F0YlIzUDN3Iiwic3ViIjoiYTE1MTZlNzctZTY1NC00ZmQwLTg5YzEtNTEyZDZlYjQ4NzUyIiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.hrOU-so8gIaxriEqnrYWjogVIsRHgz8t9YEX5Yzyjc4
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzY5Mzc5NTgsImV4cCI6MTc3Njk0MTU1OCwibmJmIjoxNzc2OTM3OTU4LCJqdGkiOiJEcHFiSUNOM2J1OVJiUFg3Iiwic3ViIjoiYTE4ZGRkNWYtNWVjOC00MDM4LTk2ZmMtMmM2MmRiN2QzZjg1IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.cWhr0CSVmVxrAaUwhgBodtMMSBEvTESYifUg13xyVcU
 ### Login
 POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin@example.com",
-  "password": "password"
+  "username": "0325002B",
+  "password": "12345678"
 }
 
 ### Logout
@@ -25,6 +25,10 @@ Authorization: Bearer {{ token }}
 
 ### Get list of Users
 GET {{ base_url }}/profile-lulusan/prodi/844f30ab-13e4-49ac-bcb0-c308e1c8ac7f
+Authorization: Bearer {{ token }}
+
+### Get detail of Kelas Kuliah
+DELETE {{ base_url }}/dosen-pengajar-kelas/a16fe8f4-7dd3-4424-bdda-ebb63466ab43
 Authorization: Bearer {{ token }}
 
 ### Get list of Users
@@ -206,4 +210,107 @@ Authorization: Bearer {{ token }}
 
 {
     "id_periode_pendaftaran": "a0d0a8b7-2b9c-498f-a151-fa749da273e1"
+}
+
+### Get Mahasiswa Baru
+GET {{ base_url }}/dosen-wali/a151d9d8-e59d-4c11-ae12-132a2ef12253
+Authorization: Bearer {{ token }}
+### Get Mahasiswa Baru
+GET {{ base_url }}/daftar-mahasiswa
+Authorization: Bearer {{ token }}
+### Get Mahasiswa Baru
+GET {{ base_url }}/bimbingan
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Current
+GET {{ base_url }}/krs-mahasiswa/current
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Init Draft Current Semester
+POST {{ base_url }}/krs-mahasiswa/current/init
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Statistics
+GET {{ base_url }}/krs-mahasiswa/statistics
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Available Mata Kuliah by Current Semester
+GET {{ base_url }}/krs-mahasiswa/available-mata-kuliah
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Available Mata Kuliah by KRS
+GET {{ base_url }}/krs-mahasiswa/available-mata-kuliah?id_krs=REPLACE_KRS_ID
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Detail
+GET {{ base_url }}/krs-mahasiswa/REPLACE_KRS_ID
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Validation Summary
+GET {{ base_url }}/krs-mahasiswa/validation-summary?id_krs=REPLACE_KRS_ID
+Authorization: Bearer {{ token }}
+
+### KRS Mahasiswa - Add Mata Kuliah
+POST {{ base_url }}/krs-mahasiswa/add-mata-kuliah
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+  "id_krs": "REPLACE_KRS_ID",
+  "id_kelas_kuliah": "REPLACE_KELAS_ID"
+}
+
+### KRS Mahasiswa - Submit
+POST {{ base_url }}/krs-mahasiswa/submit
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+  "id_krs": "REPLACE_KRS_ID"
+}
+
+### KRS Mahasiswa - Remove Mata Kuliah
+DELETE {{ base_url }}/krs-mahasiswa/REPLACE_KRS_ID/remove-mata-kuliah/REPLACE_KELAS_ID
+Authorization: Bearer {{ token }}
+
+### KRS Dosen - Statistics
+GET {{ base_url }}/krs-dosen/statistics
+Authorization: Bearer {{ token }}
+
+### KRS Dosen - Pending
+GET {{ base_url }}/krs-dosen/pending
+Authorization: Bearer {{ token }}
+
+### KRS Dosen - Detail
+GET {{ base_url }}/krs-dosen/REPLACE_KRS_ID
+Authorization: Bearer {{ token }}
+
+### KRS Dosen - Approve
+POST {{ base_url }}/krs-dosen/approve
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+  "id_krs": "REPLACE_KRS_ID",
+  "catatan": "Disetujui dosen wali"
+}
+
+### KRS Dosen - Revision
+POST {{ base_url }}/krs-dosen/revision
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+  "id_krs": "REPLACE_KRS_ID",
+  "catatan": "Silakan revisi pilihan mata kuliah."
+}
+
+### KRS Dosen - Reject
+POST {{ base_url }}/krs-dosen/reject
+Content-Type: application/json
+Authorization: Bearer {{ token }}
+
+{
+  "id_krs": "REPLACE_KRS_ID",
+  "catatan": "Pengajuan ditolak."
 }

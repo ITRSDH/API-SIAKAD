@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -45,6 +46,10 @@ class CheckRolePermission
             return $next($request);
         }
 
+        if ($this->isAllowedByDefaultRoleAccess($user, $routeName)) {
+            return $next($request);
+        }
+
         // Cek apakah user memiliki izin
         if (!$user->can($routeName)) {
             return response()->json([
@@ -56,5 +61,37 @@ class CheckRolePermission
 
         // Lolos
         return $next($request);
+    }
+
+    private function isAllowedByDefaultRoleAccess($user, string $routeName): bool
+    {
+        $roleRoutePrefixes = [
+            'dosen' => [
+                'siakad.master.refrensi.kelas-kuliah.',
+                'akademik.pertemuan.',
+                'akademik.presensi.',
+                'akademik.penilaian.',
+                'akademik.krs-dosen.',
+            ],
+            'mahasiswa' => [
+                'akademik.krs-mahasiswa.',
+                'akademik.khs.',
+                'akademik.transkrip.',
+            ],
+        ];
+
+        foreach ($roleRoutePrefixes as $role => $prefixes) {
+            if (!$user->hasRole($role)) {
+                continue;
+            }
+
+            foreach ($prefixes as $prefix) {
+                if (Str::startsWith($routeName, $prefix)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

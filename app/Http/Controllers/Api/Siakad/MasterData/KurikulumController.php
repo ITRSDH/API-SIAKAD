@@ -421,6 +421,114 @@ class KurikulumController extends Controller
         }
     }
 
+    public function tambahMataKuliahCheckbox(Request $request, string $id_kurikulum): JsonResponse
+    {
+        DB::beginTransaction();
+
+        try {
+            // ✅ VALIDASI SESUAI FORMAT BARU
+            $request->validate([
+                'selected_mk' => 'required|array|min:1',
+                'selected_mk.*' => 'exists:mata_kuliah,id',
+
+                'semester_ke' => 'required|array',
+                'semester_ke.*' => 'nullable|integer|min:1|max:8',
+
+                'is_wajib' => 'nullable|array',
+                'is_wajib.*' => 'in:1',
+            ]);
+
+            $kurikulum = Kurikulum::findOrFail($id_kurikulum);
+
+            $selected = $request->selected_mk;
+
+            // 🔎 Ambil yang sudah ada (hindari duplicate)
+            $existing = DB::table('kurikulum_mata_kuliah')
+                ->where('id_kurikulum', $kurikulum->id)
+                ->whereIn('id_mata_kuliah', $selected)
+                ->pluck('id_mata_kuliah')
+                ->toArray();
+
+            $insertData = [];
+
+            foreach ($selected as $id_mk) {
+
+                // ⛔ Skip kalau sudah ada
+                if (in_array($id_mk, $existing)) {
+                    continue;
+                }
+
+                $semester = isset($request->semester_ke[$id_mk])
+                    ? (int) $request->semester_ke[$id_mk]
+                    : null;
+
+                $isWajib = isset($request->is_wajib[$id_mk]) ? 1 : 0;
+
+                $insertData[] = [
+                    'id' => (string) Str::uuid(),
+                    'id_kurikulum' => $kurikulum->id,
+                    'id_mata_kuliah' => $id_mk,
+                    'semester_ke' => $semester,
+                    'status_mk' => $isWajib ? 'wajib' : 'pilihan',
+                    'is_wajib' => $isWajib,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            // 🚀 INSERT KOLEKTIF
+            if (!empty($insertData)) {
+                DB::table('kurikulum_mata_kuliah')->insert($insertData);
+            }
+
+            // ✅ VALIDASI SKS
+            $rekap = DB::table('kurikulum_mata_kuliah as kmk')
+                ->join('mata_kuliah as mk', 'kmk.id_mata_kuliah', '=', 'mk.id')
+                ->selectRaw('
+                SUM(CASE WHEN kmk.is_wajib = 1 THEN mk.sks ELSE 0 END) as wajib,
+                SUM(CASE WHEN kmk.is_wajib = 0 THEN mk.sks ELSE 0 END) as pilihan
+            ')
+                ->where('kmk.id_kurikulum', $kurikulum->id)
+                ->first();
+
+            if (
+                ($rekap->wajib ?? 0) > $kurikulum->jumlah_sks_wajib ||
+                ($rekap->pilihan ?? 0) > $kurikulum->jumlah_sks_pilihan
+            ) {
+                DB::rollBack();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jumlah SKS melebihi batas kurikulum'
+                ], 422);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mata kuliah berhasil ditambahkan',
+                'total_insert' => count($insertData)
+            ]);
+        } catch (ValidationException $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Memperbarui data mata kuliah di kurikulum (pivot).
      */

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('kode_ik_cpl', 255);
             $table->text('deskripsi_ik_cpl_indonesia');
             $table->text('deskripsi_ik_cpl_english')->nullable();
-            $table->enum('kategori_ik_cpl', ['S', 'P', 'KU', 'KK'])->nullable();
+            $table->enum('kategori_ik_cpl', ['S', 'P', 'KU', 'KK']);
             $table->timestamps();
         });
     }

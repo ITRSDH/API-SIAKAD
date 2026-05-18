@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\MasterData\MataKuliahPrasyarat;
 
 class MataKuliah extends Model
 {
@@ -49,5 +50,25 @@ class MataKuliah extends Model
             'status_mk',
             'is_wajib',
         ]);
+    }
+
+    public function prasyarat(): HasMany
+    {
+        return $this->hasMany(MataKuliahPrasyarat::class, 'id_mata_kuliah');
+    }
+
+    public function sebagaiPrasyarat(): HasMany
+    {
+        return $this->hasMany(MataKuliahPrasyarat::class, 'id_mata_kuliah_prasyarat');
+    }
+
+    public function konversiSebagaiAsal(): HasMany
+    {
+        return $this->hasMany(KonversiMataKuliah::class, 'id_mata_kuliah_asal');
+    }
+
+    public function konversiSebagaiTujuan(): HasMany
+    {
+        return $this->hasMany(KonversiMataKuliah::class, 'id_mata_kuliah_tujuan');
     }
 }
