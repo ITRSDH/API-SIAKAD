@@ -2,7 +2,7 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids; // Tersedia di Laravel 9.x ke atas
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,38 +35,27 @@ class KelasKuliah extends Model
         'tanggal_akhir_efektif',
     ];
 
-    /**
-     * RELASI: Ke Kurikulum Mata Kuliah (Aturan SKS & Semester)
-     */
     public function kurikulumMataKuliah(): BelongsTo
     {
         return $this->belongsTo(KurikulumMataKuliah::class, 'id_kurikulum_mata_kuliah');
     }
 
-    // Relasi ke Dosen Pengajar (Satu kelas bisa banyak dosen)
     public function dosen_pengajar(): HasMany
     {
         return $this->hasMany(DosenPengajarKelas::class, 'id_kelas_kuliah')
             ->orderBy('urutan', 'asc');
     }
 
-    // Relasi ke Jadwal (Satu kelas bisa banyak jadwal, misal: Teori & Praktikum)
     public function jadwal(): HasMany
     {
         return $this->hasMany(JadwalKuliah::class, 'id_kelas_kuliah');
     }
 
-    /**
-     * RELASI: Ke Prodi
-     */
     public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class, 'id_prodi');
     }
 
-    /**
-     * RELASI: Ke Semester/Periode Aktif
-     */
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class, 'id_semester');
