@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Dosen;
-use App\Models\MasterData\Kelaskuliah;
+use App\Models\MasterData\KelasKuliah;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
