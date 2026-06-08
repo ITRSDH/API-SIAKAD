@@ -441,6 +441,7 @@ class KRSMahasiswaController extends Controller
         $currentSks = $krs->calculateTotalSks();
         $maxSks = $this->getMaxSksAllowed($mahasiswa);
         $selectedMataKuliahIds = $this->getSelectedMataKuliahIds($krs);
+        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
 
         $failedHistories = KRSDetail::query()
             ->whereHas('krs', function ($query) use ($mahasiswa, $semester) {
@@ -450,13 +451,32 @@ class KRSMahasiswaController extends Controller
             })
             ->where('status', KRSDetail::STATUS_TIDAK_LULUS)
             ->with([
+                'mataKuliah',
                 'kelasKuliah.kurikulumMataKuliah.mataKuliah',
                 'krs.semester.tahunAkademik',
             ])
             ->get()
-            ->groupBy(function (KRSDetail $detail) {
-                return $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
+            ->groupBy(function (KRSDetail $detail) use ($mahasiswa, $activeKurikulumId) {
+                $sourceCourseId = $detail->id_mata_kuliah
+                    ?? $detail->mataKuliah?->id
+                    ?? $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
+                if (!filled($sourceCourseId)) {
+                    return null;
+                }
+
+                return $this->curriculumConversionService
+                    ->resolveTranscriptCourse($mahasiswa->id, $sourceCourseId, $activeKurikulumId)?->id
+                    ?? $sourceCourseId;
             })
+            ->map(function (Collection $items) use ($semester) {
+                return $items->filter(function (KRSDetail $detail) use ($semester) {
+                    return $this->isSemesterBefore(
+                        $detail->krs?->semester,
+                        $semester
+                    );
+                });
+            })
+            ->filter(fn(Collection $items) => $items->isNotEmpty())
             ->filter(fn($items, $mataKuliahId) => filled($mataKuliahId));
 
         $result = [];
@@ -470,7 +490,12 @@ class KRSMahasiswaController extends Controller
                 return optional($detail->krs)->tanggal_pengajuan ?? $detail->created_at;
             })->first();
 
-            $mataKuliah = $latestHistory?->kelasKuliah?->kurikulumMataKuliah?->mataKuliah;
+            $sourceCourseId = $latestHistory?->id_mata_kuliah
+                ?? $latestHistory?->mataKuliah?->id
+                ?? $latestHistory?->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
+            $mataKuliah = filled($sourceCourseId)
+                ? $this->curriculumConversionService->resolveTranscriptCourse($mahasiswa->id, $sourceCourseId, $activeKurikulumId)
+                : null;
 
             if (!$mataKuliah) {
                 continue;
@@ -533,6 +558,9 @@ class KRSMahasiswaController extends Controller
                     'nilai_akhir' => $latestHistory?->nilai_akhir,
                 ],
                 'kelas_tersedia' => $kelasTersedia,
+                'availability_reason' => $kelasTersedia->isEmpty()
+                    ? 'Belum ada kelas aktif untuk mata kuliah ini pada semester berjalan.'
+                    : null,
             ];
         }
 
@@ -1112,8 +1140,9 @@ class KRSMahasiswaController extends Controller
         return [
             'id' => $krs->id,
             'id_mahasiswa' => $krs->id_mahasiswa,
-            'id_semester' => $activeSemester ? $activeSemester->id : $krs->id_semester,
-            'semester_aktif' => $activeSemester,
+            'id_semester' => $krs->id_semester,
+            'semester_aktif' => $krs->semester,
+            'semester_global_aktif' => $activeSemester,
             'tanggal_pengajuan' => $krs->tanggal_pengajuan,
             'status_approval' => $krs->status_approval,
             'approved_by' => $krs->approved_by,
@@ -1223,6 +1252,14 @@ class KRSMahasiswaController extends Controller
 
         $packageItems = $this->getPackageItemsForSemester($mahasiswa, $semester, $semesterKe);
         $unresolvedItems = [];
+
+        if ($packageItems->isEmpty()) {
+            $unresolvedItems[] = [
+                'id_struktur_operasional' => $activeKurikulumId,
+                'id_kurikulum' => $activeKurikulumId,
+                'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+            ];
+        }
 
         foreach ($packageItems as $packageItem) {
             $mataKuliah = $packageItem->mataKuliah;
@@ -1397,22 +1434,43 @@ class KRSMahasiswaController extends Controller
         $selectedClasses = collect();
 
         $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
+        $curriculumContext = $this->activeCurriculumService->resolveCurriculumContext($mahasiswa);
 
         if (!$activeKurikulumId) {
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
+                    'kurikulum_context' => $curriculumContext,
+                    'id_struktur_operasional' => $activeKurikulumId,
+                    'id_kurikulum_operasional' => $activeKurikulumId,
                     'generated_count' => 0,
                     'generated_sks' => 0,
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'reason' => 'Mahasiswa belum memiliki kurikulum aktif',
+                    'reason' => 'Mahasiswa belum memiliki kurikulum operasional untuk semester berjalan',
                 ]],
             ];
         }
 
         $packageItems = $this->getPackageItemsForSemester($mahasiswa, $semester, $semesterKe);
+
+        if ($packageItems->isEmpty()) {
+            return [
+                'summary' => [
+                    'semester_ke' => $semesterKe,
+                    'kurikulum_context' => $curriculumContext,
+                    'generated_count' => 0,
+                    'generated_sks' => 0,
+                    'unresolved_count' => 1,
+                ],
+                'unresolved_items' => [[
+                    'id_struktur_operasional' => $activeKurikulumId,
+                    'id_kurikulum' => $activeKurikulumId,
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+                ]],
+            ];
+        }
 
         foreach ($packageItems as $packageItem) {
             $mataKuliah = $packageItem->mataKuliah;
@@ -1489,6 +1547,9 @@ class KRSMahasiswaController extends Controller
         return [
             'summary' => [
                 'semester_ke' => $semesterKe,
+                'kurikulum_context' => $curriculumContext,
+                'id_struktur_operasional' => $activeKurikulumId,
+                'id_kurikulum_operasional' => $activeKurikulumId,
                 'generated_count' => $generatedCount,
                 'generated_sks' => $generatedSks,
                 'unresolved_count' => count($unresolvedItems),
@@ -1512,18 +1573,32 @@ class KRSMahasiswaController extends Controller
 
     private function getPackageItemsForSemester(Mahasiswa $mahasiswa, Semester $semester, int $semesterKe): Collection
     {
-        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
-        if (!$activeKurikulumId) {
-            return collect();
+        return $this->activeCurriculumService->resolvePackageItemsForSemester($mahasiswa, $semesterKe);
+    }
+
+    private function buildMissingPackageReason(
+        Mahasiswa $mahasiswa,
+        Semester $semester,
+        int $semesterKe,
+        ?string $activeKurikulumId
+    ): string {
+        $availableClassCount = KelasKuliah::query()
+            ->where('id_semester', $semester->id)
+            ->where('id_prodi', $mahasiswa->id_prodi)
+            ->whereHas('kurikulumMataKuliah', function ($query) use ($semesterKe) {
+                $query->where('semester_ke', $semesterKe);
+            })
+            ->count();
+
+        if ($availableClassCount > 0) {
+            return "Ada {$availableClassCount} kelas kuliah untuk semester {$semesterKe}, tetapi belum terhubung ke kurikulum operasional mahasiswa";
         }
 
-        return \App\Models\MasterData\KurikulumMataKuliah::query()
-            ->where('id_kurikulum', $activeKurikulumId)
-            ->where('semester_ke', $semesterKe)
-            ->with('mataKuliah')
-            ->orderByDesc('is_wajib')
-            ->orderBy('id')
-            ->get();
+        if (!$activeKurikulumId) {
+            return "Mahasiswa belum memiliki kurikulum operasional untuk membentuk paket semester {$semesterKe}";
+        }
+
+        return "Belum ada mata kuliah paket yang terdefinisi untuk semester {$semesterKe} pada kurikulum operasional mahasiswa";
     }
 
     private function hasClassScheduleConflict(Collection $selectedClasses, KelasKuliah $candidate): bool
@@ -1643,6 +1718,29 @@ class KRSMahasiswaController extends Controller
         }
 
         return false;
+    }
+
+    private function isSemesterBefore(?Semester $candidate, Semester $reference): bool
+    {
+        if (!$candidate || !$candidate->tahunAkademik || !$reference->tahunAkademik) {
+            return true;
+        }
+
+        $candidateYear = (int) substr((string) $candidate->tahunAkademik->tahun_akademik, 0, 4);
+        $referenceYear = (int) substr((string) $reference->tahunAkademik->tahun_akademik, 0, 4);
+
+        if ($candidateYear !== $referenceYear) {
+            return $candidateYear < $referenceYear;
+        }
+
+        return $this->semesterPeriodWeight($candidate->nama_semester) < $this->semesterPeriodWeight($reference->nama_semester);
+    }
+
+    private function semesterPeriodWeight(?string $semesterName): int
+    {
+        $normalized = strtolower(trim((string) $semesterName));
+
+        return str_contains($normalized, 'genap') ? 2 : 1;
     }
 
     private function isTimeOverlap(string $start1, string $end1, string $start2, string $end2): bool

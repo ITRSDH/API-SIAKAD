@@ -25,7 +25,9 @@ class TugasAkhirController extends Controller
     {
         $query = TugasAkhir::with([
             'mahasiswa:id,nim,nama_mahasiswa',
-            'kurikulum:id,nama_kurikulum',
+            'kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
+            'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+            'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
             'pembimbing.dosen:id,nama_dosen,nidn',
             'ujian',
         ])->orderByDesc('created_at');
@@ -44,7 +46,7 @@ class TugasAkhirController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $query->get(),
+            'data' => $query->get()->map(fn(TugasAkhir $item) => $this->serializeTugasAkhir($item))->values(),
         ]);
     }
 
@@ -52,7 +54,9 @@ class TugasAkhirController extends Controller
     {
         $tugasAkhir = TugasAkhir::with([
             'mahasiswa:id,nim,nama_mahasiswa',
-            'kurikulum:id,nama_kurikulum',
+            'kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
+            'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+            'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
             'pembimbing.dosen:id,nama_dosen,nidn',
             'ujian',
         ])->find($id);
@@ -66,7 +70,7 @@ class TugasAkhirController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $tugasAkhir,
+            'data' => $this->serializeTugasAkhir($tugasAkhir),
         ]);
     }
 
@@ -81,10 +85,12 @@ class TugasAkhirController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data tugas akhir berhasil ditambahkan',
-            'data' => $tugasAkhir->load([
+            'data' => $this->serializeTugasAkhir($tugasAkhir->load([
                 'mahasiswa:id,nim,nama_mahasiswa',
-                'kurikulum:id,nama_kurikulum',
-            ]),
+                'kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
+                'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+                'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            ])),
         ], 201);
     }
 
@@ -110,12 +116,14 @@ class TugasAkhirController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data tugas akhir berhasil diperbarui',
-            'data' => $tugasAkhir->fresh()->load([
+            'data' => $this->serializeTugasAkhir($tugasAkhir->fresh()->load([
                 'mahasiswa:id,nim,nama_mahasiswa',
-                'kurikulum:id,nama_kurikulum',
+                'kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
+                'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+                'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
                 'pembimbing.dosen:id,nama_dosen,nidn',
                 'ujian',
-            ]),
+            ])),
         ]);
     }
 
@@ -280,7 +288,7 @@ class TugasAkhirController extends Controller
             ?? $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
 
         abort_if(!$mahasiswa, 422, 'Mahasiswa tidak ditemukan untuk data tugas akhir');
-        abort_if(!$resolvedKurikulumId, 422, 'Mahasiswa belum memiliki kurikulum aktif');
+        abort_if(!$resolvedKurikulumId, 422, 'Mahasiswa belum memiliki kurikulum operasional');
 
         $kurikulum = Kurikulum::find($resolvedKurikulumId);
 
@@ -301,6 +309,40 @@ class TugasAkhirController extends Controller
                 ? ($validated['tanggal_lulus'] ?? now()->toDateString())
                 : ($validated['tanggal_lulus'] ?? $existing?->tanggal_lulus),
         ]);
+    }
+
+    private function serializeTugasAkhir(TugasAkhir $tugasAkhir): array
+    {
+        $tugasAkhir->loadMissing('kurikulum.kurikulumInduk.jenisKurikulum');
+
+        return [
+            ...$tugasAkhir->toArray(),
+            'kurikulum_context' => [
+                'id_kurikulum_induk' => $tugasAkhir->kurikulum?->id_kurikulum_induk,
+                'id_struktur_operasional' => $tugasAkhir->id_kurikulum,
+                'id_kurikulum_operasional' => $tugasAkhir->id_kurikulum,
+                'kurikulum_induk' => $tugasAkhir->kurikulum?->kurikulumInduk ? [
+                    'id' => $tugasAkhir->kurikulum->kurikulumInduk->id,
+                    'nama_kurikulum' => $tugasAkhir->kurikulum->kurikulumInduk->nama_kurikulum,
+                    'keterangan' => $tugasAkhir->kurikulum->kurikulumInduk->nama_kurikulum,
+                    'kode_kurikulum' => $tugasAkhir->kurikulum->kurikulumInduk->kode_kurikulum,
+                    'tahun_kurikulum' => $tugasAkhir->kurikulum->kurikulumInduk->tahun_kurikulum,
+                    'jenis_kurikulum' => $tugasAkhir->kurikulum->kurikulumInduk->jenisKurikulum ? [
+                        'id' => $tugasAkhir->kurikulum->kurikulumInduk->jenisKurikulum->id,
+                        'kode_jenis' => $tugasAkhir->kurikulum->kurikulumInduk->jenisKurikulum->kode_jenis,
+                        'nama_jenis_kurikulum' => $tugasAkhir->kurikulum->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+                    ] : null,
+                ] : null,
+                'struktur_operasional' => $tugasAkhir->kurikulum ? [
+                    'id' => $tugasAkhir->kurikulum->id,
+                    'nama_struktur_mk' => $tugasAkhir->kurikulum->nama_struktur_mk,
+                    'nama_kurikulum' => $tugasAkhir->kurikulum->nama_kurikulum,
+                    'mulai_berlaku' => $tugasAkhir->kurikulum->semesterMulai?->tahunAkademik
+                        ? trim($tugasAkhir->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $tugasAkhir->kurikulum->semesterMulai->nama_semester)
+                        : null,
+                ] : null,
+            ],
+        ];
     }
 
     private function ensureNoOtherActiveTaskAkhir(string $mahasiswaId, ?string $exceptId = null): void

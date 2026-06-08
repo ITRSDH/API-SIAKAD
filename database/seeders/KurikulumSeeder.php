@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\MasterData\Kurikulum;
+use App\Models\MasterData\KurikulumInduk;
+use App\Models\MasterData\RefJenisKurikulum;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,27 +18,72 @@ class KurikulumSeeder extends Seeder
     public function run(): void
     {
         $prodiD3KBD = DB::table('prodi')->where('kode_prodi', 'D3-KBD')->value('id');
-        $kurikulums = [
-            [
-                'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiD3KBD,
-                'nama_kurikulum' => 'Kurikulum 2020',
-                'tahun_kurikulum' => 2020,
-                'status' => true, // Aktif
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'id' => (string) Str::uuid(),
-                'id_prodi' => $prodiD3KBD,
-                'nama_kurikulum' => 'Kurikulum 2015',
-                'tahun_kurikulum' => 2015,
-                'status' => false, // Tidak Aktif
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ];
+        if (!$prodiD3KBD) {
+            return;
+        }
 
-        DB::table('kurikulum')->insert($kurikulums);
+        $jenisInstitusi = RefJenisKurikulum::query()->where('kode_jenis', 'INST')->first();
+        if (!$jenisInstitusi) {
+            return;
+        }
+
+        $induk2020 = KurikulumInduk::updateOrCreate(
+            [
+                'id_prodi' => $prodiD3KBD,
+                'id_jenis_kurikulum' => $jenisInstitusi->id,
+                'tahun_kurikulum' => '2020',
+            ],
+            [
+                'nama_kurikulum' => '2020 - ' . $jenisInstitusi->nama_jenis_kurikulum,
+                'kode_kurikulum' => '2020-INST-D3KBD',
+                'is_aktif' => true,
+            ]
+        );
+
+        $induk2015 = KurikulumInduk::updateOrCreate(
+            [
+                'id_prodi' => $prodiD3KBD,
+                'id_jenis_kurikulum' => $jenisInstitusi->id,
+                'tahun_kurikulum' => '2015',
+            ],
+            [
+                'nama_kurikulum' => '2015 - ' . $jenisInstitusi->nama_jenis_kurikulum,
+                'kode_kurikulum' => '2015-INST-D3KBD',
+                'is_aktif' => false,
+            ]
+        );
+
+        $semesterId = DB::table('semester')->value('id');
+        if (!$semesterId) {
+            return;
+        }
+
+        Kurikulum::updateOrCreate(
+            [
+                'id_prodi' => $prodiD3KBD,
+                'id_kurikulum_induk' => $induk2020->id,
+                'nama_struktur_mk' => 'Struktur Operasional 2020',
+            ],
+            [
+                'id_semester' => $semesterId,
+                'jumlah_sks_wajib' => 110,
+                'jumlah_sks_pilihan' => 34,
+                'jumlah_sks_lulus' => 144,
+            ]
+        );
+
+        Kurikulum::updateOrCreate(
+            [
+                'id_prodi' => $prodiD3KBD,
+                'id_kurikulum_induk' => $induk2015->id,
+                'nama_struktur_mk' => 'Struktur Operasional 2015',
+            ],
+            [
+                'id_semester' => $semesterId,
+                'jumlah_sks_wajib' => 108,
+                'jumlah_sks_pilihan' => 36,
+                'jumlah_sks_lulus' => 144,
+            ]
+        );
     }
 }

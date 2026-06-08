@@ -75,8 +75,10 @@ class Mahasiswa extends Model
             ->latest('created_at');
     }
 
-    public function getActiveKurikulumId(): ?string
+    public function getCurrentKurikulumId(): ?string
     {
+        // Kurikulum mahasiswa pada current state disimpan langsung di tabel mahasiswa.
+        // Riwayat kurikulum dipakai sebagai fallback bila relasi aktif sudah dimuat.
         if (filled($this->id_kurikulum)) {
             return $this->id_kurikulum;
         }
@@ -93,29 +95,54 @@ class Mahasiswa extends Model
         return $this->riwayatKurikulumAktif()->value('id_kurikulum');
     }
 
-    public function getActiveKurikulum(): ?Kurikulum
+    public function getCurrentKurikulumIndukId(): ?string
     {
-        $activeKurikulumId = $this->getActiveKurikulumId();
-        if (!$activeKurikulumId) {
+        if ($this->relationLoaded('kurikulum') && filled($this->kurikulum?->id_kurikulum_induk)) {
+            return $this->kurikulum?->id_kurikulum_induk;
+        }
+
+        $currentKurikulumId = $this->getCurrentKurikulumId();
+        if (!$currentKurikulumId) {
             return null;
         }
 
-        if ($this->relationLoaded('kurikulum') && $this->kurikulum?->id === $activeKurikulumId) {
+        return Kurikulum::query()
+            ->where('id', $currentKurikulumId)
+            ->value('id_kurikulum_induk');
+    }
+
+    public function getCurrentKurikulum(): ?Kurikulum
+    {
+        $currentKurikulumId = $this->getCurrentKurikulumId();
+        if (!$currentKurikulumId) {
+            return null;
+        }
+
+        if ($this->relationLoaded('kurikulum') && $this->kurikulum?->id === $currentKurikulumId) {
             return $this->kurikulum;
         }
 
-        if ($this->relationLoaded('riwayatKurikulumAktif') && $this->riwayatKurikulumAktif?->kurikulum?->id === $activeKurikulumId) {
-            return $this->riwayatKurikulumAktif->kurikulum;
-        }
+        return Kurikulum::find($currentKurikulumId);
+    }
 
-        if ($this->relationLoaded('riwayatKurikulum')) {
-            $activeHistory = $this->riwayatKurikulum->firstWhere('is_active', true);
-            if ($activeHistory?->kurikulum?->id === $activeKurikulumId) {
-                return $activeHistory->kurikulum;
-            }
-        }
+    public function getBaseKurikulumId(): ?string
+    {
+        return $this->getCurrentKurikulumId();
+    }
 
-        return Kurikulum::find($activeKurikulumId);
+    public function getBaseKurikulum(): ?Kurikulum
+    {
+        return $this->getCurrentKurikulum();
+    }
+
+    public function getActiveKurikulumId(): ?string
+    {
+        return $this->getCurrentKurikulumId();
+    }
+
+    public function getActiveKurikulum(): ?Kurikulum
+    {
+        return $this->getCurrentKurikulum();
     }
 
     // Relasi ke Dosen (Wali)

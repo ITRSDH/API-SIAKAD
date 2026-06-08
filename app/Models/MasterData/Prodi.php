@@ -50,6 +50,11 @@ class Prodi extends Model
         return $this->hasMany(Kurikulum::class, 'id_prodi');
     }
 
+    public function kurikulumInduk(): HasMany
+    {
+        return $this->hasMany(KurikulumInduk::class, 'id_prodi');
+    }
+
     // Relasi ke matakuliah
     public function matakuliah(): HasMany
     {

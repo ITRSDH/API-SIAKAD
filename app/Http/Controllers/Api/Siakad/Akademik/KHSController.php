@@ -10,13 +10,24 @@ use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\PenilaianKelas;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Semester;
+use App\Services\Khs\KhsCalculationService;
+use App\Services\Khs\KhsManualUpdateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
 class KHSController extends Controller
 {
+    private ?bool $hasKeteranganColumn = null;
+
+    public function __construct(
+        private readonly KhsCalculationService $calculationService,
+        private readonly KhsManualUpdateService $manualUpdateService
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $authenticatedMahasiswa = $this->getAuthenticatedMahasiswa($request);
@@ -56,8 +67,11 @@ class KHSController extends Controller
     public function show(string $id): JsonResponse
     {
         $query = KHS::with([
-            'mahasiswa:id,nim,nama_mahasiswa',
+            'mahasiswa:id,nim,nama_mahasiswa,id_prodi',
+            'mahasiswa.prodi:id,nama_prodi',
             'semester.tahunAkademik:id,tahun_akademik',
+            'updater:id,name',
+            'finalizer:id,name',
             'details',
         ]);
 
@@ -83,10 +97,13 @@ class KHSController extends Controller
 
     public function generate(Request $request): JsonResponse
     {
+        $this->normalizeDecimalInputs($request, ['ipk']);
+
         $validated = $request->validate([
             'id_mahasiswa' => 'required|uuid|exists:mahasiswa,id',
             'id_semester' => 'required|uuid|exists:semester,id',
             'is_final' => 'nullable|boolean',
+            'ipk' => 'nullable|numeric|min:0|max:4',
         ]);
 
         $mahasiswa = Mahasiswa::find($validated['id_mahasiswa']);
@@ -102,6 +119,7 @@ class KHSController extends Controller
         $krs = KRS::with([
             'details.kelasKuliah.penilaianKelas',
             'details.kelasKuliah.kurikulumMataKuliah.mataKuliah',
+            'details.nilaiKomponen',
         ])
             ->where('id_mahasiswa', $mahasiswa->id)
             ->where('id_semester', $semester->id)
@@ -137,7 +155,18 @@ class KHSController extends Controller
             ], 422);
         }
 
-        $snapshot = $this->buildSemesterSnapshot($mahasiswa->id, $semester->id, $krs);
+        $snapshot = $this->buildSemesterSnapshot($mahasiswa->id, $semester->id, $krs, $validated['ipk'] ?? null);
+
+        if ($snapshot['requires_manual_ipk'] && $snapshot['summary']['ipk'] === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPK manual wajib diisi untuk generate KHS semester di atas semester 1.',
+                'data' => [
+                    'semester_ke' => $snapshot['semester_ke'],
+                    'requires_manual_ipk' => true,
+                ],
+            ], 422);
+        }
 
         $khs = DB::transaction(function () use ($validated, $snapshot, $mahasiswa, $semester) {
             $khs = KHS::updateOrCreate(
@@ -145,14 +174,15 @@ class KHSController extends Controller
                     'id_mahasiswa' => $mahasiswa->id,
                     'id_semester' => $semester->id,
                 ],
-                [
+                $this->withOptionalKeterangan([
                     'total_sks_diambil' => $snapshot['summary']['total_sks_diambil'],
                     'total_sks_lulus' => $snapshot['summary']['total_sks_lulus'],
                     'ips' => $snapshot['summary']['ips'],
                     'ipk' => $snapshot['summary']['ipk'],
+                    'keterangan' => $snapshot['summary']['keterangan'],
                     'is_final' => $validated['is_final'] ?? false,
                     'generated_at' => now(),
-                ]
+                ])
             );
 
             KHSDetail::where('id_khs', $khs->id)->delete();
@@ -169,6 +199,7 @@ class KHSController extends Controller
                     'nilai_akhir' => $detail['nilai_akhir'],
                     'nilai_huruf' => $detail['nilai_huruf'],
                     'bobot_nilai' => $detail['bobot_nilai'],
+                    'mutu' => $detail['mutu'],
                     'status' => $detail['status'],
                 ]);
             }
@@ -189,14 +220,18 @@ class KHSController extends Controller
 
     public function preview(Request $request): JsonResponse
     {
+        $this->normalizeDecimalInputs($request, ['ipk']);
+
         $validated = $request->validate([
             'id_mahasiswa' => 'required|uuid|exists:mahasiswa,id',
             'id_semester' => 'required|uuid|exists:semester,id',
+            'ipk' => 'nullable|numeric|min:0|max:4',
         ]);
 
         $krs = KRS::with([
             'details.kelasKuliah.penilaianKelas',
             'details.kelasKuliah.kurikulumMataKuliah.mataKuliah',
+            'details.nilaiKomponen',
             'semester.tahunAkademik',
         ])
             ->where('id_mahasiswa', $validated['id_mahasiswa'])
@@ -222,93 +257,181 @@ class KHSController extends Controller
             return $validationError;
         }
 
+        $snapshot = $this->buildSemesterSnapshot($validated['id_mahasiswa'], $validated['id_semester'], $krs, $validated['ipk'] ?? null);
+
+        if ($snapshot['requires_manual_ipk'] && $snapshot['summary']['ipk'] === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IPK manual wajib diisi untuk preview KHS semester di atas semester 1.',
+                'data' => [
+                    'semester_ke' => $snapshot['semester_ke'],
+                    'requires_manual_ipk' => true,
+                ],
+            ], 422);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $this->buildSemesterSnapshot($validated['id_mahasiswa'], $validated['id_semester'], $krs),
+            'data' => $snapshot,
         ]);
     }
 
-    private function buildSemesterSnapshot(string $mahasiswaId, string $semesterId, KRS $krs): array
+    public function updateDetail(Request $request, string $id, string $detailId): JsonResponse
+    {
+        $this->normalizeDecimalInputs($request, ['nilai_akhir', 'bobot_nilai', 'mutu', 'ipk']);
+
+        $validated = $request->validate([
+            'nilai_akhir' => 'nullable|numeric|min:0|max:100',
+            'nilai_huruf' => 'nullable|string|max:2',
+            'bobot_nilai' => 'nullable|numeric|min:0',
+            'mutu' => 'nullable|numeric|min:0|max:4',
+            'ipk' => 'nullable|numeric|min:0|max:4',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $query = KHS::query()->with(['details', 'mahasiswa', 'semester.tahunAkademik', 'revisions.creator:id,name']);
+        $authenticatedMahasiswa = $this->getAuthenticatedMahasiswa($request);
+        if ($authenticatedMahasiswa) {
+            $query->where('id_mahasiswa', $authenticatedMahasiswa->id);
+        }
+
+        $khs = $query->find($id);
+        if (!$khs) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KHS tidak ditemukan',
+            ], 404);
+        }
+
+        $detail = $khs->details->firstWhere('id', $detailId);
+        if (!$detail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detail KHS tidak ditemukan',
+            ], 404);
+        }
+
+        try {
+            $result = $this->manualUpdateService->updateDetail($khs, $detail, $validated, $request->user()?->id);
+        } catch (InvalidArgumentException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function updateSummary(Request $request, string $id): JsonResponse
+    {
+        $this->normalizeDecimalInputs($request, ['ipk']);
+
+        $validated = $request->validate([
+            'ipk' => 'nullable|numeric|min:0|max:4',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $query = KHS::query()->with(['details', 'mahasiswa', 'semester.tahunAkademik', 'revisions.creator:id,name']);
+        $authenticatedMahasiswa = $this->getAuthenticatedMahasiswa($request);
+        if ($authenticatedMahasiswa) {
+            $query->where('id_mahasiswa', $authenticatedMahasiswa->id);
+        }
+
+        $khs = $query->find($id);
+        if (!$khs) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KHS tidak ditemukan',
+            ], 404);
+        }
+
+        try {
+            $result = $this->manualUpdateService->updateSummary($khs, $validated, $request->user()?->id);
+        } catch (InvalidArgumentException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function finalize(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $query = KHS::query()->with(['details', 'mahasiswa', 'semester.tahunAkademik', 'revisions.creator:id,name']);
+        $authenticatedMahasiswa = $this->getAuthenticatedMahasiswa($request);
+        if ($authenticatedMahasiswa) {
+            $query->where('id_mahasiswa', $authenticatedMahasiswa->id);
+        }
+
+        $khs = $query->find($id);
+        if (!$khs) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KHS tidak ditemukan',
+            ], 404);
+        }
+
+        $result = $this->manualUpdateService->finalize($khs, $request->user()?->id, $validated['reason'] ?? null);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    private function buildSemesterSnapshot(string $mahasiswaId, string $semesterId, KRS $krs, ?float $manualIpk = null): array
     {
         $details = $this->collectCountedKhsDetails($krs->details)->map(function (KRSDetail $detail) {
             return [
                 'id_krs_detail' => $detail->id,
                 'id_kelas_kuliah' => $detail->id_kelas_kuliah,
-                'id_mata_kuliah' => $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id,
+                'id_mata_kuliah' => $detail->resolveMataKuliahId(),
                 'kode_mk' => $detail->kode_mata_kuliah,
                 'nama_mk' => $detail->nama_mata_kuliah,
                 'sks' => $detail->sks,
                 'nilai_akhir' => $detail->nilai_akhir,
                 'nilai_huruf' => $detail->nilai_huruf,
-                'bobot_nilai' => $detail->bobot_nilai,
+                'mutu' => $detail->resolveMutuValue(),
+                'bobot_nilai' => $detail->resolveWeightedBobotNilaiValue(),
                 'status' => $detail->status,
             ];
         })->values();
-
-        $totalSksDiambil = (int) $details->sum('sks');
-        $passed = $details->where('status', KRSDetail::STATUS_LULUS);
-        $totalSksLulus = (int) $passed->sum('sks');
-
-        $totalBobotSemester = 0;
-        $totalSksBobotSemester = 0;
-        foreach ($details as $detail) {
-            if ($detail['bobot_nilai'] !== null) {
-                $totalBobotSemester += ((float) $detail['bobot_nilai']) * ((int) $detail['sks']);
-                $totalSksBobotSemester += (int) $detail['sks'];
-            }
-        }
-
-        $ips = $totalSksBobotSemester > 0 ? round($totalBobotSemester / $totalSksBobotSemester, 2) : 0;
-        $ipk = $this->calculateIPK($mahasiswaId, $semesterId);
+        $summary = $this->calculationService->calculateSummaryFromKrsDetails($krs->details);
+        $semesterKe = $this->resolveSemesterKe($krs);
+        $requiresManualIpk = $semesterKe > 1;
+        $ipk = $requiresManualIpk
+            ? ($manualIpk !== null ? round((float) $manualIpk, 2) : null)
+            : $summary['ips'];
 
         return [
+            'semester_ke' => $semesterKe,
+            'requires_manual_ipk' => $requiresManualIpk,
             'summary' => [
                 'id_mahasiswa' => $mahasiswaId,
                 'id_semester' => $semesterId,
-                'total_sks_diambil' => $totalSksDiambil,
-                'total_sks_lulus' => $totalSksLulus,
-                'ips' => $ips,
+                'total_sks_diambil' => $summary['total_sks_diambil'],
+                'total_sks_lulus' => $summary['total_sks_lulus'],
+                'ips' => $summary['ips'],
                 'ipk' => $ipk,
+                'keterangan' => $summary['keterangan'],
             ],
             'details' => $details,
         ];
     }
 
-    private function calculateIPK(string $mahasiswaId, string $semesterId): float
+    private function resolveSemesterKe(KRS $krs): int
     {
-        $allApprovedKrs = KRS::with(['details.kelasKuliah.kurikulumMataKuliah.mataKuliah', 'semester.tahunAkademik'])
-            ->with('details.kelasKuliah.penilaianKelas')
-            ->where('id_mahasiswa', $mahasiswaId)
-            ->where('status_approval', KRS::STATUS_APPROVED)
-            ->get()
-            ->sortBy(function ($item) {
-                $tahun = $item->semester?->tahunAkademik?->tahun_akademik ?? '0000/0000';
-                $semester = strtolower($item->semester?->nama_semester ?? '');
-
-                return $tahun . '-' . ($semester === 'ganjil' ? '1' : '2');
-            })
+        $semesterKe = $krs->details
+            ->pluck('kelasKuliah.kurikulumMataKuliah.semester_ke')
+            ->filter(fn($value) => $value !== null)
+            ->map(fn($value) => (int) $value)
             ->values();
 
-        $targetIndex = $allApprovedKrs->search(fn($item) => $item->id_semester === $semesterId);
-        if ($targetIndex === false) {
-            $targetIndex = $allApprovedKrs->count() - 1;
-        }
-
-        $considered = $allApprovedKrs->take($targetIndex + 1);
-
-        $totalBobot = 0;
-        $totalSks = 0;
-
-        foreach ($considered as $krs) {
-            foreach ($this->collectCountedKhsDetails($krs->details) as $detail) {
-                if ($detail->bobot_nilai !== null) {
-                    $totalBobot += ((float) $detail->bobot_nilai) * ((int) $detail->sks);
-                    $totalSks += (int) $detail->sks;
-                }
-            }
-        }
-
-        return $totalSks > 0 ? round($totalBobot / $totalSks, 2) : 0;
+        return $semesterKe->isNotEmpty() ? (int) $semesterKe->max() : 1;
     }
 
     private function validateKrsForKhs(KRS $krs): ?JsonResponse
@@ -341,8 +464,15 @@ class KHSController extends Controller
         $unpublishedClassDetails = $countedDetails
             ->filter(function (KRSDetail $detail) {
                 $workflow = $detail->kelasKuliah?->penilaianKelas;
+                $hasNilaiKomponen = $detail->relationLoaded('nilaiKomponen')
+                    ? $detail->nilaiKomponen->isNotEmpty()
+                    : $detail->nilaiKomponen()->exists();
 
-                return !$workflow || !$workflow->isPublished();
+                if (!$workflow || !$hasNilaiKomponen) {
+                    return false;
+                }
+
+                return !$workflow->isPublished();
             })
             ->values();
 
@@ -389,5 +519,66 @@ class KHSController extends Controller
         }
 
         return Mahasiswa::where('user_id', $user->id)->first();
+    }
+
+    private function withOptionalKeterangan(array $attributes): array
+    {
+        if ($this->hasKeteranganColumn()) {
+            return $attributes;
+        }
+
+        unset($attributes['keterangan']);
+
+        return $attributes;
+    }
+
+    private function hasKeteranganColumn(): bool
+    {
+        return $this->hasKeteranganColumn ??= Schema::hasColumn('khs', 'keterangan');
+    }
+
+    private function normalizeDecimalInputs(Request $request, array $keys): void
+    {
+        $normalized = [];
+
+        foreach ($keys as $key) {
+            if (!$request->exists($key)) {
+                continue;
+            }
+
+            $value = $request->input($key);
+
+            if ($value === null || $value === '') {
+                $normalized[$key] = $value;
+                continue;
+            }
+
+            if (is_string($value)) {
+                $candidate = trim($value);
+                $candidate = str_replace(' ', '', $candidate);
+
+                if (str_contains($candidate, ',') && str_contains($candidate, '.')) {
+                    $lastComma = strrpos($candidate, ',');
+                    $lastDot = strrpos($candidate, '.');
+
+                    if ($lastComma !== false && $lastDot !== false) {
+                        if ($lastComma > $lastDot) {
+                            $candidate = str_replace('.', '', $candidate);
+                            $candidate = str_replace(',', '.', $candidate);
+                        } else {
+                            $candidate = str_replace(',', '', $candidate);
+                        }
+                    }
+                } elseif (str_contains($candidate, ',')) {
+                    $candidate = str_replace(',', '.', $candidate);
+                }
+
+                $normalized[$key] = $candidate;
+            }
+        }
+
+        if (!empty($normalized)) {
+            $request->merge($normalized);
+        }
     }
 }

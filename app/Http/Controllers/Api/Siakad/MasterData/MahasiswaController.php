@@ -9,31 +9,36 @@ use App\Models\MasterData\Prodi;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\RiwayatKurikulumMahasiswa;
-use App\Models\MasterData\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Mahasiswa;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Exports\MahasiswaExport;
 use App\Imports\MahasiswaImport;
+use App\Services\MahasiswaCurriculumContextService;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MahasiswaController extends Controller
 {
+    public function __construct(
+        private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
+    ) {
+    }
+
     public function index(): JsonResponse
     {
         try {
             // Memuat relasi yang relevan termasuk user
-            $mahasiswas = Mahasiswa::with(['prodi', 'kurikulum', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
+            $mahasiswas = Mahasiswa::with(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ->where('status', '!=', 'PMB')
-                ->get();
+                ->get()
+                ->map(fn(Mahasiswa $mahasiswa) => $this->serializeMahasiswa($mahasiswa));
             $dataprodi = Prodi::all();
             $datadosen = Dosen::all();
-            $datakurikulum = Kurikulum::with(['prodi', 'semesterMulai.tahunAkademik'])->get();
+            $datakurikulum = Kurikulum::with(['prodi', 'kurikulumInduk', 'semesterMulai.tahunAkademik'])->get();
 
             return response()->json([
                 'success' => true,
@@ -59,7 +64,7 @@ class MahasiswaController extends Controller
         try {
             $mahasiswa = Mahasiswa::with([
                 'prodi',
-                'kurikulum',
+                'kurikulum.kurikulumInduk',
                 'dosenWali',
                 'user',
                 'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
@@ -75,7 +80,7 @@ class MahasiswaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Detail Mahasiswa',
-                'data' => $mahasiswa
+                'data' => $this->serializeMahasiswa($mahasiswa)
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -109,7 +114,7 @@ class MahasiswaController extends Controller
 
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
             $result = DB::transaction(function () use ($request) {
-                $resolvedKurikulumId = $this->resolveKurikulumId(
+                $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
                     $request->input('id_kurikulum'),
                     $request->input('id_prodi'),
                     $request->input('angkatan'),
@@ -152,7 +157,7 @@ class MahasiswaController extends Controller
 
                 return [
                     'user' => $user,
-                    'mahasiswa' => $mahasiswa
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ];
             });
 
@@ -160,7 +165,7 @@ class MahasiswaController extends Controller
                 'success' => true,
                 'message' => 'Mahasiswa dan User berhasil dibuat.',
                 'data' => [
-                    'mahasiswa' => $result['mahasiswa'],
+                    'mahasiswa' => $this->serializeMahasiswa($result['mahasiswa']),
                     'user' => $result['user']
                 ]
             ], 201);
@@ -213,6 +218,7 @@ class MahasiswaController extends Controller
             $result = DB::transaction(function () use ($request, $mahasiswa) {
                 // 1. Update Mahasiswa
                 $mahasiswaData = $this->buildMahasiswaPayload($request);
+                unset($mahasiswaData['id_kurikulum_induk']);
 
                 $targetProdiId = $request->input('id_prodi', $mahasiswa->id_prodi);
                 if (
@@ -221,7 +227,7 @@ class MahasiswaController extends Controller
                     || $request->has('angkatan')
                     || $request->has('tanggal_masuk')
                 ) {
-                    $resolvedKurikulumId = $this->resolveKurikulumId(
+                $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
                         $request->input('id_kurikulum'),
                         $targetProdiId,
                         $request->input('angkatan', $mahasiswa->angkatan),
@@ -282,14 +288,14 @@ class MahasiswaController extends Controller
                 }
 
                 return [
-                    'mahasiswa' => $mahasiswa->fresh(['user'])
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ];
             });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Mahasiswa dan User berhasil diperbarui.',
-                'data' => $result['mahasiswa']
+                'data' => $this->serializeMahasiswa($result['mahasiswa'])
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -425,6 +431,7 @@ class MahasiswaController extends Controller
         $mahasiswa = Mahasiswa::with([
             'prodi',
             'kurikulum',
+            'riwayatKurikulum.kurikulum.kurikulumInduk.jenisKurikulum',
             'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
             'riwayatKurikulum.createdBy:id,name',
         ])->find($id);
@@ -439,8 +446,34 @@ class MahasiswaController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'mahasiswa' => $mahasiswa,
-                'riwayat_kurikulum' => $mahasiswa->riwayatKurikulum,
+                'mahasiswa' => $this->serializeMahasiswa($mahasiswa),
+                'riwayat_kurikulum' => $mahasiswa->riwayatKurikulum->map(function ($riwayat) {
+                    return [
+                        ...$riwayat->toArray(),
+                        'id_struktur_operasional' => $riwayat->id_kurikulum,
+                        'kurikulum_operasional' => $riwayat->kurikulum ? [
+                            'id' => $riwayat->kurikulum->id,
+                            'nama_struktur_mk' => $riwayat->kurikulum->nama_struktur_mk,
+                            'nama_kurikulum' => $riwayat->kurikulum->nama_kurikulum,
+                            'id_kurikulum_induk' => $riwayat->kurikulum->id_kurikulum_induk,
+                            'mulai_berlaku' => $riwayat->kurikulum->semesterMulai?->tahunAkademik
+                                ? trim($riwayat->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $riwayat->kurikulum->semesterMulai->nama_semester)
+                                : null,
+                        ] : null,
+                        'kurikulum_induk' => $riwayat->kurikulum?->kurikulumInduk ? [
+                            'id' => $riwayat->kurikulum->kurikulumInduk->id,
+                            'nama_kurikulum' => $riwayat->kurikulum->kurikulumInduk->nama_kurikulum,
+                            'keterangan' => $riwayat->kurikulum->kurikulumInduk->nama_kurikulum,
+                            'kode_kurikulum' => $riwayat->kurikulum->kurikulumInduk->kode_kurikulum,
+                            'tahun_kurikulum' => $riwayat->kurikulum->kurikulumInduk->tahun_kurikulum,
+                            'jenis_kurikulum' => $riwayat->kurikulum->kurikulumInduk->jenisKurikulum ? [
+                                'id' => $riwayat->kurikulum->kurikulumInduk->jenisKurikulum->id,
+                                'kode_jenis' => $riwayat->kurikulum->kurikulumInduk->jenisKurikulum->kode_jenis,
+                                'nama_jenis_kurikulum' => $riwayat->kurikulum->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+                            ] : null,
+                        ] : null,
+                    ];
+                })->values(),
             ],
         ]);
     }
@@ -521,7 +554,8 @@ class MahasiswaController extends Controller
 
             return $mahasiswa->fresh([
                 'prodi',
-                'kurikulum',
+                'kurikulum.kurikulumInduk',
+                'riwayatKurikulum.kurikulum.kurikulumInduk',
                 'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
                 'riwayatKurikulum.createdBy:id,name',
             ]);
@@ -530,67 +564,13 @@ class MahasiswaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Migrasi kurikulum mahasiswa berhasil diproses.',
-            'data' => $result,
+            'data' => $this->serializeMahasiswa($result),
+            'kurikulum_migration_context' => [
+                'id_kurikulum_induk' => $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($result),
+                'id_struktur_operasional' => $result->id_kurikulum,
+                'id_kurikulum_operasional' => $result->id_kurikulum,
+            ],
         ]);
-    }
-
-    private function resolveKurikulumId(
-        ?string $requestedKurikulumId,
-        string $prodiId,
-        $angkatan = null,
-        $tanggalMasuk = null
-    ): ?string
-    {
-        if (filled($requestedKurikulumId)) {
-            $kurikulum = Kurikulum::where('id', $requestedKurikulumId)
-                ->where('id_prodi', $prodiId)
-                ->first();
-
-            if (!$kurikulum) {
-                throw ValidationException::withMessages([
-                    'id_kurikulum' => ['Kurikulum yang dipilih tidak sesuai dengan program studi mahasiswa.'],
-                ]);
-            }
-
-            return $kurikulum->id;
-        }
-
-        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
-        $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
-            ->where('id_prodi', $prodiId)
-            ->get();
-
-        if ($kurikulums->isEmpty()) {
-            return null;
-        }
-
-        $sortedKurikulums = $kurikulums->sortByDesc(function (Kurikulum $kurikulum) {
-            return $this->buildKurikulumSortKey($kurikulum);
-        })->values();
-
-        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan, $tanggalMasuk);
-
-        if ($cohortSortKey !== null) {
-            $eligibleKurikulums = $sortedKurikulums->filter(function (Kurikulum $kurikulum) use ($cohortSortKey) {
-                $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
-
-                return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
-            })->values();
-
-            if ($eligibleKurikulums->isNotEmpty()) {
-                $matchedKurikulum = $this->resolvePreferredKurikulumCandidate(
-                    $eligibleKurikulums,
-                    $preferredSemesterOrder
-                );
-
-                return $matchedKurikulum->id;
-            }
-        }
-
-        return $this->resolvePreferredKurikulumCandidate(
-            $sortedKurikulums,
-            $preferredSemesterOrder
-        )?->id;
     }
 
     private function hasAcademicHistory(Mahasiswa $mahasiswa): bool
@@ -612,154 +592,6 @@ class MahasiswaController extends Controller
                     ]);
             })
             ->exists();
-    }
-
-    private function resolveCohortSortKey($angkatan = null, $tanggalMasuk = null): ?int
-    {
-        try {
-            if (!blank($tanggalMasuk)) {
-                $timestamp = strtotime((string) $tanggalMasuk);
-                if ($timestamp !== false) {
-                    $year = (int) date('Y', $timestamp);
-                    $month = (int) date('n', $timestamp);
-                    $semesterOrder = $month >= 7 ? 1 : 2;
-                    $academicStartYear = $semesterOrder === 1 ? $year : $year - 1;
-
-                    return ($academicStartYear * 10) + $semesterOrder;
-                }
-            }
-        } catch (Exception) {
-        }
-
-        if (filled($angkatan)) {
-            return ((int) $angkatan * 10) + 1;
-        }
-
-        return null;
-    }
-
-    private function extractKurikulumStartYear(Kurikulum $kurikulum): ?int
-    {
-        $tahunAkademik = $kurikulum->semesterMulai?->tahunAkademik?->tahun_akademik;
-
-        if (!$tahunAkademik) {
-            return null;
-        }
-
-        return (int) substr((string) $tahunAkademik, 0, 4);
-    }
-
-    private function buildKurikulumSortKey(Kurikulum $kurikulum): ?int
-    {
-        $tahunMulai = $this->extractKurikulumStartYear($kurikulum);
-        if ($tahunMulai === null) {
-            return null;
-        }
-
-        $semesterOrder = $this->resolveSemesterOrder($kurikulum->semesterMulai?->kode_semester, $kurikulum->semesterMulai?->nama_semester);
-
-        return ($tahunMulai * 10) + $semesterOrder;
-    }
-
-    private function resolveSemesterOrder(?string $kodeSemester = null, ?string $namaSemester = null): int
-    {
-        $normalizedKode = strtolower(trim((string) $kodeSemester));
-        $normalizedNama = strtolower(trim((string) $namaSemester));
-
-        if (str_contains($normalizedKode, 'ganjil') || str_contains($normalizedNama, 'ganjil') || $normalizedKode === '1') {
-            return 1;
-        }
-
-        if (str_contains($normalizedKode, 'genap') || str_contains($normalizedNama, 'genap') || $normalizedKode === '2') {
-            return 2;
-        }
-
-        return 9;
-    }
-
-    private function resolvePreferredKurikulumCandidate(
-        Collection $kurikulums,
-        ?int $preferredSemesterOrder
-    ): ?Kurikulum {
-        if ($kurikulums->isEmpty()) {
-            return null;
-        }
-
-        if ($preferredSemesterOrder !== null) {
-            $preferred = $kurikulums->first(function (Kurikulum $kurikulum) use ($preferredSemesterOrder) {
-                return $this->resolveSemesterOrder(
-                    $kurikulum->semesterMulai?->kode_semester,
-                    $kurikulum->semesterMulai?->nama_semester
-                ) === $preferredSemesterOrder;
-            });
-
-            if ($preferred) {
-                return $preferred;
-            }
-        }
-
-        return $kurikulums->first();
-    }
-
-    private function resolvePreferredSemesterOrder($angkatan = null, $tanggalMasuk = null): ?int
-    {
-        $resolvedAngkatan = filled($angkatan) ? (int) $angkatan : $this->resolveAngkatanFromTanggalMasuk($tanggalMasuk);
-
-        if ($resolvedAngkatan !== null) {
-            $semesterBerjalan = $this->resolveSemesterBerjalanPadaAkademikAktif($resolvedAngkatan);
-
-            if ($semesterBerjalan !== null) {
-                return $semesterBerjalan % 2 === 1 ? 1 : 2;
-            }
-        }
-
-        $cohortSortKey = $this->resolveCohortSortKey($resolvedAngkatan, $tanggalMasuk);
-
-        return $cohortSortKey !== null ? (int) substr((string) $cohortSortKey, -1) : null;
-    }
-
-    private function resolveSemesterBerjalanPadaAkademikAktif(int $angkatan): ?int
-    {
-        $semesterAktif = $this->getActiveSemester();
-        if (!$semesterAktif) {
-            return null;
-        }
-
-        $tahunMulaiAktif = (int) substr((string) $semesterAktif->tahunAkademik?->tahun_akademik, 0, 4);
-        if ($tahunMulaiAktif <= 0) {
-            return null;
-        }
-
-        $semesterOrder = $this->resolveSemesterOrder(
-            $semesterAktif->kode_semester,
-            $semesterAktif->nama_semester
-        );
-
-        return max(1, (($tahunMulaiAktif - $angkatan) * 2) + $semesterOrder);
-    }
-
-    private function resolveAngkatanFromTanggalMasuk($tanggalMasuk = null): ?int
-    {
-        try {
-            if (!blank($tanggalMasuk)) {
-                $timestamp = strtotime((string) $tanggalMasuk);
-
-                if ($timestamp !== false) {
-                    return (int) date('Y', $timestamp);
-                }
-            }
-        } catch (Exception) {
-        }
-
-        return null;
-    }
-
-    private function getActiveSemester(): ?Semester
-    {
-        return Semester::with('tahunAkademik:id,tahun_akademik,status_aktif')
-            ->select('id', 'id_tahun_akademik', 'nama_semester', 'kode_semester', 'tanggal_mulai', 'tanggal_selesai', 'status')
-            ->where('status', 'Aktif')
-            ->first();
     }
 
     private function buildMahasiswaPayload(Request $request): array
@@ -819,5 +651,52 @@ class MahasiswaController extends Controller
             'catatan' => $catatan,
             'created_by' => null,
         ]);
+    }
+
+    private function serializeMahasiswa(Mahasiswa $mahasiswa): array
+    {
+        $mahasiswa->loadMissing([
+            'prodi',
+            'kurikulum.kurikulumInduk.jenisKurikulum',
+            'kurikulum.semesterMulai.tahunAkademik',
+            'dosenWali',
+            'user',
+        ]);
+
+        $resolvedKurikulumInduk = $mahasiswa->kurikulum?->kurikulumInduk;
+        $resolvedKurikulumIndukId = $resolvedKurikulumInduk?->id
+            ?? $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($mahasiswa);
+
+        return [
+            ...$mahasiswa->toArray(),
+            'id_kurikulum_induk' => $resolvedKurikulumIndukId,
+            'kurikulum_context' => [
+                'id_kurikulum_induk' => $resolvedKurikulumIndukId,
+                'id_struktur_operasional' => $mahasiswa->id_kurikulum,
+                'id_kurikulum_operasional' => $mahasiswa->id_kurikulum,
+                'kurikulum_induk' => $resolvedKurikulumInduk ? [
+                    'id' => $resolvedKurikulumInduk->id,
+                    'nama_kurikulum' => $resolvedKurikulumInduk->nama_kurikulum,
+                    'keterangan' => $resolvedKurikulumInduk->nama_kurikulum,
+                    'kode_kurikulum' => $resolvedKurikulumInduk->kode_kurikulum,
+                    'tahun_kurikulum' => $resolvedKurikulumInduk->tahun_kurikulum,
+                    'jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum ? [
+                        'id' => $resolvedKurikulumInduk->jenisKurikulum->id,
+                        'kode_jenis' => $resolvedKurikulumInduk->jenisKurikulum->kode_jenis,
+                        'nama_jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+                    ] : null,
+                ] : null,
+                'struktur_operasional' => $mahasiswa->kurikulum ? [
+                    'id' => $mahasiswa->kurikulum->id,
+                    'nama_struktur_mk' => $mahasiswa->kurikulum->nama_struktur_mk,
+                    'nama_kurikulum' => $mahasiswa->kurikulum->nama_kurikulum,
+                    'id_semester' => $mahasiswa->kurikulum->id_semester,
+                    'id_kurikulum_induk' => $mahasiswa->kurikulum->id_kurikulum_induk,
+                    'mulai_berlaku' => $mahasiswa->kurikulum->semesterMulai?->tahunAkademik
+                        ? trim($mahasiswa->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $mahasiswa->kurikulum->semesterMulai->nama_semester)
+                        : null,
+                ] : null,
+            ],
+        ];
     }
 }

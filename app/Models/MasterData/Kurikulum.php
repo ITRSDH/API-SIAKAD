@@ -17,21 +17,51 @@ class Kurikulum extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $appends = ['nama_kurikulum', 'nama_kurikulum_induk'];
 
     protected $fillable = [
         'id_prodi',
+        'id_kurikulum_induk',
         'kode_kurikulum',
-        'nama_kurikulum',
+        'nama_struktur_mk',
         'id_semester',
         'jumlah_sks_wajib',
         'jumlah_sks_pilihan',
         'jumlah_sks_lulus',
     ];
 
+    public function getDisplayNameAttribute(): string
+    {
+        return (string) $this->nama_struktur_mk;
+    }
+
+    public function getNamaKurikulumAttribute(): ?string
+    {
+        if ($this->relationLoaded('kurikulumInduk') && filled($this->kurikulumInduk?->nama_kurikulum)) {
+            return $this->kurikulumInduk?->nama_kurikulum;
+        }
+
+        return $this->attributes['nama_struktur_mk'] ?? null;
+    }
+
+    public function getNamaKurikulumIndukAttribute(): ?string
+    {
+        if ($this->relationLoaded('kurikulumInduk')) {
+            return $this->kurikulumInduk?->nama_kurikulum;
+        }
+
+        return null;
+    }
+
     // Relasi ke Prodi
     public function prodi(): BelongsTo
     {
         return $this->belongsTo(Prodi::class, 'id_prodi');
+    }
+
+    public function kurikulumInduk(): BelongsTo
+    {
+        return $this->belongsTo(KurikulumInduk::class, 'id_kurikulum_induk');
     }
 
     public function semesterMulai(): BelongsTo

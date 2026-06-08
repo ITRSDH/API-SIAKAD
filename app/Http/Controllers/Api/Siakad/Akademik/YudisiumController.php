@@ -26,7 +26,9 @@ class YudisiumController extends Controller
         $query = Yudisium::with([
             'mahasiswa:id,nim,nama_mahasiswa',
             'transkrip:id,id_mahasiswa,total_sks_lulus,ipk',
-            'kurikulum:id,nama_kurikulum,jumlah_sks_lulus',
+            'kurikulum:id,id_kurikulum_induk,nama_struktur_mk,jumlah_sks_lulus',
+            'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+            'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
         ])->orderByDesc('generated_at');
 
         if ($request->filled('id_mahasiswa')) {
@@ -35,7 +37,7 @@ class YudisiumController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $query->get(),
+            'data' => $query->get()->map(fn(Yudisium $yudisium) => $this->serializeYudisium($yudisium))->values(),
         ]);
     }
 
@@ -44,7 +46,9 @@ class YudisiumController extends Controller
         $yudisium = Yudisium::with([
             'mahasiswa:id,nim,nama_mahasiswa',
             'transkrip.details',
-            'kurikulum:id,nama_kurikulum,jumlah_sks_lulus',
+            'kurikulum:id,id_kurikulum_induk,nama_struktur_mk,jumlah_sks_lulus',
+            'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+            'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
         ])->find($id);
 
         if (!$yudisium) {
@@ -56,7 +60,7 @@ class YudisiumController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $yudisium,
+            'data' => $this->serializeYudisium($yudisium),
         ]);
     }
 
@@ -105,11 +109,13 @@ class YudisiumController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Yudisium berhasil digenerate',
-            'data' => $yudisium->load([
+            'data' => $this->serializeYudisium($yudisium->load([
                 'mahasiswa:id,nim,nama_mahasiswa',
                 'transkrip:id,id_mahasiswa,total_sks_lulus,ipk',
-                'kurikulum:id,nama_kurikulum,jumlah_sks_lulus',
-            ]),
+                'kurikulum:id,id_kurikulum_induk,nama_struktur_mk,jumlah_sks_lulus',
+                'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
+                'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            ])),
         ]);
     }
 
@@ -153,11 +159,71 @@ class YudisiumController extends Controller
                 'id_mahasiswa' => $mahasiswaId,
                 'id_transkrip' => $transkrip->id,
                 'id_kurikulum' => $kurikulum->id,
+                'id_struktur_operasional' => $kurikulum->id,
+                'id_kurikulum_induk' => $kurikulum->id_kurikulum_induk,
                 'target_sks_lulus' => $targetSksLulus,
                 'total_sks_lulus' => $totalSksLulus,
                 'ipk' => $ipk,
                 'status' => $status,
                 'predikat_lulus' => $status === 'memenuhi' ? $this->determinePredikat($ipk) : null,
+                'kurikulum_context' => [
+                    'id_kurikulum_induk' => $kurikulum->id_kurikulum_induk,
+                    'id_struktur_operasional' => $kurikulum->id,
+                    'kurikulum_induk' => $kurikulum->kurikulumInduk ? [
+                        'id' => $kurikulum->kurikulumInduk->id,
+                        'nama_kurikulum' => $kurikulum->kurikulumInduk->nama_kurikulum,
+                        'keterangan' => $kurikulum->kurikulumInduk->nama_kurikulum,
+                        'kode_kurikulum' => $kurikulum->kurikulumInduk->kode_kurikulum,
+                        'tahun_kurikulum' => $kurikulum->kurikulumInduk->tahun_kurikulum,
+                        'jenis_kurikulum' => $kurikulum->kurikulumInduk->jenisKurikulum ? [
+                            'id' => $kurikulum->kurikulumInduk->jenisKurikulum->id,
+                            'kode_jenis' => $kurikulum->kurikulumInduk->jenisKurikulum->kode_jenis,
+                            'nama_jenis_kurikulum' => $kurikulum->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+                        ] : null,
+                    ] : null,
+                    'struktur_operasional' => [
+                        'id' => $kurikulum->id,
+                        'nama_struktur_mk' => $kurikulum->nama_struktur_mk,
+                        'nama_kurikulum' => $kurikulum->nama_kurikulum,
+                        'mulai_berlaku' => $kurikulum->semesterMulai?->tahunAkademik
+                            ? trim($kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $kurikulum->semesterMulai->nama_semester)
+                            : null,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private function serializeYudisium(Yudisium $yudisium): array
+    {
+        $yudisium->loadMissing('kurikulum.kurikulumInduk.jenisKurikulum');
+
+        return [
+            ...$yudisium->toArray(),
+            'kurikulum_context' => [
+                'id_kurikulum_induk' => $yudisium->kurikulum?->id_kurikulum_induk,
+                'id_struktur_operasional' => $yudisium->id_kurikulum,
+                'id_kurikulum_operasional' => $yudisium->id_kurikulum,
+                'kurikulum_induk' => $yudisium->kurikulum?->kurikulumInduk ? [
+                    'id' => $yudisium->kurikulum->kurikulumInduk->id,
+                    'nama_kurikulum' => $yudisium->kurikulum->kurikulumInduk->nama_kurikulum,
+                    'keterangan' => $yudisium->kurikulum->kurikulumInduk->nama_kurikulum,
+                    'kode_kurikulum' => $yudisium->kurikulum->kurikulumInduk->kode_kurikulum,
+                    'tahun_kurikulum' => $yudisium->kurikulum->kurikulumInduk->tahun_kurikulum,
+                    'jenis_kurikulum' => $yudisium->kurikulum->kurikulumInduk->jenisKurikulum ? [
+                        'id' => $yudisium->kurikulum->kurikulumInduk->jenisKurikulum->id,
+                        'kode_jenis' => $yudisium->kurikulum->kurikulumInduk->jenisKurikulum->kode_jenis,
+                        'nama_jenis_kurikulum' => $yudisium->kurikulum->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+                    ] : null,
+                ] : null,
+                'struktur_operasional' => $yudisium->kurikulum ? [
+                    'id' => $yudisium->kurikulum->id,
+                    'nama_struktur_mk' => $yudisium->kurikulum->nama_struktur_mk,
+                    'nama_kurikulum' => $yudisium->kurikulum->nama_kurikulum,
+                    'mulai_berlaku' => $yudisium->kurikulum->semesterMulai?->tahunAkademik
+                        ? trim($yudisium->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $yudisium->kurikulum->semesterMulai->nama_semester)
+                        : null,
+                ] : null,
             ],
         ];
     }

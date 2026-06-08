@@ -79,6 +79,23 @@ class CurriculumConversionService
                 ->first();
         }
 
-        return $conversion?->mataKuliahTujuan ?: MataKuliah::find($sourceCourseId);
+        if ($conversion?->mataKuliahTujuan) {
+            return $conversion->mataKuliahTujuan;
+        }
+
+        $sourceCourse = MataKuliah::find($sourceCourseId);
+        if (!$sourceCourse) {
+            return null;
+        }
+
+        $matchedByCode = MataKuliah::query()
+            ->where('kode_mk', $sourceCourse->kode_mk)
+            ->whereHas('kurikulum', function ($query) use ($resolvedTargetKurikulumId) {
+                $query->where('kurikulum.id', $resolvedTargetKurikulumId);
+            })
+            ->orderBy('id')
+            ->first();
+
+        return $matchedByCode ?: $sourceCourse;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models\Akademik;
 
 use App\Models\MasterData\KelasKuliah;
+use App\Models\MasterData\MataKuliah;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,16 +22,20 @@ class KRSDetail extends Model
     protected $fillable = [
         'id_krs',
         'id_kelas_kuliah',
+        'id_mata_kuliah',
+        'id_import_batch',
         'status',
         'catatan',
         'nilai_akhir',
         'nilai_huruf',
         'bobot_nilai',
+        'mutu',
     ];
 
     protected $casts = [
         'nilai_akhir' => 'decimal:2',
         'bobot_nilai' => 'decimal:2',
+        'mutu' => 'decimal:2',
     ];
 
     const STATUS_TERDAFTAR = 'terdaftar';
@@ -48,6 +53,16 @@ class KRSDetail extends Model
     public function kelasKuliah(): BelongsTo
     {
         return $this->belongsTo(KelasKuliah::class, 'id_kelas_kuliah');
+    }
+
+    public function mataKuliah(): BelongsTo
+    {
+        return $this->belongsTo(MataKuliah::class, 'id_mata_kuliah');
+    }
+
+    public function importBatch(): BelongsTo
+    {
+        return $this->belongsTo(KhsImportBatch::class, 'id_import_batch');
     }
 
     public function nilaiKomponen(): HasMany
@@ -90,7 +105,8 @@ class KRSDetail extends Model
 
         return $this->nilai_akhir !== null
             && $this->nilai_huruf !== null
-            && $this->bobot_nilai !== null
+            && $this->resolveMutuValue() !== null
+            && $this->resolveWeightedBobotNilaiValue() !== null
             && in_array($this->status, [self::STATUS_LULUS, self::STATUS_TIDAK_LULUS], true);
     }
 
@@ -102,19 +118,19 @@ class KRSDetail extends Model
     // Method untuk mendapatkan SKS
     public function getSksAttribute()
     {
-        return $this->kelasKuliah->kurikulumMataKuliah->mataKuliah->sks ?? 0;
+        return $this->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->sks ?? 0;
     }
 
     // Method untuk mendapatkan nama mata kuliah
     public function getNamaMataKuliahAttribute()
     {
-        return $this->kelasKuliah->kurikulumMataKuliah->mataKuliah->nama_mk ?? '';
+        return $this->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->nama_mk ?? '';
     }
 
     // Method untuk mendapatkan kode mata kuliah
     public function getKodeMataKuliahAttribute()
     {
-        return $this->kelasKuliah->kurikulumMataKuliah->mataKuliah->kode_mk ?? '';
+        return $this->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->kode_mk ?? '';
     }
 
     // Method untuk drop mata kuliah
@@ -129,13 +145,16 @@ class KRSDetail extends Model
     // Method untuk input nilai
     public function inputNilai($nilai_akhir, $nilai_huruf, $bobot_nilai)
     {
-        $status = $bobot_nilai >= 2.0 ? self::STATUS_LULUS : self::STATUS_TIDAK_LULUS;
+        $mutu = (float) $bobot_nilai;
+        $status = $mutu >= 2.0 ? self::STATUS_LULUS : self::STATUS_TIDAK_LULUS;
         
         return $this->update([
             'nilai_akhir' => $nilai_akhir,
             'nilai_huruf' => $nilai_huruf,
-            'bobot_nilai' => $bobot_nilai,
+            'mutu' => $mutu,
+            'bobot_nilai' => round(((int) $this->sks) * $mutu, 2),
             'status' => $status,
+            'id_mata_kuliah' => $this->resolveMataKuliahId(),
         ]);
     }
 
@@ -164,9 +183,48 @@ class KRSDetail extends Model
         return [
             'nilai_akhir' => round($nilaiAkhir, 2),
             'nilai_huruf' => $grading['nilai_huruf'],
-            'bobot_nilai' => $grading['bobot_nilai'],
+            'mutu' => $grading['bobot_nilai'],
+            'bobot_nilai' => $this->fresh()->bobot_nilai,
             'status' => $this->fresh()->status,
         ];
+    }
+
+    public function resolveMataKuliahId(): ?string
+    {
+        return $this->id_mata_kuliah
+            ?? $this->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
+    }
+
+    public function resolveMutuValue(): ?float
+    {
+        if ($this->mutu !== null) {
+            return round((float) $this->mutu, 2);
+        }
+
+        if ($this->bobot_nilai !== null && (float) $this->bobot_nilai <= 4.00) {
+            return round((float) $this->bobot_nilai, 2);
+        }
+
+        $sks = (int) $this->sks;
+        if ($this->bobot_nilai !== null && $sks > 0) {
+            return round(((float) $this->bobot_nilai) / $sks, 2);
+        }
+
+        return null;
+    }
+
+    public function resolveWeightedBobotNilaiValue(): ?float
+    {
+        if ($this->bobot_nilai !== null && (float) $this->bobot_nilai > 4.00) {
+            return round((float) $this->bobot_nilai, 2);
+        }
+
+        $mutu = $this->resolveMutuValue();
+        if ($mutu === null) {
+            return null;
+        }
+
+        return round(((int) $this->sks) * $mutu, 2);
     }
 
     public static function convertNumericScore(float $nilaiAkhir): array

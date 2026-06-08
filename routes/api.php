@@ -20,9 +20,10 @@ use App\Http\Controllers\Api\Website\GetApiController;
 use App\Http\Controllers\Api\Website\ProfileDosenController;
 use App\Http\Controllers\Api\Siakad\Administratif\WisudaController;
 use App\Http\Controllers\Api\Siakad\Akademik\AcademicPolicyController;
+use App\Http\Controllers\Api\Siakad\Akademik\StudentStudyAdministrationController;
 use App\Http\Controllers\Api\Siakad\Krs\KRSMahasiswaController;
+use App\Http\Controllers\Api\Siakad\Krs\KRSHistoricalController;
 use App\Http\Controllers\Api\Siakad\Krs\KRSDosenWaliController;
-use App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -65,12 +66,22 @@ Route::prefix('v1')->group(function () {
                     Route::apiResource('periode-krs', \App\Http\Controllers\Api\Siakad\MasterData\PeriodeKrsController::class);
                     Route::apiResource('ruang-kuliah', \App\Http\Controllers\Api\Siakad\MasterData\RuangKuliahController::class);
                     Route::apiResource('semester', \App\Http\Controllers\Api\Siakad\MasterData\SemesterController::class);
+                    Route::get('jenis-kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\RefJenisKurikulumController::class, 'index'])->name('jenis-kurikulum.index');
+                    Route::get('jenis-kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\RefJenisKurikulumController::class, 'show'])->name('jenis-kurikulum.show');
+                    Route::post('jenis-kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\RefJenisKurikulumController::class, 'store'])->name('jenis-kurikulum.store');
+                    Route::put('jenis-kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\RefJenisKurikulumController::class, 'update'])->name('jenis-kurikulum.update');
+                    Route::delete('jenis-kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\RefJenisKurikulumController::class, 'destroy'])->name('jenis-kurikulum.destroy');
 
                     Route::get('kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'index'])->name('kurikulum.index');
                     Route::get('kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'show'])->name('kurikulum.show');
                     Route::post('kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'store'])->name('kurikulum.store');
                     Route::put('kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'update'])->name('kurikulum.update');
                     Route::delete('kurikulum/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumController::class, 'destroy'])->name('kurikulum.destroy');
+                    Route::get('kurikulum-induk', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumIndukController::class, 'index'])->name('kurikulum-induk.index');
+                    Route::get('kurikulum-induk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumIndukController::class, 'show'])->name('kurikulum-induk.show');
+                    Route::post('kurikulum-induk', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumIndukController::class, 'store'])->name('kurikulum-induk.store');
+                    Route::put('kurikulum-induk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumIndukController::class, 'update'])->name('kurikulum-induk.update');
+                    Route::delete('kurikulum-induk/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KurikulumIndukController::class, 'destroy'])->name('kurikulum-induk.destroy');
                     Route::get('konversi-mata-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KonversiMataKuliahController::class, 'index'])->name('konversi-mata-kuliah.index');
                     Route::get('konversi-mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KonversiMataKuliahController::class, 'show'])->name('konversi-mata-kuliah.show');
                     Route::post('konversi-mata-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KonversiMataKuliahController::class, 'store'])->name('konversi-mata-kuliah.store');
@@ -87,10 +98,12 @@ Route::prefix('v1')->group(function () {
 
                     Route::get('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'index'])->name('kelas-kuliah.index');
                     Route::get('kelas-kuliah/dosen-saya', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'kelasDosenSaya'])->name('kelas-kuliah.dosen-saya');
-                    Route::get('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'show'])->name('kelas-kuliah.show');
-                    Route::post('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'store'])->name('kelas-kuliah.store');
-                    Route::put('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'update'])->name('kelas-kuliah.update');
-                    Route::delete('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'destroy'])->name('kelas-kuliah.destroy');
+                    Route::get('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'show'])->name('kelas-kuliah.show');
+                    Route::get('kelas-kuliah/{id}/krs-candidates', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'krsCandidates'])->name('kelas-kuliah.krs-candidates');
+                    Route::post('kelas-kuliah/{id}/register-krs', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'registerKrsMahasiswa'])->name('kelas-kuliah.register-krs');
+                    Route::post('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'store'])->name('kelas-kuliah.store');
+                    Route::put('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'update'])->name('kelas-kuliah.update');
+                    Route::delete('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'destroy'])->name('kelas-kuliah.destroy');
 
                     Route::apiResource('dosen', \App\Http\Controllers\Api\Siakad\MasterData\DosenController::class);
 
@@ -165,6 +178,39 @@ Route::prefix('v1')->group(function () {
         });
 
         // End Master Data
+
+        Route::name('akademik.krs-historical.')->prefix('krs-historical')->group(function () {
+            Route::get('filters', [KRSHistoricalController::class, 'filters'])->name('filters');
+            Route::get('eligible-mahasiswa', [KRSHistoricalController::class, 'eligibleMahasiswa'])->name('eligible-mahasiswa');
+            Route::get('package-classes', [KRSHistoricalController::class, 'packageClasses'])->name('package-classes');
+            Route::get('repeat-candidates', [KRSHistoricalController::class, 'repeatCandidates'])->name('repeat-candidates');
+
+            Route::post('preview/build', [KRSHistoricalController::class, 'previewBuildHistoricalKrs'])->name('preview.build');
+            Route::post('execute/build', [KRSHistoricalController::class, 'executeBuildHistoricalKrs'])->name('execute.build');
+
+            Route::post('preview/reopen', [KRSHistoricalController::class, 'previewReopenHistoricalKrs'])->name('preview.reopen');
+            Route::post('execute/reopen', [KRSHistoricalController::class, 'executeReopenHistoricalKrs'])->name('execute.reopen');
+
+            Route::post('preview/refinalize', [KRSHistoricalController::class, 'previewRefinalizeHistoricalKrs'])->name('preview.refinalize');
+            Route::post('execute/refinalize', [KRSHistoricalController::class, 'executeRefinalizeHistoricalKrs'])->name('execute.refinalize');
+
+            Route::post('preview/reset', [KRSHistoricalController::class, 'previewResetHistoricalKrs'])->name('preview.reset');
+            Route::post('execute/reset', [KRSHistoricalController::class, 'executeResetHistoricalKrs'])->name('execute.reset');
+
+            Route::post('preview/generate-khs', [KRSHistoricalController::class, 'previewGenerateKhs'])->name('preview.generate-khs');
+            Route::post('execute/generate-khs', [KRSHistoricalController::class, 'executeGenerateKhs'])->name('execute.generate-khs');
+
+            Route::get('batches', [KRSHistoricalController::class, 'batchHistory'])->name('batches');
+            Route::get('batches/{id}', [KRSHistoricalController::class, 'batchShow'])->name('batches.show');
+        });
+
+        Route::name('akademik.administrasi-studi.')->prefix('administrasi-studi')->group(function () {
+            Route::get('filters', [StudentStudyAdministrationController::class, 'filters'])->name('filters');
+            Route::get('summary', [StudentStudyAdministrationController::class, 'summary'])->name('summary');
+            Route::get('ready-khs', [StudentStudyAdministrationController::class, 'readyForKhs'])->name('ready-khs');
+            Route::get('batches', [StudentStudyAdministrationController::class, 'batchHistory'])->name('batches');
+            Route::get('batches/{source}/{id}', [StudentStudyAdministrationController::class, 'batchShow'])->name('batches.show');
+        });
 
         // Akademik - KRS
         // Route::name('akademik.')->group(function () {
@@ -249,8 +295,22 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::name('khs.')->group(function () {
+                Route::get('khs/import/template/export', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'exportTemplate'])->name('import.template-export');
+                Route::get('khs/import/remark-reference', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'remarkReference'])->name('import.remark-reference');
+                Route::get('khs/import/history', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'history'])->name('import.history');
+                Route::post('khs/import/upload', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'upload'])->name('import.upload');
+                Route::get('khs/import/{batch}', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'show'])->name('import.show');
+                Route::get('khs/import/{batch}/preview', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'preview'])->name('import.preview');
+                Route::post('khs/import/{batch}/process', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'process'])->name('import.process');
+                Route::post('khs/import/{batch}/finalize', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'finalizeBatch'])->name('import.finalize');
+                Route::post('khs/import/{batch}/rollback', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'rollback'])->name('import.rollback');
+                Route::get('khs/import/{batch}/export-errors', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'exportErrors'])->name('import.export-errors');
+                Route::get('khs/import/{batch}/export-results', [\App\Http\Controllers\Api\Siakad\Akademik\KhsImportController::class, 'exportResults'])->name('import.export-results');
                 Route::get('khs', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'index'])->name('index');
                 Route::get('khs/{id}', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'show'])->name('show');
+                Route::put('khs/{id}/details/{detailId}', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'updateDetail'])->name('details.update');
+                Route::put('khs/{id}/summary', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'updateSummary'])->name('summary.update');
+                Route::post('khs/{id}/finalize', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'finalize'])->name('finalize');
                 Route::post('khs/generate', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'generate'])->name('generate');
                 Route::get('khs/preview/semester', [\App\Http\Controllers\Api\Siakad\Akademik\KHSController::class, 'preview'])->name('preview');
             });
@@ -377,8 +437,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/landing/sertifikat-akreditasi', [GetApiController::class, 'sertifikatAkreditasi'])->name('landing.sertifikat-akreditasi');
     Route::get('/landing/sertifikat-akreditasi/{id}', [GetApiController::class, 'sertifikatAkreditasiDetail'])->name('landing.sertifikat-akreditasi.detail');
     Route::get('/landing/pmb-pendaftaran', [GetApiController::class, 'pmbPendaftaran'])->name('landing.pmb-pendaftaran');
-    
-    // Route TEST 
+
+    // Route TEST
     Route::get('kelas-kuliah-test', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'index'])->name('kelas-kuliah.index.test');
 });
 

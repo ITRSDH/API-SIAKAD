@@ -19,10 +19,10 @@ class AuthController extends Controller
         try {
             // Validasi input
             $validator = Validator::make($request->all(), [
-                'username' => 'required', // email / nim / nup
+                'username' => 'required', // email / nim / nidn
                 'password' => 'required',
             ], [
-                'username.required' => 'Email / NIM / NUP wajib diisi.',
+                'username.required' => 'Email / NIM / NIDN wajib diisi.',
                 'password.required' => 'Password wajib diisi.',
             ]);
 
@@ -36,13 +36,13 @@ class AuthController extends Controller
             $username = $request->username;
             $password = $request->password;
 
-            // 🔍 Cari user berdasarkan email / nim / nup
+            // 🔍 Cari user berdasarkan email / nim / nidn
             $user = User::where('email', $username)
                 ->orWhereHas('mahasiswa', function ($q) use ($username) {
                     $q->where('nim', $username);
                 })
                 ->orWhereHas('dosen', function ($q) use ($username) {
-                    $q->where('nup', $username);
+                    $q->where('nidn', $username);
                 })
                 ->first();
 
@@ -74,7 +74,7 @@ class AuthController extends Controller
             if (!$token = Auth::guard('api')->attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Email / NIM / NUP atau password salah.'
+                    'error' => 'Email / NIM / NIDN atau password salah.'
                 ], 401);
             }
 

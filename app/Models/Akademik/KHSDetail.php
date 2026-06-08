@@ -23,12 +23,14 @@ class KHSDetail extends Model
         'id_krs_detail',
         'id_kelas_kuliah',
         'id_mata_kuliah',
+        'id_import_batch',
         'kode_mk',
         'nama_mk',
         'sks',
         'nilai_akhir',
         'nilai_huruf',
         'bobot_nilai',
+        'mutu',
         'status',
     ];
 
@@ -36,6 +38,7 @@ class KHSDetail extends Model
         'sks' => 'integer',
         'nilai_akhir' => 'decimal:2',
         'bobot_nilai' => 'decimal:2',
+        'mutu' => 'decimal:2',
     ];
 
     public function khs(): BelongsTo
@@ -56,5 +59,10 @@ class KHSDetail extends Model
     public function mataKuliah(): BelongsTo
     {
         return $this->belongsTo(MataKuliah::class, 'id_mata_kuliah');
+    }
+
+    public function importBatch(): BelongsTo
+    {
+        return $this->belongsTo(KhsImportBatch::class, 'id_import_batch');
     }
 }

@@ -9,6 +9,7 @@ use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Schema;
 
 class ProdiController extends Controller
 {
@@ -18,16 +19,26 @@ class ProdiController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $prodi = Prodi::with(['kaprodi:id,nama_dosen'])->get();
+            $hasKaprodiColumn = Schema::hasColumn('prodi', 'id_kaprodi');
+            $prodiQuery = Prodi::query();
 
-            // Exclude dosen who are already kaprodi
-            $dosen_list = Dosen::whereNotIn('id', function ($query) {
-                $query->select('id_kaprodi')
-                    ->from('prodi')
-                    ->whereNotNull('id_kaprodi');
-            })
-                ->select('id', 'nama_dosen', 'nup')
-                ->get();
+            if ($hasKaprodiColumn) {
+                $prodiQuery->with(['kaprodi:id,nama_dosen']);
+            }
+
+            $prodi = $prodiQuery->get();
+
+            $dosenListQuery = Dosen::query()->select('id', 'nama_dosen', 'nup');
+
+            if ($hasKaprodiColumn) {
+                $dosenListQuery->whereNotIn('id', function ($query) {
+                    $query->select('id_kaprodi')
+                        ->from('prodi')
+                        ->whereNotNull('id_kaprodi');
+                });
+            }
+
+            $dosen_list = $dosenListQuery->get();
 
             return response()->json([
                 'success' => true,

@@ -3,9 +3,9 @@
 namespace App\Imports;
 
 use App\Models\MasterData\Mahasiswa;
-use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\RiwayatKurikulumMahasiswa;
 use App\Models\User;
+use App\Services\MahasiswaCurriculumContextService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -20,10 +20,12 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     private $successCount = 0;
     private $rowCount = 0;
     private $idProdi;
+    private MahasiswaCurriculumContextService $mahasiswaCurriculumContextService;
 
     public function __construct($idProdi = null)
     {
         $this->idProdi = $idProdi;
+        $this->mahasiswaCurriculumContextService = app(MahasiswaCurriculumContextService::class);
     }
 
     public function model(array $row)
@@ -38,7 +40,7 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             $nim = is_numeric($row['nim']) ? (string) $row['nim'] : $row['nim'];
             $nik = isset($row['nik']) ? (is_numeric($row['nik']) ? (string) $row['nik'] : ltrim($row['nik'], "'")) : null;
             $namaMahasiswa = $row['nama_mahasiswa'] ?? $row['nama'] ?? 'Unknown';
-            $status = $row['status_mahasiswa'] ?? 'Aktif';
+            $status = $this->normalizeStatus($row['status_mahasiswa'] ?? null);
 
             // Parse tempat dan tanggal lahir
             $tempatLahir = null;
@@ -57,7 +59,7 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             if (!empty($row['jenis_kelamin'])) {
                 $jk = strtoupper(trim($row['jenis_kelamin']));
                 if (in_array($jk, ['L', 'P', 'LAKI-LAKI', 'PEREMPUAN', 'MALE', 'FEMALE'])) {
-                    $jenisKelamin = (in_array($jk, ['L', 'LAKI-LAKI', 'MALE'])) ? 'L' : 'P';
+                    $jenisKelamin = in_array($jk, ['L', 'LAKI-LAKI', 'MALE']) ? 'L' : 'P';
                 }
             }
 
@@ -77,15 +79,16 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                 $alamat = trim($row['alamat']);
             }
 
-            // Generate password default (NIM atau tanggal lahir)
+            // Gunakan password default tetap untuk akun mahasiswa hasil import
             $password = '12345678';
-            // if (!empty($parsedTanggalLahir)) {
-            //     $password = $parsedTanggalLahir->format('dmY');
-            // }
 
             DB::transaction(function () use ($nim, $nik, $namaMahasiswa, $status, $tempatLahir, $parsedTanggalLahir, $tanggalMasuk, $password, $jenisKelamin, $agama, $alamat, $row) {
                 $angkatan = $this->resolveAngkatan($row, $tanggalMasuk);
-                $resolvedKurikulumId = $this->resolveKurikulumId($this->idProdi, $angkatan, $tanggalMasuk);
+                $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveMatchingKurikulumId(
+                    $this->idProdi,
+                    $angkatan,
+                    $tanggalMasuk
+                );
 
                 if (!$resolvedKurikulumId) {
                     throw new \RuntimeException('Kurikulum aktif untuk program studi mahasiswa belum tersedia.');
@@ -153,7 +156,7 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             'tanggal_masuk' => 'nullable',
             'alamat' => 'nullable|string',
             'agama' => 'nullable|string',
-            'status_mahasiswa' => 'nullable|in:Aktif,Cuti,DO,Lulus',
+            'status_mahasiswa' => 'nullable|string',
         ];
     }
 
@@ -253,124 +256,17 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
         return null;
     }
 
-    private function resolveKurikulumId(?string $prodiId, ?int $angkatan, $tanggalMasuk): ?string
+    private function normalizeStatus(?string $status): string
     {
-        if (!$prodiId) {
-            return null;
-        }
+        $normalized = strtoupper(trim((string) $status));
 
-        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
-
-        $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
-            ->where('id_prodi', $prodiId)
-            ->get();
-
-        if ($kurikulums->isEmpty()) {
-            return null;
-        }
-
-        $sorted = $kurikulums->sortByDesc(fn(Kurikulum $kurikulum) => $this->buildKurikulumSortKey($kurikulum) ?? 0)
-            ->values();
-
-        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan, $tanggalMasuk);
-
-        if ($cohortSortKey !== null) {
-            $matched = $sorted->first(function (Kurikulum $kurikulum) use ($cohortSortKey) {
-                $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
-
-                return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
-            });
-
-            if ($matched) {
-                $eligible = $sorted->filter(function (Kurikulum $kurikulum) use ($cohortSortKey) {
-                    $kurikulumSortKey = $this->buildKurikulumSortKey($kurikulum);
-
-                    return $kurikulumSortKey !== null && $kurikulumSortKey <= $cohortSortKey;
-                })->values();
-
-                return $this->resolvePreferredKurikulumCandidate($eligible, $preferredSemesterOrder)?->id;
-            }
-        }
-
-        return $this->resolvePreferredKurikulumCandidate($sorted, $preferredSemesterOrder)?->id;
+        return match ($normalized) {
+            'AKTIF' => 'Aktif',
+            'CUTI' => 'Cuti',
+            'DO' => 'DO',
+            'LULUS' => 'Lulus',
+            default => 'Aktif',
+        };
     }
 
-    private function resolveCohortSortKey(?int $angkatan, $tanggalMasuk): ?int
-    {
-        if ($tanggalMasuk instanceof \Carbon\Carbon) {
-            $year = (int) $tanggalMasuk->format('Y');
-            $month = (int) $tanggalMasuk->format('n');
-            $semesterOrder = $month >= 7 ? 1 : 2;
-            $academicStartYear = $semesterOrder === 1 ? $year : $year - 1;
-
-            return ($academicStartYear * 10) + $semesterOrder;
-        }
-
-        if ($angkatan !== null) {
-            return ($angkatan * 10) + 1;
-        }
-
-        return null;
-    }
-
-    private function resolvePreferredKurikulumCandidate($kurikulums, ?int $preferredSemesterOrder): ?Kurikulum
-    {
-        if ($kurikulums->isEmpty()) {
-            return null;
-        }
-
-        if ($preferredSemesterOrder !== null) {
-            $preferred = $kurikulums->first(function (Kurikulum $kurikulum) use ($preferredSemesterOrder) {
-                return $this->resolveSemesterOrder(
-                    $kurikulum->semesterMulai?->kode_semester,
-                    $kurikulum->semesterMulai?->nama_semester
-                ) === $preferredSemesterOrder;
-            });
-
-            if ($preferred) {
-                return $preferred;
-            }
-        }
-
-        return $kurikulums->first();
-    }
-
-    private function resolvePreferredSemesterOrder(?int $angkatan, $tanggalMasuk): ?int
-    {
-        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
-
-        return $cohortSortKey !== null ? (int) substr((string) $cohortSortKey, -1) : null;
-    }
-
-    private function buildKurikulumSortKey(Kurikulum $kurikulum): ?int
-    {
-        $tahunAkademik = $kurikulum->semesterMulai?->tahunAkademik?->tahun_akademik;
-        if (!$tahunAkademik) {
-            return null;
-        }
-
-        $tahunMulai = (int) substr((string) $tahunAkademik, 0, 4);
-        $semesterOrder = $this->resolveSemesterOrder(
-            $kurikulum->semesterMulai?->kode_semester,
-            $kurikulum->semesterMulai?->nama_semester
-        );
-
-        return ($tahunMulai * 10) + $semesterOrder;
-    }
-
-    private function resolveSemesterOrder(?string $kodeSemester = null, ?string $namaSemester = null): int
-    {
-        $normalizedKode = strtolower(trim((string) $kodeSemester));
-        $normalizedNama = strtolower(trim((string) $namaSemester));
-
-        if (str_contains($normalizedKode, 'ganjil') || str_contains($normalizedNama, 'ganjil') || $normalizedKode === '1') {
-            return 1;
-        }
-
-        if (str_contains($normalizedKode, 'genap') || str_contains($normalizedNama, 'genap') || $normalizedKode === '2') {
-            return 2;
-        }
-
-        return 9;
-    }
 }

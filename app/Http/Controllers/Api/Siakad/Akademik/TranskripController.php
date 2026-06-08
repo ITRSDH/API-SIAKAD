@@ -223,9 +223,7 @@ class TranskripController extends Controller
             ->values();
 
         $totalSksLulus = (int) $bestPerCourse->sum('sks');
-        $totalBobot = $bestPerCourse->sum(function ($item) {
-            return ((float) ($item['bobot_nilai'] ?? 0)) * ((int) ($item['sks'] ?? 0));
-        });
+        $totalBobot = (float) $bestPerCourse->sum(fn($item) => (float) ($item['bobot_nilai'] ?? 0));
 
         $ipk = $totalSksLulus > 0 ? round($totalBobot / $totalSksLulus, 2) : 0;
 

@@ -20,8 +20,7 @@ class NilaiKomponenController extends Controller
 
     public function __construct(
         private readonly AttendanceEligibilityService $attendanceEligibilityService
-    ) {
-    }
+    ) {}
 
     public function index(string $id_kelas_kuliah): JsonResponse
     {
@@ -52,6 +51,7 @@ class NilaiKomponenController extends Controller
                     'id' => $detail->krs?->mahasiswa?->id,
                     'nim' => $detail->krs?->mahasiswa?->nim,
                     'nama_mahasiswa' => $detail->krs?->mahasiswa?->nama_mahasiswa,
+                    'angkatan' => $detail->krs?->mahasiswa?->angkatan,
                 ],
                 'nilai_akhir_existing' => [
                     'nilai_akhir' => $detail->nilai_akhir,

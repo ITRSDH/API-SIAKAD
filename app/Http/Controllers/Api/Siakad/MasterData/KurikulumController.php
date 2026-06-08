@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Kurikulum;
+use App\Models\MasterData\KurikulumInduk;
 use App\Models\MasterData\MataKuliah;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class KurikulumController extends Controller
@@ -18,59 +19,19 @@ class KurikulumController extends Controller
     public function index(): JsonResponse
     {
         try {
-
-            $kurikulum = Kurikulum::with([
-                'prodi:id,nama_prodi,jenjang_pendidikan',
-                'semesterMulai.tahunAkademik:id,tahun_akademik',
-                'mataKuliah:id,sks'
-            ])
+            $kurikulum = Kurikulum::with($this->defaultRelations())
                 ->get()
-                ->map(function ($item) {
-
-                    // 🔥 Hitung realisasi SKS dari relasi
-                    $totalWajib = $item->mataKuliah
-                        ->where('pivot.is_wajib', 1)
-                        ->sum('sks');
-
-                    $totalPilihan = $item->mataKuliah
-                        ->where('pivot.is_wajib', 0)
-                        ->sum('sks');
-
-                    return [
-                        'id' => $item->id,
-                        'nama_kurikulum' => $item->nama_kurikulum,
-
-                        // ✅ ATURAN
-                        'jumlah_sks_lulus' => $item->jumlah_sks_lulus,
-                        'jumlah_sks_wajib' => $item->jumlah_sks_wajib,
-                        'jumlah_sks_pilihan' => $item->jumlah_sks_pilihan,
-
-                        // ✅ REALISASI DARI MATA KULIAH
-                        'jumlah_sks_wajib_mk' => $totalWajib,
-                        'jumlah_sks_pilihan_mk' => $totalPilihan,
-
-                        'prodi' => $item->prodi
-                            ? "({$item->prodi->jenjang_pendidikan}) {$item->prodi->nama_prodi}"
-                            : '-',
-
-                        'semester_mulai' => $item->semesterMulai
-                            ? $item->semesterMulai->tahunAkademik->tahun_akademik
-                            . ' ' .
-                            $item->semesterMulai->nama_semester
-                            : null,
-                    ];
-                });
+                ->map(fn(Kurikulum $item) => $this->serializeKurikulum($item));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data All Kurikulum berhasil diambil',
+                'message' => 'Data struktur kurikulum berhasil diambil',
                 'data' => $kurikulum,
             ], 200);
         } catch (Exception $e) {
-
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data All Kurikulum.',
+                'message' => 'Terjadi kesalahan saat mengambil data struktur kurikulum.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -79,12 +40,11 @@ class KurikulumController extends Controller
     public function matakuliahByProdi(string $id_kurikulum): JsonResponse
     {
         try {
-            // Ambil kurikulum dan prodi
             $kurikulum = Kurikulum::findOrFail($id_kurikulum);
             $idProdi = $kurikulum->id_prodi;
 
             $mataKuliah = MataKuliah::select('id', 'kode_mk', 'nama_mk', 'sks', 'sks_tatap_muka', 'sks_praktikum', 'sks_praktek_lapangan', 'sks_simulasi')
-                ->where('id_prodi', $idProdi) // Ambil MK milik prodi kurikulum
+                ->where('id_prodi', $idProdi)
                 ->get();
 
             return response()->json([
@@ -106,17 +66,30 @@ class KurikulumController extends Controller
     public function kurikulumByProdi(string $id_kurikulum): JsonResponse
     {
         try {
-            // Ambil kurikulum dan prodi
             $kurikulum = Kurikulum::findOrFail($id_kurikulum);
             $idProdi = $kurikulum->id_prodi;
 
-            $kurikulumList = Kurikulum::select('id', 'nama_kurikulum')
-                ->where('id_prodi', $idProdi) // Ambil kurikulum milik prodi yang sama
-                ->get();
+            $kurikulumList = Kurikulum::with([
+                'kurikulumInduk:id,id_prodi,id_jenis_kurikulum,nama_kurikulum,tahun_kurikulum,kode_kurikulum,is_aktif',
+                'kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            ])
+                ->select('id', 'id_kurikulum_induk', 'nama_struktur_mk')
+                ->where('id_prodi', $idProdi)
+                ->get()
+                ->map(function (Kurikulum $item) {
+                    return [
+                        'id' => $item->id,
+                        'jenis_entitas' => 'struktur_operasional',
+                        'id_kurikulum_induk' => $item->id_kurikulum_induk,
+                        'nama_struktur_mk' => $item->nama_struktur_mk,
+                        'nama_kurikulum' => $item->nama_kurikulum,
+                        'kurikulum_induk' => $this->serializeKurikulumInduk($item),
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data kurikulum berhasil diambil',
+                'message' => 'Data struktur kurikulum berhasil diambil',
                 'data' => [
                     'kurikulum' => $kurikulumList
                 ]
@@ -136,20 +109,22 @@ class KurikulumController extends Controller
             $kurikulum = Kurikulum::select([
                 'id',
                 'id_prodi',
-                'nama_kurikulum',
+                'id_kurikulum_induk',
+                'nama_struktur_mk',
                 'id_semester',
                 'jumlah_sks_lulus',
                 'jumlah_sks_wajib',
                 'jumlah_sks_pilihan',
             ])
                 ->with([
-                    'prodi:id,jenjang_pendidikan,nama_prodi',
+                    'prodi:id,jenjang_pendidikan,nama_prodi,kode_prodi',
+                    'kurikulumInduk:id,id_prodi,id_jenis_kurikulum,nama_kurikulum,tahun_kurikulum,kode_kurikulum,is_aktif',
+                    'kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
                     'semesterMulai:id,id_tahun_akademik,nama_semester',
                     'semesterMulai.tahunAkademik:id,tahun_akademik',
                 ])
                 ->findOrFail($id);
 
-            // 🔥 Ambil data mata kuliah dari pivot secara manual
             $mataKuliahDiKurikulum = DB::table('kurikulum_mata_kuliah as kmk')
                 ->join('mata_kuliah as mk', 'kmk.id_mata_kuliah', '=', 'mk.id')
                 ->select(
@@ -186,32 +161,9 @@ class KurikulumController extends Controller
                 })
                 ->toArray();
 
-            // 🔥 Format ulang supaya clean
-            $data = [
-                'id' => $kurikulum->id,
-                'id_prodi' => $kurikulum->id_prodi,
-                'id_semester' => $kurikulum->id_semester,
-                'nama_kurikulum' => $kurikulum->nama_kurikulum,
-                'jumlah_sks_lulus' => $kurikulum->jumlah_sks_lulus,
-                'jumlah_sks_wajib' => $kurikulum->jumlah_sks_wajib,
-                'jumlah_sks_pilihan' => $kurikulum->jumlah_sks_pilihan,
-
-                'prodi' => $kurikulum->prodi
-                    ? "({$kurikulum->prodi->jenjang_pendidikan}) {$kurikulum->prodi->nama_prodi}"
-                    : null,
-
-                'semester_mulai' => $kurikulum->semesterMulai
-                    ? $kurikulum->semesterMulai->tahunAkademik->tahun_akademik
-                    . ' ' .
-                    $kurikulum->semesterMulai->nama_semester
-                    : null,
-
-                'mata_kuliah' => $mataKuliahDiKurikulum,
-            ];
-
             return response()->json([
                 'status' => 'success',
-                'data' => $data,
+                'data' => $this->serializeKurikulum($kurikulum, $mataKuliahDiKurikulum),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -221,13 +173,19 @@ class KurikulumController extends Controller
         }
     }
 
-
     public function store(Request $request): JsonResponse
     {
         try {
+            if (!$request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
+                $request->merge([
+                    'nama_struktur_mk' => $request->input('nama_kurikulum'),
+                ]);
+            }
+
             $validatedData = $request->validate([
-                'id_prodi' => 'nullable|exists:prodi,id',
-                'nama_kurikulum' => [
+                'id_prodi' => 'required|exists:prodi,id',
+                'id_kurikulum_induk' => 'required|exists:kurikulum_induk,id',
+                'nama_struktur_mk' => [
                     'required',
                     'string',
                     'max:100',
@@ -241,16 +199,23 @@ class KurikulumController extends Controller
                 'jumlah_sks_pilihan' => 'nullable|integer|min:0',
             ]);
 
-            // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
-            $totalSks = ($validatedData['jumlah_sks_wajib'] ?? 0) +
-                ($validatedData['jumlah_sks_pilihan'] ?? 0);
-            $validatedData['jumlah_sks_lulus'] = $totalSks;
+            $kurikulumInduk = KurikulumInduk::findOrFail($validatedData['id_kurikulum_induk']);
+            if ($kurikulumInduk->id_prodi !== $validatedData['id_prodi']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tahun kurikulum harus berasal dari program studi yang sama.',
+                ], 422);
+            }
+
+            $validatedData['jumlah_sks_lulus'] = ($validatedData['jumlah_sks_wajib'] ?? 0)
+                + ($validatedData['jumlah_sks_pilihan'] ?? 0);
 
             $kurikulum = Kurikulum::create($validatedData);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Kurikulum berhasil ditambahkan',
-                'data' => $kurikulum
+                'message' => 'Struktur kurikulum berhasil ditambahkan',
+                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations()))
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -263,13 +228,18 @@ class KurikulumController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
+            if (!$request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
+                $request->merge([
+                    'nama_struktur_mk' => $request->input('nama_kurikulum'),
+                ]);
+            }
 
             $kurikulum = Kurikulum::findOrFail($id);
 
             $validatedData = $request->validate([
-                'id_prodi' => 'nullable|exists:prodi,id',
-
-                'nama_kurikulum' => [
+                'id_prodi' => 'required|exists:prodi,id',
+                'id_kurikulum_induk' => 'required|exists:kurikulum_induk,id',
+                'nama_struktur_mk' => [
                     'required',
                     'string',
                     'max:100',
@@ -284,17 +254,23 @@ class KurikulumController extends Controller
                 'jumlah_sks_pilihan' => 'nullable|integer|min:0',
             ]);
 
-            // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
-            $totalSks = ($validatedData['jumlah_sks_wajib'] ?? 0) +
-                ($validatedData['jumlah_sks_pilihan'] ?? 0);
-            $validatedData['jumlah_sks_lulus'] = $totalSks;
+            $kurikulumInduk = KurikulumInduk::findOrFail($validatedData['id_kurikulum_induk']);
+            if ($kurikulumInduk->id_prodi !== $validatedData['id_prodi']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tahun kurikulum harus berasal dari program studi yang sama.',
+                ], 422);
+            }
+
+            $validatedData['jumlah_sks_lulus'] = ($validatedData['jumlah_sks_wajib'] ?? 0)
+                + ($validatedData['jumlah_sks_pilihan'] ?? 0);
 
             $kurikulum->update($validatedData);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kurikulum berhasil diperbarui',
-                'data' => $kurikulum
+                'message' => 'Struktur kurikulum berhasil diperbarui',
+                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations()))
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -316,7 +292,7 @@ class KurikulumController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Kurikulum dan data mata kuliah terkait berhasil dihapus',
+                'message' => 'Struktur kurikulum dan data mata kuliah terkait berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
@@ -327,9 +303,6 @@ class KurikulumController extends Controller
         }
     }
 
-    /**
-     * Menambahkan mata kuliah ke kurikulum secara manual.
-     */
     public function tambahMataKuliahManual(Request $request, string $id_kurikulum): JsonResponse
     {
         DB::beginTransaction();
@@ -345,11 +318,9 @@ class KurikulumController extends Controller
             $kurikulum = Kurikulum::findOrFail($id_kurikulum);
 
             foreach ($request->mata_kuliah as $mk) {
-
-                $isWajibBool = isset($mk['is_wajib']) ? (bool)$mk['is_wajib'] : false;
+                $isWajibBool = isset($mk['is_wajib']) ? (bool) $mk['is_wajib'] : false;
                 $statusMk = $isWajibBool ? 'wajib' : 'pilihan';
 
-                // Cegah duplicate
                 $exists = DB::table('kurikulum_mata_kuliah')
                     ->where('id_kurikulum', $kurikulum->id)
                     ->where('id_mata_kuliah', $mk['id_mata_kuliah'])
@@ -371,7 +342,6 @@ class KurikulumController extends Controller
                 ]);
             }
 
-            // ✅ VALIDASI TOTAL SKS (WAJIB & PILIHAN DIPISAH)
             $rekap = DB::table('kurikulum_mata_kuliah as kmk')
                 ->join('mata_kuliah as mk', 'kmk.id_mata_kuliah', '=', 'mk.id')
                 ->selectRaw('
@@ -401,7 +371,6 @@ class KurikulumController extends Controller
                 'data' => $kurikulum->fresh()->load('mataKuliah'),
             ], 200);
         } catch (ValidationException $e) {
-
             DB::rollBack();
 
             return response()->json([
@@ -409,8 +378,7 @@ class KurikulumController extends Controller
                 'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),
             ], 422);
-        } catch (\Exception $e) {
-
+        } catch (Exception $e) {
             DB::rollBack();
 
             return response()->json([
@@ -426,23 +394,18 @@ class KurikulumController extends Controller
         DB::beginTransaction();
 
         try {
-            // ✅ VALIDASI SESUAI FORMAT BARU
             $request->validate([
                 'selected_mk' => 'required|array|min:1',
                 'selected_mk.*' => 'exists:mata_kuliah,id',
-
                 'semester_ke' => 'required|array',
                 'semester_ke.*' => 'nullable|integer|min:1|max:8',
-
                 'is_wajib' => 'nullable|array',
                 'is_wajib.*' => 'in:1',
             ]);
 
             $kurikulum = Kurikulum::findOrFail($id_kurikulum);
-
             $selected = $request->selected_mk;
 
-            // 🔎 Ambil yang sudah ada (hindari duplicate)
             $existing = DB::table('kurikulum_mata_kuliah')
                 ->where('id_kurikulum', $kurikulum->id)
                 ->whereIn('id_mata_kuliah', $selected)
@@ -452,8 +415,6 @@ class KurikulumController extends Controller
             $insertData = [];
 
             foreach ($selected as $id_mk) {
-
-                // ⛔ Skip kalau sudah ada
                 if (in_array($id_mk, $existing)) {
                     continue;
                 }
@@ -476,12 +437,10 @@ class KurikulumController extends Controller
                 ];
             }
 
-            // 🚀 INSERT KOLEKTIF
             if (!empty($insertData)) {
                 DB::table('kurikulum_mata_kuliah')->insert($insertData);
             }
 
-            // ✅ VALIDASI SKS
             $rekap = DB::table('kurikulum_mata_kuliah as kmk')
                 ->join('mata_kuliah as mk', 'kmk.id_mata_kuliah', '=', 'mk.id')
                 ->selectRaw('
@@ -511,15 +470,13 @@ class KurikulumController extends Controller
                 'total_insert' => count($insertData)
             ]);
         } catch (ValidationException $e) {
-
             DB::rollBack();
 
             return response()->json([
                 'success' => false,
                 'errors' => $e->errors()
             ], 422);
-        } catch (\Exception $e) {
-
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
@@ -529,9 +486,6 @@ class KurikulumController extends Controller
         }
     }
 
-    /**
-     * Memperbarui data mata kuliah di kurikulum (pivot).
-     */
     public function updateMataKuliah(Request $request, string $id_kurikulum, string $id_mata_kuliah): JsonResponse
     {
         DB::beginTransaction();
@@ -562,7 +516,6 @@ class KurikulumController extends Controller
                 'updated_at' => now(),
             ];
 
-            // Filter hanya field yang tidak null
             $dataToUpdate = array_filter($dataToUpdate, fn($value) => !is_null($value));
 
             DB::table('kurikulum_mata_kuliah')
@@ -591,9 +544,6 @@ class KurikulumController extends Controller
         }
     }
 
-    /**
-     * Menghapus mata kuliah dari kurikulum.
-     */
     public function hapusMataKuliah(Request $request, string $id_kurikulum, string $id_mata_kuliah): JsonResponse
     {
         DB::beginTransaction();
@@ -623,10 +573,8 @@ class KurikulumController extends Controller
     {
         DB::beginTransaction();
         try {
-            // 🔥 Ganti dengan query manual tanpa with()
             $kurikulumTujuan = Kurikulum::findOrFail($id_kurikulum_tujuan);
 
-            // Ambil data mata kuliah dari kurikulum asal secara manual
             $mataKuliahAsal = DB::table('kurikulum_mata_kuliah as kmk')
                 ->join('mata_kuliah as mk', 'kmk.id_mata_kuliah', '=', 'mk.id')
                 ->select(
@@ -641,7 +589,6 @@ class KurikulumController extends Controller
                 ->get();
 
             foreach ($mataKuliahAsal as $mk) {
-
                 $isWajib = $mk->is_wajib;
                 $isWajibBool = null;
 
@@ -655,7 +602,7 @@ class KurikulumController extends Controller
                 }
 
                 $dataToInsert = [
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'id_kurikulum' => $kurikulumTujuan->id,
                     'id_mata_kuliah' => $mk->id_mata_kuliah,
                     'semester_ke' => $mk->semester_ke,
@@ -665,7 +612,6 @@ class KurikulumController extends Controller
                     'updated_at' => now(),
                 ];
 
-                // Cek apakah sudah ada, jika belum maka insert
                 $exists = DB::table('kurikulum_mata_kuliah')
                     ->where('id_kurikulum', $kurikulumTujuan->id)
                     ->where('id_mata_kuliah', $mk->id_mata_kuliah)
@@ -689,5 +635,81 @@ class KurikulumController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function defaultRelations(): array
+    {
+        return [
+            'prodi:id,nama_prodi,jenjang_pendidikan,kode_prodi',
+            'kurikulumInduk:id,id_prodi,id_jenis_kurikulum,nama_kurikulum,tahun_kurikulum,kode_kurikulum,is_aktif',
+            'kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            'semesterMulai.tahunAkademik:id,tahun_akademik',
+            'mataKuliah:id,sks',
+        ];
+    }
+
+    private function serializeKurikulum(Kurikulum $item, ?array $mataKuliah = null): array
+    {
+        $totalWajib = $item->relationLoaded('mataKuliah')
+            ? $item->mataKuliah->where('pivot.is_wajib', 1)->sum('sks')
+            : null;
+        $totalPilihan = $item->relationLoaded('mataKuliah')
+            ? $item->mataKuliah->where('pivot.is_wajib', 0)->sum('sks')
+            : null;
+        $semesterMulai = $item->semesterMulai
+            ? $item->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->semesterMulai->nama_semester
+            : null;
+
+        return [
+            'id' => $item->id,
+            'jenis_entitas' => 'struktur_operasional',
+            'id_prodi' => $item->id_prodi,
+            'id_kurikulum_induk' => $item->id_kurikulum_induk,
+            'id_semester' => $item->id_semester,
+            'nama_struktur_mk' => $item->nama_struktur_mk,
+            'nama_kurikulum' => $item->nama_kurikulum,
+            'nama_kurikulum_induk' => $item->nama_kurikulum_induk,
+            'keterangan_kurikulum_induk' => $item->nama_kurikulum_induk,
+            'jumlah_sks_lulus' => $item->jumlah_sks_lulus,
+            'jumlah_sks_wajib' => $item->jumlah_sks_wajib,
+            'jumlah_sks_pilihan' => $item->jumlah_sks_pilihan,
+            'jumlah_sks_wajib_mk' => $totalWajib,
+            'jumlah_sks_pilihan_mk' => $totalPilihan,
+            'prodi' => $item->prodi
+                ? "({$item->prodi->jenjang_pendidikan}) {$item->prodi->nama_prodi}"
+                : null,
+            'semester_mulai' => $semesterMulai,
+            'mulai_berlaku' => $semesterMulai,
+            'kurikulum_induk' => $this->serializeKurikulumInduk($item),
+            'struktur_operasional' => [
+                'id' => $item->id,
+                'nama_struktur_mk' => $item->nama_struktur_mk,
+                'id_semester' => $item->id_semester,
+                'semester_mulai' => $semesterMulai,
+                'mulai_berlaku' => $semesterMulai,
+            ],
+            'mata_kuliah' => $mataKuliah,
+        ];
+    }
+
+    private function serializeKurikulumInduk(Kurikulum $item): ?array
+    {
+        if (!$item->kurikulumInduk) {
+            return null;
+        }
+
+        return [
+            'id' => $item->kurikulumInduk->id,
+            'nama_kurikulum' => $item->kurikulumInduk->nama_kurikulum,
+            'keterangan' => $item->kurikulumInduk->nama_kurikulum,
+            'kode_kurikulum' => $item->kurikulumInduk->kode_kurikulum,
+            'tahun_kurikulum' => $item->kurikulumInduk->tahun_kurikulum,
+            'is_aktif' => $item->kurikulumInduk->is_aktif,
+            'jenis_kurikulum' => $item->kurikulumInduk->jenisKurikulum ? [
+                'id' => $item->kurikulumInduk->jenisKurikulum->id,
+                'kode_jenis' => $item->kurikulumInduk->jenisKurikulum->kode_jenis,
+                'nama_jenis_kurikulum' => $item->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
+            ] : null,
+        ];
     }
 }
