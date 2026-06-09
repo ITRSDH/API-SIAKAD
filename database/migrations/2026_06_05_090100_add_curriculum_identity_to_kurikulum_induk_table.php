@@ -88,6 +88,10 @@ return new class extends Migration
             $table->string('kode_kurikulum', 50)->nullable(false)->change();
         });
 
+        // Data lama dapat bertabrakan setelah kolom identitas baru diisi otomatis.
+        // Rapikan dulu duplikatnya sebelum unique index diberlakukan.
+        $this->deduplicateCurriculumIdentity();
+
         if (!$this->hasIndex('kurikulum_induk', 'kurikulum_induk_kode_unique')) {
             Schema::table('kurikulum_induk', function (Blueprint $table) {
                 $table->unique('kode_kurikulum', 'kurikulum_induk_kode_unique');
@@ -153,6 +157,60 @@ return new class extends Migration
         $suffix = strtoupper(substr(str_replace('-', '', $id), 0, 6));
 
         return sprintf('%s-%s-%s-%s', $tahun, strtoupper($kodeJenis), $sanitizedProdi, $suffix);
+    }
+
+    private function deduplicateCurriculumIdentity(): void
+    {
+        $duplicateGroups = DB::table('kurikulum_induk')
+            ->select('id_prodi', 'id_jenis_kurikulum', 'tahun_kurikulum', DB::raw('COUNT(*) as total'))
+            ->groupBy('id_prodi', 'id_jenis_kurikulum', 'tahun_kurikulum')
+            ->having('total', '>', 1)
+            ->get();
+
+        foreach ($duplicateGroups as $group) {
+            DB::transaction(function () use ($group) {
+                $records = DB::table('kurikulum_induk')
+                    ->where('id_prodi', $group->id_prodi)
+                    ->where('id_jenis_kurikulum', $group->id_jenis_kurikulum)
+                    ->where('tahun_kurikulum', $group->tahun_kurikulum)
+                    ->orderByDesc('is_aktif')
+                    ->orderBy('created_at')
+                    ->orderBy('id')
+                    ->get();
+
+                $primary = $records->first();
+                if (!$primary) {
+                    return;
+                }
+
+                $duplicateIds = $records
+                    ->skip(1)
+                    ->pluck('id')
+                    ->filter();
+
+                if ($duplicateIds->isEmpty()) {
+                    return;
+                }
+
+                DB::table('kurikulum')
+                    ->whereIn('id_kurikulum_induk', $duplicateIds->all())
+                    ->update([
+                        'id_kurikulum_induk' => $primary->id,
+                        'updated_at' => now(),
+                    ]);
+
+                DB::table('kurikulum_induk')
+                    ->where('id', $primary->id)
+                    ->update([
+                        'is_aktif' => $records->contains(fn ($record) => (bool) $record->is_aktif),
+                        'updated_at' => now(),
+                    ]);
+
+                DB::table('kurikulum_induk')
+                    ->whereIn('id', $duplicateIds->all())
+                    ->delete();
+            });
+        }
     }
 
     private function hasIndex(string $table, string $indexName): bool
