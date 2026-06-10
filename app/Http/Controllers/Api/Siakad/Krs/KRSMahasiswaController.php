@@ -68,7 +68,9 @@ class KRSMahasiswaController extends Controller
             ], 404);
         }
 
-        $semesterSaatIni = $this->hitungSemesterBerjalan($mahasiswa);
+        $semesterSaatIni = $this->hitungSemesterKrs($mahasiswa, $semester);
+        $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
+        $periodError = $this->validateKRSPeriod($semester);
 
         $krs = KRS::with($this->krsRelations())
             ->where('id_mahasiswa', $mahasiswa->id)
@@ -83,6 +85,9 @@ class KRSMahasiswaController extends Controller
                 'mahasiswa' => $mahasiswa,
                 'krs' => $krs ? $this->transformKRS($krs) : null,
                 'has_krs' => (bool) $krs,
+                'is_krs_eligible' => $eligibility['eligible'],
+                'eligibility_message' => $eligibility['message'],
+                'can_auto_init' => $eligibility['eligible'] && $periodError === null,
             ],
         ]);
     }
@@ -105,6 +110,14 @@ class KRSMahasiswaController extends Controller
                 'success' => false,
                 'message' => 'Semester aktif tidak ditemukan'
             ], 404);
+        }
+
+        $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
+        if (!$eligibility['eligible']) {
+            return response()->json([
+                'success' => false,
+                'message' => $eligibility['message'],
+            ], 422);
         }
 
         $periodError = $this->validateKRSPeriod($semester);
@@ -215,6 +228,14 @@ class KRSMahasiswaController extends Controller
         }
 
         $semester = Semester::find($request->id_semester);
+        $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
+        if (!$eligibility['eligible']) {
+            return response()->json([
+                'success' => false,
+                'message' => $eligibility['message'],
+            ], 422);
+        }
+
         $periodError = $this->validateKRSPeriod($semester);
         if ($periodError) {
             return $periodError;
@@ -318,6 +339,25 @@ class KRSMahasiswaController extends Controller
             ], 404);
         }
 
+        $mahasiswaSemester = $this->hitungSemesterKrs($mahasiswa, $semester);
+        $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
+
+        if (!$eligibility['eligible']) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'meta' => [
+                    'id_semester' => $semester->id,
+                    'id_krs' => $krs?->id,
+                    'current_sks' => 0,
+                    'max_sks_allowed' => $this->getMaxSksAllowed($mahasiswa),
+                    'semester_tempuh' => $mahasiswaSemester,
+                    'is_krs_eligible' => false,
+                    'message' => $eligibility['message'],
+                ],
+            ]);
+        }
+
         $selectedKelasIds = [];
         if ($krs) {
             $selectedKelasIds = KRSDetail::where('id_krs', $krs->id)
@@ -327,6 +367,9 @@ class KRSMahasiswaController extends Controller
 
         $availableKelas = KelasKuliah::where('id_prodi', $mahasiswa->id_prodi)
             ->where('id_semester', $semester->id)
+            ->whereHas('kurikulumMataKuliah', function ($query) use ($mahasiswaSemester) {
+                $query->where('semester_ke', '<=', $mahasiswaSemester);
+            })
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
                 'jadwal',
@@ -334,7 +377,6 @@ class KRSMahasiswaController extends Controller
             ])
             ->get();
 
-        $mahasiswaSemester = $this->hitungSemesterBerjalan($mahasiswa);
         $currentSks = $krs ? $krs->calculateTotalSks() : 0;
         $maxSks = $this->getMaxSksAllowed($mahasiswa);
 
@@ -391,6 +433,8 @@ class KRSMahasiswaController extends Controller
                 'id_krs' => $krs?->id,
                 'current_sks' => $currentSks,
                 'max_sks_allowed' => $maxSks,
+                'semester_tempuh' => $mahasiswaSemester,
+                'is_krs_eligible' => true,
             ],
         ]);
     }
@@ -644,6 +688,17 @@ class KRSMahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Mata kuliah tidak ditawarkan pada semester ini'
+            ], 400);
+        }
+
+        $semesterKrs = $krs->semester ?: Semester::with('tahunAkademik')->find($krs->id_semester);
+        $semesterTempuh = $semesterKrs ? $this->hitungSemesterKrs($mahasiswa, $semesterKrs) : 0;
+        $semesterPaket = (int) ($kelasKuliah->kurikulumMataKuliah->semester_ke ?? 0);
+
+        if ($semesterTempuh < 1 || ($semesterPaket > 0 && $semesterPaket > $semesterTempuh)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mata kuliah belum sesuai dengan semester tempuh mahasiswa pada periode akademik aktif'
             ], 400);
         }
 
@@ -1436,6 +1491,21 @@ class KRSMahasiswaController extends Controller
         $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
         $curriculumContext = $this->activeCurriculumService->resolveCurriculumContext($mahasiswa);
 
+        if ($semesterKe < 1) {
+            return [
+                'summary' => [
+                    'semester_ke' => $semesterKe,
+                    'kurikulum_context' => $curriculumContext,
+                    'generated_count' => 0,
+                    'generated_sks' => 0,
+                    'unresolved_count' => 1,
+                ],
+                'unresolved_items' => [[
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+                ]],
+            ];
+        }
+
         if (!$activeKurikulumId) {
             return [
                 'summary' => [
@@ -1582,6 +1652,15 @@ class KRSMahasiswaController extends Controller
         int $semesterKe,
         ?string $activeKurikulumId
     ): string {
+        if ($semesterKe < 1) {
+            return sprintf(
+                'Mahasiswa angkatan %s belum memasuki periode studi untuk semester aktif %s %s',
+                $mahasiswa->angkatan,
+                $semester->tahunAkademik?->tahun_akademik ?? '-',
+                $semester->nama_semester ?? '-'
+            );
+        }
+
         $availableClassCount = KelasKuliah::query()
             ->where('id_semester', $semester->id)
             ->where('id_prodi', $mahasiswa->id_prodi)
@@ -1665,24 +1744,50 @@ class KRSMahasiswaController extends Controller
     //     return ($currentYear - $angkatan) * 2 + 1;
     // }
 
-    private function hitungSemesterBerjalan(Mahasiswa $mahasiswa): int
-    {
-        $semesterAktif = $this->getActiveSemester();
-        $tahunSekarang = (int) substr($semesterAktif->tahunAkademik->tahun_akademik, 0, 4);
-        $digitPeriode = (strtolower(trim($semesterAktif->nama_semester)) === 'ganjil') ? 1 : 2;
-        $selisihTahun = $tahunSekarang - $mahasiswa->angkatan;
-
-        return ($selisihTahun * 2) + $digitPeriode;
-    }
-
     private function hitungSemesterKrs(Mahasiswa $mahasiswa, Semester $semester): int
     {
-        $tahunAkademik = $semester->tahunAkademik;
-        $tahunMulai = (int) substr((string) $tahunAkademik->tahun_akademik, 0, 4);
-        $digitPeriode = strtolower(trim((string) $semester->nama_semester)) === 'ganjil' ? 1 : 2;
-        $selisihTahun = $tahunMulai - (int) $mahasiswa->angkatan;
+        $semester->loadMissing('tahunAkademik');
 
-        return max(1, ($selisihTahun * 2) + $digitPeriode);
+        return $this->calculateSemesterPosition(
+            $mahasiswa,
+            (string) ($semester->tahunAkademik?->tahun_akademik ?? ''),
+            (string) ($semester->nama_semester ?? '')
+        );
+    }
+
+    private function calculateSemesterPosition(Mahasiswa $mahasiswa, string $tahunAkademik, string $namaSemester): int
+    {
+        $tahunMulai = (int) substr($tahunAkademik, 0, 4);
+        $digitPeriode = strtolower(trim($namaSemester)) === 'ganjil' ? 1 : 2;
+        $selisihTahun = $tahunMulai - (int) $mahasiswa->angkatan;
+        $semesterKe = ($selisihTahun * 2) + $digitPeriode;
+
+        return max(0, $semesterKe);
+    }
+
+    private function buildSemesterEligibility(Mahasiswa $mahasiswa, Semester $semester): array
+    {
+        $semester->loadMissing('tahunAkademik');
+        $semesterKe = $this->hitungSemesterKrs($mahasiswa, $semester);
+
+        if ($semesterKe < 1) {
+            return [
+                'eligible' => false,
+                'semester_ke' => $semesterKe,
+                'message' => sprintf(
+                    'Periode akademik %s %s belum berlaku untuk mahasiswa angkatan %s.',
+                    $semester->tahunAkademik?->tahun_akademik ?? '-',
+                    $semester->nama_semester ?? '-',
+                    $mahasiswa->angkatan ?? '-'
+                ),
+            ];
+        }
+
+        return [
+            'eligible' => true,
+            'semester_ke' => $semesterKe,
+            'message' => null,
+        ];
     }
 
     private function hasJadwalKonflik(KRS $krs, KelasKuliah $newKelas): bool

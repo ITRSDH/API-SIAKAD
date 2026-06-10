@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Prodi;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class DosenController extends Controller
@@ -15,8 +18,8 @@ class DosenController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Memuat relasi prodi
-            $dosens = Dosen::with(['prodi'])->get();
+            // Memuat relasi prodi dan user
+            $dosens = Dosen::with(['prodi', 'user'])->get();
             $dataprodi = Prodi::all();
             return response()->json([
                 'success' => true,
@@ -38,7 +41,7 @@ class DosenController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $dosen = Dosen::with(['prodi'])->find($id);
+            $dosen = Dosen::with(['prodi', 'user'])->find($id);
 
             if (!$dosen) {
                 return response()->json([
@@ -66,7 +69,6 @@ class DosenController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
-                // 'user_id' => 'required|exists:user,id',
                 'nidn' => 'nullable|string|unique:dosen,nidn',
                 'nup' => 'nullable|string|unique:dosen,nup',
                 'nama_dosen' => 'required|string|max:255',
@@ -74,19 +76,42 @@ class DosenController extends Controller
                 'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                // 'email' => 'nullable|email|unique:dosen,email',
-                // 'jabatan_akademik' => 'nullable|string|max:255', // Asisten Ahli, Lektor, dll
-                // 'pangkat_golongan' => 'nullable|string|max:255',
-                // 'status_aktif' => 'boolean', // Default: true
-                // Tambahkan validasi untuk field lain jika ada
+                'email' => 'nullable|email|unique:users,email',
+                'password' => 'nullable|string|min:6',
             ]);
 
-            $dosen = Dosen::create($request->all());
+            $result = DB::transaction(function () use ($request) {
+                $password = $request->filled('password')
+                    ? Hash::make($request->password)
+                    : Hash::make($request->tanggal_lahir ? date('dmY', strtotime($request->tanggal_lahir)) : 'password');
+
+                $user = User::create([
+                    'name' => $request->nama_dosen,
+                    'email' => $request->email,
+                    'password' => $password,
+                    'status' => 'aktif',
+                ]);
+
+                $user->assignRole('dosen');
+
+                $dosenData = $this->buildDosenPayload($request);
+                $dosenData['user_id'] = $user->id;
+
+                $dosen = Dosen::create($dosenData);
+
+                return [
+                    'user' => $user,
+                    'dosen' => $dosen->fresh(['prodi', 'user']),
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Dosen berhasil dibuat.',
-                'data' => $dosen
+                'message' => 'Dosen dan User berhasil dibuat.',
+                'data' => [
+                    'dosen' => $result['dosen'],
+                    'user' => $result['user'],
+                ]
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -106,7 +131,7 @@ class DosenController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            $dosen = Dosen::find($id);
+            $dosen = Dosen::with('user')->find($id);
 
             if (!$dosen) {
                 return response()->json([
@@ -117,7 +142,6 @@ class DosenController extends Controller
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                // 'user_id' => 'sometimes|exists:user,id',
                 'nidn' => 'nullable|string|unique:dosen,nidn,' . $id,
                 'nup' => 'nullable|string|unique:dosen,nup,' . $id,
                 'nama_dosen' => 'sometimes|string|max:255',
@@ -125,19 +149,61 @@ class DosenController extends Controller
                 'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                // 'email' => 'nullable|email|unique:dosen,email,' . $id,
-                // 'jabatan_akademik' => 'nullable|string|max:255',
-                // 'pangkat_golongan' => 'nullable|string|max:255',
-                // 'status_aktif' => 'boolean',
-                // Tambahkan validasi untuk field lain jika ada
+                'email' => 'nullable|email|unique:users,email,' . $dosen->user_id,
+                'password' => 'nullable|string|min:6',
             ]);
 
-            $dosen->update($request->all());
+            $result = DB::transaction(function () use ($request, $dosen) {
+                $dosenData = $this->buildDosenPayload($request);
+                $dosen->update($dosenData);
+
+                $shouldSyncUser = $request->hasAny(['nama_dosen', 'email', 'password']);
+
+                if ($shouldSyncUser) {
+                    if ($dosen->user) {
+                        $userData = [];
+
+                        if ($request->has('nama_dosen')) {
+                            $userData['name'] = $request->nama_dosen;
+                        }
+
+                        if ($request->has('email')) {
+                            $userData['email'] = $request->email;
+                        }
+
+                        if ($request->filled('password')) {
+                            $userData['password'] = Hash::make($request->password);
+                        }
+
+                        if (!empty($userData)) {
+                            $dosen->user->update($userData);
+                        }
+                    } else {
+                        $password = $request->filled('password')
+                            ? Hash::make($request->password)
+                            : Hash::make($request->tanggal_lahir ?? $dosen->tanggal_lahir
+                                ? date('dmY', strtotime($request->tanggal_lahir ?? $dosen->tanggal_lahir))
+                                : 'password');
+
+                        $user = User::create([
+                            'name' => $request->input('nama_dosen', $dosen->nama_dosen),
+                            'email' => $request->input('email'),
+                            'password' => $password,
+                            'status' => 'aktif',
+                        ]);
+
+                        $user->assignRole('dosen');
+                        $dosen->update(['user_id' => $user->id]);
+                    }
+                }
+
+                return $dosen->fresh(['prodi', 'user']);
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Dosen berhasil diperbarui.',
-                'data' => $dosen
+                'message' => 'Dosen dan User berhasil diperbarui.',
+                'data' => $result
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -152,6 +218,20 @@ class DosenController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function buildDosenPayload(Request $request): array
+    {
+        return $request->only([
+            'id_prodi',
+            'nidn',
+            'nup',
+            'nama_dosen',
+            'jenis_kelamin',
+            'tanggal_lahir',
+            'alamat',
+            'no_hp',
+        ]);
     }
 
     public function destroy(string $id): JsonResponse
