@@ -348,6 +348,59 @@ class MahasiswaController extends Controller
         }
     }
 
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'ids' => 'required|array|min:1',
+                'ids.*' => 'uuid|exists:mahasiswa,id',
+            ]);
+
+            $mahasiswas = Mahasiswa::with('user')
+                ->whereIn('id', $validated['ids'])
+                ->get();
+
+            if ($mahasiswas->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada mahasiswa yang ditemukan untuk dihapus.',
+                ], 404);
+            }
+
+            DB::transaction(function () use ($mahasiswas) {
+                foreach ($mahasiswas as $mahasiswa) {
+                    $user = $mahasiswa->user;
+                    $mahasiswa->delete();
+
+                    if ($user) {
+                        $user->delete();
+                    }
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => sprintf('%d mahasiswa beserta user terkait berhasil dihapus.', $mahasiswas->count()),
+                'data' => [
+                    'deleted_ids' => $mahasiswas->pluck('id')->values(),
+                    'deleted_count' => $mahasiswas->count(),
+                ],
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus mahasiswa secara kolektif.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function export(Request $request)
     {
         try {

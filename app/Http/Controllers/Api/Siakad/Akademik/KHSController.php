@@ -284,7 +284,7 @@ class KHSController extends Controller
             'nilai_akhir' => 'nullable|numeric|min:0|max:100',
             'nilai_huruf' => 'nullable|string|max:2',
             'bobot_nilai' => 'nullable|numeric|min:0',
-            'mutu' => 'nullable|numeric|min:0|max:4',
+            'mutu' => 'nullable|numeric|min:0',
             'ipk' => 'nullable|numeric|min:0|max:4',
             'reason' => 'nullable|string|max:1000',
         ]);

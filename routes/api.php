@@ -107,6 +107,7 @@ Route::prefix('v1')->group(function () {
 
                     Route::apiResource('dosen', \App\Http\Controllers\Api\Siakad\MasterData\DosenController::class);
 
+                    Route::post('mahasiswa/bulk-delete', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'bulkDestroy'])->name('mahasiswa.bulk-destroy');
                     Route::apiResource('mahasiswa', \App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class);
                     Route::get('mahasiswa/{id}/riwayat-kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'riwayatKurikulum'])->name('mahasiswa.riwayat-kurikulum');
                     Route::post('mahasiswa/{id}/migrasi-kurikulum', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaController::class, 'migrateKurikulum'])->name('mahasiswa.migrasi-kurikulum');
