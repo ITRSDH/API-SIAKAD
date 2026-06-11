@@ -25,8 +25,7 @@ class MahasiswaController extends Controller
 {
     public function __construct(
         private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
-    ) {
-    }
+    ) {}
 
     public function index(): JsonResponse
     {
@@ -227,7 +226,7 @@ class MahasiswaController extends Controller
                     || $request->has('angkatan')
                     || $request->has('tanggal_masuk')
                 ) {
-                $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
+                    $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
                         $request->input('id_kurikulum'),
                         $targetProdiId,
                         $request->input('angkatan', $mahasiswa->angkatan),
@@ -493,6 +492,9 @@ class MahasiswaController extends Controller
             ->delete();
 
         DB::table('krs_collective_batch_items')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
+        DB::table('refresh_tokens')
             ->where('id_mahasiswa', $mahasiswaId)
             ->delete();
     }
