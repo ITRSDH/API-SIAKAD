@@ -286,6 +286,38 @@ class KurikulumController extends Controller
         try {
             $kurikulum = Kurikulum::findOrFail($id);
 
+            $blockingRelations = [];
+
+            $riwayatCount = DB::table('riwayat_kurikulum_mahasiswa')
+                ->where('id_kurikulum', $id)
+                ->count();
+            if ($riwayatCount > 0) {
+                $blockingRelations[] = "riwayat kurikulum mahasiswa ({$riwayatCount})";
+            }
+
+            $konversiAsalCount = DB::table('konversi_mata_kuliah')
+                ->where('id_kurikulum_asal', $id)
+                ->count();
+            if ($konversiAsalCount > 0) {
+                $blockingRelations[] = "konversi mata kuliah sebagai kurikulum asal ({$konversiAsalCount})";
+            }
+
+            $konversiTujuanCount = DB::table('konversi_mata_kuliah')
+                ->where('id_kurikulum_tujuan', $id)
+                ->count();
+            if ($konversiTujuanCount > 0) {
+                $blockingRelations[] = "konversi mata kuliah sebagai kurikulum tujuan ({$konversiTujuanCount})";
+            }
+
+            if (!empty($blockingRelations)) {
+                DB::rollBack();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Struktur kurikulum tidak dapat dihapus karena masih terhubung dengan ' . implode(', ', $blockingRelations) . '.'
+                ], 422);
+            }
+
             $kurikulum->delete();
 
             DB::commit();
