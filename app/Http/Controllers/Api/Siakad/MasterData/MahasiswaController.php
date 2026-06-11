@@ -494,9 +494,11 @@ class MahasiswaController extends Controller
         DB::table('krs_collective_batch_items')
             ->where('id_mahasiswa', $mahasiswaId)
             ->delete();
-        DB::table('refresh_tokens')
-            ->where('id_mahasiswa', $mahasiswaId)
-            ->delete();
+        if (filled($mahasiswa->user_id)) {
+            DB::table('refresh_tokens')
+                ->where('user_id', $mahasiswa->user_id)
+                ->delete();
+        }
     }
 
     public function export(Request $request)
