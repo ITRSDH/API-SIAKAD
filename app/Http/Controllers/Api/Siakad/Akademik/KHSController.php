@@ -68,7 +68,8 @@ class KHSController extends Controller
     {
         $query = KHS::with([
             'mahasiswa:id,nim,nama_mahasiswa,id_prodi',
-            'mahasiswa.prodi:id,nama_prodi',
+            'mahasiswa.prodi:id,nama_prodi,id_kaprodi',
+            'mahasiswa.prodi.kaprodi:id,nama_dosen,nidn',
             'semester.tahunAkademik:id,tahun_akademik',
             'updater:id,name',
             'finalizer:id,name',

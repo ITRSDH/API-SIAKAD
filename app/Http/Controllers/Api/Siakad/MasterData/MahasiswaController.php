@@ -805,7 +805,7 @@ class MahasiswaController extends Controller
     private function serializeMahasiswa(Mahasiswa $mahasiswa): array
     {
         $mahasiswa->loadMissing([
-            'prodi',
+            'prodi.kaprodi',
             'kurikulum.kurikulumInduk.jenisKurikulum',
             'kurikulum.semesterMulai.tahunAkademik',
             'dosenWali',
