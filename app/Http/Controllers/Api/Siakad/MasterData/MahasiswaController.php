@@ -326,18 +326,22 @@ class MahasiswaController extends Controller
 
             // Gunakan transaksi untuk memastikan kedua data terhapus atau gagal bersama
             DB::transaction(function () use ($mahasiswa) {
+                $user = $mahasiswa->user;
+
+                $this->purgeMahasiswaRelatedData($mahasiswa);
+
                 // 1. Hapus Mahasiswa terlebih dahulu (karena memiliki foreign key ke User)
                 $mahasiswa->delete();
 
                 // 2. Hapus User terkait jika ada
-                if ($mahasiswa->user) {
-                    $mahasiswa->user->delete();
+                if ($user) {
+                    $user->delete();
                 }
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mahasiswa dan User berhasil dihapus.'
+                'message' => 'Mahasiswa, user, dan data akademik terkait berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -370,6 +374,9 @@ class MahasiswaController extends Controller
             DB::transaction(function () use ($mahasiswas) {
                 foreach ($mahasiswas as $mahasiswa) {
                     $user = $mahasiswa->user;
+
+                    $this->purgeMahasiswaRelatedData($mahasiswa);
+
                     $mahasiswa->delete();
 
                     if ($user) {
@@ -380,7 +387,7 @@ class MahasiswaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => sprintf('%d mahasiswa beserta user terkait berhasil dihapus.', $mahasiswas->count()),
+                'message' => sprintf('%d mahasiswa beserta user dan data akademik terkait berhasil dihapus.', $mahasiswas->count()),
                 'data' => [
                     'deleted_ids' => $mahasiswas->pluck('id')->values(),
                     'deleted_count' => $mahasiswas->count(),
@@ -399,6 +406,95 @@ class MahasiswaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function purgeMahasiswaRelatedData(Mahasiswa $mahasiswa): void
+    {
+        $mahasiswaId = $mahasiswa->id;
+
+        $krsIds = DB::table('krs')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->pluck('id');
+
+        if ($krsIds->isNotEmpty()) {
+            DB::table('krs_detail')
+                ->whereIn('id_krs', $krsIds)
+                ->delete();
+
+            DB::table('krs')
+                ->whereIn('id', $krsIds)
+                ->delete();
+        }
+
+        $khsIds = DB::table('khs')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->pluck('id');
+
+        if ($khsIds->isNotEmpty()) {
+            DB::table('khs_revisions')
+                ->whereIn('id_khs', $khsIds)
+                ->delete();
+
+            DB::table('khs_detail')
+                ->whereIn('id_khs', $khsIds)
+                ->delete();
+
+            DB::table('khs')
+                ->whereIn('id', $khsIds)
+                ->delete();
+        }
+
+        $transkripIds = DB::table('transkrip')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->pluck('id');
+
+        if ($transkripIds->isNotEmpty()) {
+            DB::table('transkrip_detail')
+                ->whereIn('id_transkrip', $transkripIds)
+                ->delete();
+
+            DB::table('transkrip')
+                ->whereIn('id', $transkripIds)
+                ->delete();
+        }
+
+        $tugasAkhirIds = DB::table('tugas_akhir')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->pluck('id');
+
+        if ($tugasAkhirIds->isNotEmpty()) {
+            DB::table('tugas_akhir_pembimbing')
+                ->whereIn('id_tugas_akhir', $tugasAkhirIds)
+                ->delete();
+
+            DB::table('tugas_akhir_ujian')
+                ->whereIn('id_tugas_akhir', $tugasAkhirIds)
+                ->delete();
+
+            DB::table('tugas_akhir')
+                ->whereIn('id', $tugasAkhirIds)
+                ->delete();
+        }
+
+        DB::table('peserta_wisuda')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
+
+        DB::table('kelulusan')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
+
+        DB::table('yudisium')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
+
+        DB::table('riwayat_kurikulum_mahasiswa')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
+
+        DB::table('krs_collective_batch_items')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->delete();
     }
 
     public function export(Request $request)
