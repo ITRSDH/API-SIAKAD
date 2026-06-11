@@ -96,7 +96,7 @@ Route::prefix('v1')->group(function () {
                     Route::put('mata-kuliah/{id}/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'update'])->name('mata-kuliah.update');
                     Route::delete('mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'destroy'])->name('mata-kuliah.destroy');
 
-                    Route::get('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'index'])->name('kelas-kuliah.index');
+                    Route::get('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'index'])->name('kelas-kuliah.index');
                     Route::get('kelas-kuliah/dosen-saya', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'kelasDosenSaya'])->name('kelas-kuliah.dosen-saya');
                     Route::get('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'show'])->name('kelas-kuliah.show');
                     Route::get('kelas-kuliah/{id}/krs-candidates', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'krsCandidates'])->name('kelas-kuliah.krs-candidates');

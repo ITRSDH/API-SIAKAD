@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Akademik\KRS;
 use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\Dosen;
-use App\Models\MasterData\Kelaskuliah;
+use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
 use App\Services\CurriculumConversionService;
 use Exception;
@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class KelaskuliahController extends Controller
+class KelasKuliahController extends Controller
 {
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService
@@ -92,7 +92,7 @@ class KelaskuliahController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $kelaskuliah = Kelaskuliah::select([
+            $kelaskuliah = KelasKuliah::select([
                 'id',
                 'id_prodi',
                 'id_kurikulum_mata_kuliah',
@@ -470,7 +470,7 @@ class KelaskuliahController extends Controller
 
         try {
             DB::beginTransaction();
-            $kelaskuliah = Kelaskuliah::create($validatedData);
+            $kelaskuliah = KelasKuliah::create($validatedData);
             DB::commit();
             return response()->json([
                 'success' => true,
@@ -489,7 +489,7 @@ class KelaskuliahController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $kelasKuliah = Kelaskuliah::findOrFail($id);
+        $kelasKuliah = KelasKuliah::findOrFail($id);
 
         $validatedData = $request->validate([
             'id_prodi' => 'required|uuid|exists:prodi,id',
@@ -525,7 +525,7 @@ class KelaskuliahController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $kelasKuliah = Kelaskuliah::findOrFail($id);
+        $kelasKuliah = KelasKuliah::findOrFail($id);
 
         if (!$kelasKuliah) {
             return response()->json([
@@ -552,7 +552,7 @@ class KelaskuliahController extends Controller
 
     private function baseKelasQuery()
     {
-        return Kelaskuliah::select([
+        return KelasKuliah::select([
             'id',
             'id_prodi',
             'id_kurikulum_mata_kuliah',
@@ -620,9 +620,9 @@ class KelaskuliahController extends Controller
         })->values();
     }
 
-    private function loadKelasForKrsRegistration(string $id): Kelaskuliah
+    private function loadKelasForKrsRegistration(string $id): KelasKuliah
     {
-        return Kelaskuliah::query()
+        return KelasKuliah::query()
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
                 'jadwal',
@@ -632,7 +632,7 @@ class KelaskuliahController extends Controller
 
     private function assessMahasiswaRegistrationCandidate(
         Mahasiswa $mahasiswa,
-        Kelaskuliah $kelasKuliah,
+        KelasKuliah $kelasKuliah,
         ?KRS $krs,
         ?string $targetMataKuliahId,
         int $candidateSks
@@ -856,7 +856,7 @@ class KelaskuliahController extends Controller
         });
     }
 
-    private function hasScheduleConflict(Collection $details, Kelaskuliah $kelasKuliah): bool
+    private function hasScheduleConflict(Collection $details, KelasKuliah $kelasKuliah): bool
     {
         foreach ($details as $detail) {
             $existingClass = $detail->kelasKuliah;
