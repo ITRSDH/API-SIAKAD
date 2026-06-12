@@ -10,6 +10,7 @@ use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\PenilaianKelas;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Semester;
+use App\Services\ActiveCurriculumService;
 use App\Services\Khs\KhsCalculationService;
 use App\Services\Khs\KhsManualUpdateService;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,8 @@ class KHSController extends Controller
 
     public function __construct(
         private readonly KhsCalculationService $calculationService,
-        private readonly KhsManualUpdateService $manualUpdateService
+        private readonly KhsManualUpdateService $manualUpdateService,
+        private readonly ActiveCurriculumService $activeCurriculumService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -386,6 +388,20 @@ class KHSController extends Controller
 
     private function buildSemesterSnapshot(string $mahasiswaId, string $semesterId, KRS $krs, ?float $manualIpk = null): array
     {
+        $mahasiswa = $krs->relationLoaded('mahasiswa') ? $krs->mahasiswa : Mahasiswa::find($mahasiswaId);
+        $curriculumContext = $mahasiswa
+            ? $this->activeCurriculumService->resolveCurriculumContext($mahasiswa)
+            : [
+                'id_kurikulum' => null,
+                'id_kurikulum_sumber' => null,
+                'id_kurikulum_dasar' => null,
+                'id_kurikulum_induk' => null,
+                'id_struktur_operasional' => null,
+                'id_kurikulum_operasional' => null,
+                'kurikulum_induk' => null,
+                'struktur_operasional' => null,
+            ];
+
         $details = $this->collectCountedKhsDetails($krs->details)->map(function (KRSDetail $detail) {
             return [
                 'id_krs_detail' => $detail->id,
@@ -414,12 +430,16 @@ class KHSController extends Controller
             'summary' => [
                 'id_mahasiswa' => $mahasiswaId,
                 'id_semester' => $semesterId,
+                'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                 'total_sks_diambil' => $summary['total_sks_diambil'],
                 'total_sks_lulus' => $summary['total_sks_lulus'],
                 'ips' => $summary['ips'],
                 'ipk' => $ipk,
                 'keterangan' => $summary['keterangan'],
             ],
+            'kurikulum_context' => $curriculumContext,
             'details' => $details,
         ];
     }

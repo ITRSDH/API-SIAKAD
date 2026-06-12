@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class KurikulumInduk extends Model
 {
@@ -63,15 +62,8 @@ class KurikulumInduk extends Model
         return $this->hasMany(Kurikulum::class, 'id_kurikulum_induk');
     }
 
-    public function mahasiswas(): HasManyThrough
+    public function riwayatMahasiswa(): HasMany
     {
-        return $this->hasManyThrough(
-            Mahasiswa::class,
-            Kurikulum::class,
-            'id_kurikulum_induk',
-            'id_kurikulum',
-            'id',
-            'id'
-        );
+        return $this->hasMany(RiwayatKurikulumMahasiswa::class, 'id_kurikulum_induk');
     }
 }

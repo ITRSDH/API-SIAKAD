@@ -280,7 +280,7 @@ class TugasAkhirController extends Controller
     {
         $mahasiswaId = $validated['id_mahasiswa'] ?? $existing?->id_mahasiswa;
         $mahasiswa = $mahasiswaId
-            ? Mahasiswa::with(['prodi', 'kurikulum', 'riwayatKurikulumAktif.kurikulum'])->find($mahasiswaId)
+            ? Mahasiswa::with(['prodi', 'riwayatKurikulumAktif.kurikulum'])->find($mahasiswaId)
             : null;
 
         $resolvedKurikulumId = $validated['id_kurikulum']

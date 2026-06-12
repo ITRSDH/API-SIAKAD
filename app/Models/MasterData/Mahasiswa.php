@@ -27,7 +27,6 @@ class Mahasiswa extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'id_prodi',
-        'id_kurikulum',
         'id_dosen',
         'user_id',
         'nim',
@@ -55,11 +54,6 @@ class Mahasiswa extends Model
         return $this->belongsTo(Prodi::class, 'id_prodi');
     }
 
-    public function kurikulum(): BelongsTo
-    {
-        return $this->belongsTo(Kurikulum::class, 'id_kurikulum');
-    }
-
     public function riwayatKurikulum(): HasMany
     {
         return $this->hasMany(RiwayatKurikulumMahasiswa::class, 'id_mahasiswa')
@@ -77,28 +71,48 @@ class Mahasiswa extends Model
 
     public function getCurrentKurikulumId(): ?string
     {
-        // Kurikulum mahasiswa pada current state disimpan langsung di tabel mahasiswa.
-        // Riwayat kurikulum dipakai sebagai fallback bila relasi aktif sudah dimuat.
-        if (filled($this->id_kurikulum)) {
-            return $this->id_kurikulum;
-        }
-
         if ($this->relationLoaded('riwayatKurikulumAktif')) {
             return $this->riwayatKurikulumAktif?->id_kurikulum;
         }
 
         if ($this->relationLoaded('riwayatKurikulum')) {
-            return $this->riwayatKurikulum
+            $activeHistoryId = $this->riwayatKurikulum
                 ->firstWhere('is_active', true)?->id_kurikulum;
+
+            if (filled($activeHistoryId)) {
+                return $activeHistoryId;
+            }
         }
 
-        return $this->riwayatKurikulumAktif()->value('id_kurikulum');
+        $activeHistoryId = $this->riwayatKurikulumAktif()->value('id_kurikulum');
+        if (filled($activeHistoryId)) {
+            return $activeHistoryId;
+        }
+
+        return null;
     }
 
     public function getCurrentKurikulumIndukId(): ?string
     {
-        if ($this->relationLoaded('kurikulum') && filled($this->kurikulum?->id_kurikulum_induk)) {
-            return $this->kurikulum?->id_kurikulum_induk;
+        if ($this->relationLoaded('riwayatKurikulumAktif')) {
+            $activeIndukId = $this->riwayatKurikulumAktif?->id_kurikulum_induk;
+            if (filled($activeIndukId)) {
+                return $activeIndukId;
+            }
+        }
+
+        if ($this->relationLoaded('riwayatKurikulum')) {
+            $activeIndukId = $this->riwayatKurikulum
+                ->firstWhere('is_active', true)?->id_kurikulum_induk;
+
+            if (filled($activeIndukId)) {
+                return $activeIndukId;
+            }
+        }
+
+        $activeHistoryIndukId = $this->riwayatKurikulumAktif()->value('id_kurikulum_induk');
+        if (filled($activeHistoryIndukId)) {
+            return $activeHistoryIndukId;
         }
 
         $currentKurikulumId = $this->getCurrentKurikulumId();
@@ -116,10 +130,6 @@ class Mahasiswa extends Model
         $currentKurikulumId = $this->getCurrentKurikulumId();
         if (!$currentKurikulumId) {
             return null;
-        }
-
-        if ($this->relationLoaded('kurikulum') && $this->kurikulum?->id === $currentKurikulumId) {
-            return $this->kurikulum;
         }
 
         return Kurikulum::find($currentKurikulumId);

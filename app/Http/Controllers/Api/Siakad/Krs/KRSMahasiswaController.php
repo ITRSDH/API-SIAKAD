@@ -1180,6 +1180,18 @@ class KRSMahasiswaController extends Controller
     {
         $validationSummary = $this->buildValidationSummary($krs);
         $semesterKe = null;
+        $curriculumContext = $krs->mahasiswa
+            ? $this->activeCurriculumService->resolveCurriculumContext($krs->mahasiswa)
+            : [
+                'id_kurikulum' => null,
+                'id_kurikulum_sumber' => null,
+                'id_kurikulum_dasar' => null,
+                'id_kurikulum_induk' => null,
+                'id_struktur_operasional' => null,
+                'id_kurikulum_operasional' => null,
+                'kurikulum_induk' => null,
+                'struktur_operasional' => null,
+            ];
 
         if ($krs->mahasiswa && $krs->semester && $krs->semester->tahunAkademik) {
             $semesterKe = $this->hitungSemesterKrs($krs->mahasiswa, $krs->semester);
@@ -1208,6 +1220,7 @@ class KRSMahasiswaController extends Controller
             'can_edit' => $krs->isEditable(),
             'can_submit' => $krs->isEditable() && $validationSummary['is_valid'],
             'mahasiswa' => $krs->mahasiswa,
+            'kurikulum_context' => $curriculumContext,
             'semester' => $krs->semester,
             'details' => $details,
             'approved_by_detail' => $krs->approvedBy,
@@ -1496,6 +1509,9 @@ class KRSMahasiswaController extends Controller
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
+                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                    'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                    'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
                     'generated_sks' => 0,
                     'unresolved_count' => 1,
@@ -1511,14 +1527,15 @@ class KRSMahasiswaController extends Controller
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
-                    'id_struktur_operasional' => $activeKurikulumId,
-                    'id_kurikulum_operasional' => $activeKurikulumId,
+                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                    'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                    'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
                     'generated_sks' => 0,
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'reason' => 'Mahasiswa belum memiliki kurikulum operasional untuk semester berjalan',
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
                 ]],
             ];
         }
@@ -1530,13 +1547,18 @@ class KRSMahasiswaController extends Controller
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
+                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                    'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                    'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
                     'generated_sks' => 0,
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'id_struktur_operasional' => $activeKurikulumId,
-                    'id_kurikulum' => $activeKurikulumId,
+                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                    'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                    'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
+                    'id_kurikulum' => $curriculumContext['id_kurikulum_operasional'] ?? $activeKurikulumId,
                     'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
                 ]],
             ];
@@ -1618,8 +1640,9 @@ class KRSMahasiswaController extends Controller
             'summary' => [
                 'semester_ke' => $semesterKe,
                 'kurikulum_context' => $curriculumContext,
-                'id_struktur_operasional' => $activeKurikulumId,
-                'id_kurikulum_operasional' => $activeKurikulumId,
+                'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+                'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
+                'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                 'generated_count' => $generatedCount,
                 'generated_sks' => $generatedSks,
                 'unresolved_count' => count($unresolvedItems),
@@ -1670,14 +1693,14 @@ class KRSMahasiswaController extends Controller
             ->count();
 
         if ($availableClassCount > 0) {
-            return "Ada {$availableClassCount} kelas kuliah untuk semester {$semesterKe}, tetapi belum terhubung ke kurikulum operasional mahasiswa";
+            return "Ada {$availableClassCount} kelas kuliah untuk semester {$semesterKe}, tetapi paket kurikulum otomatis yang cocok belum ditemukan. Mata kuliah masih bisa ditambahkan manual dari penawaran kelas.";
         }
 
         if (!$activeKurikulumId) {
-            return "Mahasiswa belum memiliki kurikulum operasional untuk membentuk paket semester {$semesterKe}";
+            return "Sistem belum menemukan struktur kurikulum operasional yang cocok berdasarkan prodi, angkatan, dan tanggal masuk mahasiswa untuk semester {$semesterKe}.";
         }
 
-        return "Belum ada mata kuliah paket yang terdefinisi untuk semester {$semesterKe} pada kurikulum operasional mahasiswa";
+        return "Struktur kurikulum operasional mahasiswa sudah ditemukan, tetapi belum ada mata kuliah paket yang terdefinisi untuk semester {$semesterKe}.";
     }
 
     private function hasClassScheduleConflict(Collection $selectedClasses, KelasKuliah $candidate): bool

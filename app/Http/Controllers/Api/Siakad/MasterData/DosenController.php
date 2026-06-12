@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use Exception;
+use App\Models\RefreshToken;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\MasterData\Dosen;
@@ -237,7 +238,7 @@ class DosenController extends Controller
     public function destroy(string $id): JsonResponse
     {
         try {
-            $dosen = Dosen::find($id);
+            $dosen = Dosen::with('user')->find($id);
 
             if (!$dosen) {
                 return response()->json([
@@ -246,11 +247,27 @@ class DosenController extends Controller
                 ], 404);
             }
 
-            $dosen->delete();
+            DB::transaction(function () use ($dosen) {
+                $user = $dosen->user;
+
+                $dosen->delete();
+
+                if ($user) {
+                    RefreshToken::query()
+                        ->where('user_id', $user->id)
+                        ->delete();
+
+                    if (method_exists($user, 'syncRoles')) {
+                        $user->syncRoles([]);
+                    }
+
+                    $user->delete();
+                }
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Dosen berhasil dihapus.'
+                'message' => 'Dosen, user, dan refresh token terkait berhasil dihapus.'
             ], 200);
         } catch (Exception $e) {
             return response()->json([

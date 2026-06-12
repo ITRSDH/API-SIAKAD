@@ -21,20 +21,32 @@ class MahasiswaCurriculumContextService
             return null;
         }
 
-        if (filled($resolvedMahasiswa->id_kurikulum)) {
-            return $resolvedMahasiswa->id_kurikulum;
-        }
-
         if ($resolvedMahasiswa->relationLoaded('riwayatKurikulumAktif')) {
-            return $resolvedMahasiswa->riwayatKurikulumAktif?->id_kurikulum;
+            $activeHistoryId = $resolvedMahasiswa->riwayatKurikulumAktif?->id_kurikulum;
+            if (filled($activeHistoryId)) {
+                return $activeHistoryId;
+            }
         }
 
         if ($resolvedMahasiswa->relationLoaded('riwayatKurikulum')) {
-            return $resolvedMahasiswa->riwayatKurikulum
+            $activeHistoryId = $resolvedMahasiswa->riwayatKurikulum
                 ->firstWhere('is_active', true)?->id_kurikulum;
+
+            if (filled($activeHistoryId)) {
+                return $activeHistoryId;
+            }
         }
 
-        return $resolvedMahasiswa->riwayatKurikulumAktif()->value('id_kurikulum');
+        $activeHistoryId = $resolvedMahasiswa->riwayatKurikulumAktif()->value('id_kurikulum');
+        if (filled($activeHistoryId)) {
+            return $activeHistoryId;
+        }
+
+        return $this->resolveMatchingKurikulumId(
+            $resolvedMahasiswa->id_prodi,
+            $resolvedMahasiswa->angkatan,
+            $resolvedMahasiswa->tanggal_masuk
+        );
     }
 
     public function resolveKrsKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
@@ -128,8 +140,25 @@ class MahasiswaCurriculumContextService
             return null;
         }
 
-        if ($resolvedMahasiswa->relationLoaded('kurikulum') && filled($resolvedMahasiswa->kurikulum?->id_kurikulum_induk)) {
-            return $resolvedMahasiswa->kurikulum?->id_kurikulum_induk;
+        if ($resolvedMahasiswa->relationLoaded('riwayatKurikulumAktif')) {
+            $activeIndukId = $resolvedMahasiswa->riwayatKurikulumAktif?->id_kurikulum_induk;
+            if (filled($activeIndukId)) {
+                return $activeIndukId;
+            }
+        }
+
+        if ($resolvedMahasiswa->relationLoaded('riwayatKurikulum')) {
+            $activeIndukId = $resolvedMahasiswa->riwayatKurikulum
+                ->firstWhere('is_active', true)?->id_kurikulum_induk;
+
+            if (filled($activeIndukId)) {
+                return $activeIndukId;
+            }
+        }
+
+        $activeIndukId = $resolvedMahasiswa->riwayatKurikulumAktif()->value('id_kurikulum_induk');
+        if (filled($activeIndukId)) {
+            return $activeIndukId;
         }
 
         $operationalId = $this->resolveMahasiswaKurikulumId($resolvedMahasiswa);

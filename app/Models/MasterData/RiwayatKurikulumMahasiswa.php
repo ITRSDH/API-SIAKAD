@@ -20,6 +20,7 @@ class RiwayatKurikulumMahasiswa extends Model
     protected $fillable = [
         'id_mahasiswa',
         'id_kurikulum',
+        'id_kurikulum_induk',
         'tanggal_mulai',
         'tanggal_selesai',
         'is_active',
@@ -41,6 +42,11 @@ class RiwayatKurikulumMahasiswa extends Model
     public function kurikulum(): BelongsTo
     {
         return $this->belongsTo(Kurikulum::class, 'id_kurikulum');
+    }
+
+    public function kurikulumInduk(): BelongsTo
+    {
+        return $this->belongsTo(KurikulumInduk::class, 'id_kurikulum_induk');
     }
 
     public function createdBy(): BelongsTo

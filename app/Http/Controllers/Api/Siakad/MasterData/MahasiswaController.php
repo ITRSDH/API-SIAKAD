@@ -18,20 +18,22 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Exports\MahasiswaExport;
 use App\Imports\MahasiswaImport;
+use App\Services\ActiveCurriculumService;
 use App\Services\MahasiswaCurriculumContextService;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MahasiswaController extends Controller
 {
     public function __construct(
-        private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
+        private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService,
+        private readonly ActiveCurriculumService $activeCurriculumService
     ) {}
 
     public function index(): JsonResponse
     {
         try {
             // Memuat relasi yang relevan termasuk user
-            $mahasiswas = Mahasiswa::with(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
+            $mahasiswas = Mahasiswa::with(['prodi', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ->where('status', '!=', 'PMB')
                 ->get()
                 ->map(fn(Mahasiswa $mahasiswa) => $this->serializeMahasiswa($mahasiswa));
@@ -63,7 +65,6 @@ class MahasiswaController extends Controller
         try {
             $mahasiswa = Mahasiswa::with([
                 'prodi',
-                'kurikulum.kurikulumInduk',
                 'dosenWali',
                 'user',
                 'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
@@ -95,7 +96,6 @@ class MahasiswaController extends Controller
         try {
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
-                'id_kurikulum' => 'nullable|exists:kurikulum,id',
                 'nim' => 'required|string|max:20|unique:mahasiswa,nim',
                 'nik' => 'nullable|string|max:20|unique:mahasiswa,nik',
                 'nama_mahasiswa' => 'required|string|max:255',
@@ -114,17 +114,11 @@ class MahasiswaController extends Controller
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
             $result = DB::transaction(function () use ($request) {
                 $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
-                    $request->input('id_kurikulum'),
+                    null,
                     $request->input('id_prodi'),
                     $request->input('angkatan'),
                     $request->input('tanggal_masuk')
                 );
-
-                if (!$resolvedKurikulumId) {
-                    throw ValidationException::withMessages([
-                        'id_kurikulum' => ['Kurikulum untuk program studi ini belum tersedia. Pilih atau buat kurikulum terlebih dahulu.'],
-                    ]);
-                }
 
                 // 1. Buat User terlebih dahulu
                 $password = $request->filled('password')
@@ -144,19 +138,20 @@ class MahasiswaController extends Controller
                 // 3. Buat Mahasiswa dengan menghubungkan ke user yang baru dibuat
                 $mahasiswaData = $this->buildMahasiswaPayload($request);
                 $mahasiswaData['user_id'] = $user->id;
-                $mahasiswaData['id_kurikulum'] = $resolvedKurikulumId;
 
                 $mahasiswa = Mahasiswa::create($mahasiswaData);
-                $this->syncActiveKurikulumHistory(
-                    $mahasiswa,
-                    $resolvedKurikulumId,
-                    $request->input('tanggal_masuk'),
-                    'Kurikulum awal mahasiswa'
-                );
+                if ($resolvedKurikulumId) {
+                    $this->syncActiveKurikulumHistory(
+                        $mahasiswa,
+                        $resolvedKurikulumId,
+                        $request->input('tanggal_masuk'),
+                        'Kurikulum awal mahasiswa'
+                    );
+                }
 
                 return [
                     'user' => $user,
-                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ];
             });
 
@@ -197,14 +192,13 @@ class MahasiswaController extends Controller
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'id_kurikulum' => 'nullable|exists:kurikulum,id',
                 'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
                 'nik' => 'sometimes|string|max:20|unique:mahasiswa,nik,' . $id,
                 'nama_mahasiswa' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
-                'tanggal_lahir' => 'sometimes|date',
-                'tempat_lahir' => 'sometimes|string|max:255',
-                'tanggal_masuk' => 'sometimes|date',
+                'tanggal_lahir' => 'nullable|date',
+                'tempat_lahir' => 'nullable|string|max:255',
+                'tanggal_masuk' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'agama' => 'sometimes|in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu',
                 'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
@@ -218,46 +212,74 @@ class MahasiswaController extends Controller
                 // 1. Update Mahasiswa
                 $mahasiswaData = $this->buildMahasiswaPayload($request);
                 unset($mahasiswaData['id_kurikulum_induk']);
+                $resolvedKurikulumId = null;
+                $currentActiveKurikulumId = $mahasiswa->getCurrentKurikulumId();
 
                 $targetProdiId = $request->input('id_prodi', $mahasiswa->id_prodi);
-                if (
-                    $request->has('id_kurikulum')
-                    || $request->has('id_prodi')
-                    || $request->has('angkatan')
-                    || $request->has('tanggal_masuk')
-                ) {
+                $targetAngkatan = $request->input('angkatan', $mahasiswa->angkatan);
+                $targetTanggalMasuk = $request->input('tanggal_masuk', $mahasiswa->tanggal_masuk);
+                $existingTanggalMasuk = $mahasiswa->tanggal_masuk
+                    ? date('Y-m-d', strtotime((string) $mahasiswa->tanggal_masuk))
+                    : null;
+                $normalizedTargetTanggalMasuk = filled($targetTanggalMasuk)
+                    ? date('Y-m-d', strtotime((string) $targetTanggalMasuk))
+                    : null;
+
+                $isChangingProdi = (string) $mahasiswa->id_prodi !== (string) $targetProdiId;
+                $isChangingAngkatan = (string) ($mahasiswa->angkatan ?? '') !== (string) ($targetAngkatan ?? '');
+                $isChangingTanggalMasuk = $existingTanggalMasuk !== $normalizedTargetTanggalMasuk;
+                $isChangingCurriculumContext = $isChangingProdi || $isChangingAngkatan || $isChangingTanggalMasuk;
+
+                if ($isChangingCurriculumContext) {
                     $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
-                        $request->input('id_kurikulum'),
+                        null,
                         $targetProdiId,
-                        $request->input('angkatan', $mahasiswa->angkatan),
-                        $request->input('tanggal_masuk', $mahasiswa->tanggal_masuk)
+                        $targetAngkatan,
+                        $targetTanggalMasuk
                     );
 
-                    if (!$resolvedKurikulumId) {
-                        throw ValidationException::withMessages([
-                            'id_kurikulum' => ['Kurikulum untuk program studi ini belum tersedia. Pilih atau buat kurikulum terlebih dahulu.'],
-                        ]);
-                    }
-
-                    $isChangingKurikulum = $mahasiswa->id_kurikulum !== $resolvedKurikulumId;
-                    $isChangingProdi = $mahasiswa->id_prodi !== $targetProdiId;
+                    $isChangingKurikulum = $currentActiveKurikulumId !== $resolvedKurikulumId;
 
                     if (($isChangingKurikulum || $isChangingProdi) && $this->hasAcademicHistory($mahasiswa)) {
-                        throw ValidationException::withMessages([
-                            'id_kurikulum' => ['Kurikulum atau program studi mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'],
-                        ]);
-                    }
+                        $messages = [];
 
-                    $mahasiswaData['id_kurikulum'] = $resolvedKurikulumId;
+                        if ($isChangingProdi) {
+                            $messages['id_prodi'] = ['Program studi mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
+                        }
+
+                        if ($isChangingAngkatan) {
+                            $messages['angkatan'] = ['Angkatan mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
+                        }
+
+                        if ($isChangingTanggalMasuk) {
+                            $messages['tanggal_masuk'] = ['Tanggal masuk mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
+                        }
+
+                        if (empty($messages)) {
+                            $messages['id_kurikulum'] = ['Konteks kurikulum mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
+                        }
+
+                        throw ValidationException::withMessages($messages);
+                    }
                 }
 
                 $mahasiswa->update($mahasiswaData);
-                $this->syncActiveKurikulumHistory(
-                    $mahasiswa->fresh(),
-                    $mahasiswaData['id_kurikulum'] ?? $mahasiswa->id_kurikulum,
-                    $mahasiswaData['tanggal_masuk'] ?? $mahasiswa->tanggal_masuk,
-                    'Sinkronisasi kurikulum aktif mahasiswa'
-                );
+                if ($isChangingCurriculumContext && !$resolvedKurikulumId) {
+                    RiwayatKurikulumMahasiswa::query()
+                        ->where('id_mahasiswa', $mahasiswa->id)
+                        ->update([
+                            'is_active' => false,
+                            'tanggal_selesai' => now()->toDateString(),
+                            'updated_at' => now(),
+                        ]);
+                } elseif ($isChangingCurriculumContext) {
+                    $this->syncActiveKurikulumHistory(
+                        $mahasiswa->fresh(),
+                        $resolvedKurikulumId,
+                        $mahasiswaData['tanggal_masuk'] ?? $mahasiswa->tanggal_masuk,
+                        'Sinkronisasi kurikulum aktif mahasiswa'
+                    );
+                }
 
                 // 2. Update User jika ada perubahan
                 if ($mahasiswa->user) {
@@ -287,7 +309,7 @@ class MahasiswaController extends Controller
                 }
 
                 return [
-                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'kurikulum.kurikulumInduk', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user', 'riwayatKurikulum.kurikulum'])
                 ];
             });
 
@@ -334,6 +356,10 @@ class MahasiswaController extends Controller
 
                 // 2. Hapus User terkait jika ada
                 if ($user) {
+                    if (method_exists($user, 'syncRoles')) {
+                        $user->syncRoles([]);
+                    }
+
                     $user->delete();
                 }
             });
@@ -379,6 +405,10 @@ class MahasiswaController extends Controller
                     $mahasiswa->delete();
 
                     if ($user) {
+                        if (method_exists($user, 'syncRoles')) {
+                            $user->syncRoles([]);
+                        }
+
                         $user->delete();
                     }
                 }
@@ -583,7 +613,6 @@ class MahasiswaController extends Controller
     {
         $mahasiswa = Mahasiswa::with([
             'prodi',
-            'kurikulum',
             'riwayatKurikulum.kurikulum.kurikulumInduk.jenisKurikulum',
             'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
             'riwayatKurikulum.createdBy:id,name',
@@ -604,6 +633,7 @@ class MahasiswaController extends Controller
                     return [
                         ...$riwayat->toArray(),
                         'id_struktur_operasional' => $riwayat->id_kurikulum,
+                        'id_kurikulum_induk' => $riwayat->id_kurikulum_induk ?? $riwayat->kurikulum?->id_kurikulum_induk,
                         'kurikulum_operasional' => $riwayat->kurikulum ? [
                             'id' => $riwayat->kurikulum->id,
                             'nama_struktur_mk' => $riwayat->kurikulum->nama_struktur_mk,
@@ -660,7 +690,9 @@ class MahasiswaController extends Controller
             ], 422);
         }
 
-        if ($mahasiswa->id_kurikulum === $targetKurikulum->id) {
+        $currentActiveKurikulumId = $mahasiswa->getCurrentKurikulumId();
+
+        if ($currentActiveKurikulumId === $targetKurikulum->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa sudah menggunakan kurikulum tersebut.',
@@ -677,7 +709,7 @@ class MahasiswaController extends Controller
         $tanggalMulai = $validated['tanggal_mulai'] ?? now()->toDateString();
         $catatan = $validated['catatan'] ?? sprintf(
             'Migrasi kurikulum dari %s ke %s',
-            $mahasiswa->id_kurikulum,
+            $currentActiveKurikulumId,
             $targetKurikulum->id
         );
 
@@ -691,13 +723,10 @@ class MahasiswaController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            $mahasiswa->update([
-                'id_kurikulum' => $targetKurikulum->id,
-            ]);
-
             RiwayatKurikulumMahasiswa::create([
                 'id_mahasiswa' => $mahasiswa->id,
                 'id_kurikulum' => $targetKurikulum->id,
+                'id_kurikulum_induk' => $targetKurikulum->id_kurikulum_induk,
                 'tanggal_mulai' => $tanggalMulai,
                 'tanggal_selesai' => null,
                 'is_active' => true,
@@ -707,7 +736,6 @@ class MahasiswaController extends Controller
 
             return $mahasiswa->fresh([
                 'prodi',
-                'kurikulum.kurikulumInduk',
                 'riwayatKurikulum.kurikulum.kurikulumInduk',
                 'riwayatKurikulum.kurikulum.semesterMulai.tahunAkademik',
                 'riwayatKurikulum.createdBy:id,name',
@@ -720,8 +748,8 @@ class MahasiswaController extends Controller
             'data' => $this->serializeMahasiswa($result),
             'kurikulum_migration_context' => [
                 'id_kurikulum_induk' => $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($result),
-                'id_struktur_operasional' => $result->id_kurikulum,
-                'id_kurikulum_operasional' => $result->id_kurikulum,
+                'id_struktur_operasional' => $this->activeCurriculumService->resolveActiveKurikulumId($result),
+                'id_kurikulum_operasional' => $this->activeCurriculumService->resolveActiveKurikulumId($result),
             ],
         ]);
     }
@@ -784,9 +812,12 @@ class MahasiswaController extends Controller
             ->first();
 
         if ($existingActive) {
-            if ($existingActive->id_kurikulum !== $kurikulumId) {
+            $resolvedKurikulumIndukId = $this->mahasiswaCurriculumContextService->resolveOperationalToIndukId($kurikulumId);
+
+            if ($existingActive->id_kurikulum !== $kurikulumId || $existingActive->id_kurikulum_induk !== $resolvedKurikulumIndukId) {
                 $existingActive->update([
                     'id_kurikulum' => $kurikulumId,
+                    'id_kurikulum_induk' => $resolvedKurikulumIndukId,
                     'tanggal_mulai' => $tanggalMulai ?: $existingActive->tanggal_mulai ?: $mahasiswa->tanggal_masuk ?: now()->toDateString(),
                     'catatan' => $catatan ?: $existingActive->catatan,
                 ]);
@@ -798,6 +829,7 @@ class MahasiswaController extends Controller
         RiwayatKurikulumMahasiswa::create([
             'id_mahasiswa' => $mahasiswa->id,
             'id_kurikulum' => $kurikulumId,
+            'id_kurikulum_induk' => $this->mahasiswaCurriculumContextService->resolveOperationalToIndukId($kurikulumId),
             'tanggal_mulai' => $tanggalMulai ?: $mahasiswa->tanggal_masuk ?: now()->toDateString(),
             'tanggal_selesai' => null,
             'is_active' => true,
@@ -810,46 +842,19 @@ class MahasiswaController extends Controller
     {
         $mahasiswa->loadMissing([
             'prodi.kaprodi',
-            'kurikulum.kurikulumInduk.jenisKurikulum',
-            'kurikulum.semesterMulai.tahunAkademik',
             'dosenWali',
             'user',
         ]);
 
-        $resolvedKurikulumInduk = $mahasiswa->kurikulum?->kurikulumInduk;
-        $resolvedKurikulumIndukId = $resolvedKurikulumInduk?->id
-            ?? $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($mahasiswa);
+        $curriculumContext = $this->activeCurriculumService->resolveCurriculumContext($mahasiswa);
+        $activeKurikulum = $this->activeCurriculumService->resolveActiveKurikulum($mahasiswa);
 
         return [
             ...$mahasiswa->toArray(),
-            'id_kurikulum_induk' => $resolvedKurikulumIndukId,
-            'kurikulum_context' => [
-                'id_kurikulum_induk' => $resolvedKurikulumIndukId,
-                'id_struktur_operasional' => $mahasiswa->id_kurikulum,
-                'id_kurikulum_operasional' => $mahasiswa->id_kurikulum,
-                'kurikulum_induk' => $resolvedKurikulumInduk ? [
-                    'id' => $resolvedKurikulumInduk->id,
-                    'nama_kurikulum' => $resolvedKurikulumInduk->nama_kurikulum,
-                    'keterangan' => $resolvedKurikulumInduk->nama_kurikulum,
-                    'kode_kurikulum' => $resolvedKurikulumInduk->kode_kurikulum,
-                    'tahun_kurikulum' => $resolvedKurikulumInduk->tahun_kurikulum,
-                    'jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum ? [
-                        'id' => $resolvedKurikulumInduk->jenisKurikulum->id,
-                        'kode_jenis' => $resolvedKurikulumInduk->jenisKurikulum->kode_jenis,
-                        'nama_jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
-                    ] : null,
-                ] : null,
-                'struktur_operasional' => $mahasiswa->kurikulum ? [
-                    'id' => $mahasiswa->kurikulum->id,
-                    'nama_struktur_mk' => $mahasiswa->kurikulum->nama_struktur_mk,
-                    'nama_kurikulum' => $mahasiswa->kurikulum->nama_kurikulum,
-                    'id_semester' => $mahasiswa->kurikulum->id_semester,
-                    'id_kurikulum_induk' => $mahasiswa->kurikulum->id_kurikulum_induk,
-                    'mulai_berlaku' => $mahasiswa->kurikulum->semesterMulai?->tahunAkademik
-                        ? trim($mahasiswa->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $mahasiswa->kurikulum->semesterMulai->nama_semester)
-                        : null,
-                ] : null,
-            ],
+            'id_kurikulum' => $curriculumContext['id_kurikulum_operasional'] ?? null,
+            'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
+            'kurikulum' => $activeKurikulum?->toArray(),
+            'kurikulum_context' => $curriculumContext,
         ];
     }
 }

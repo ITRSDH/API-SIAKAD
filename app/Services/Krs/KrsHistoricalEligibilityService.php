@@ -51,9 +51,6 @@ class KrsHistoricalEligibilityService
         $query = Mahasiswa::query()
             ->with([
                 'prodi:id,nama_prodi',
-                'kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
-                'kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-                'kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
                 'riwayatKurikulumAktif:id,id_mahasiswa,id_kurikulum,is_active,tanggal_mulai',
             ])
             ->where(function ($builder) {
@@ -104,7 +101,8 @@ class KrsHistoricalEligibilityService
             $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumId($mahasiswa);
             $resolvedKurikulumIndukId = $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($mahasiswa);
             $resolvedOperationalKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
-            $resolvedKurikulumInduk = $mahasiswa->kurikulum?->kurikulumInduk;
+            $resolvedOperationalKurikulum = $this->activeCurriculumService->resolveActiveKurikulum($mahasiswa);
+            $resolvedKurikulumInduk = $resolvedOperationalKurikulum?->kurikulumInduk;
             $messages = [];
 
             if ($hasExisting) {
@@ -143,13 +141,13 @@ class KrsHistoricalEligibilityService
                             'nama_jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
                         ] : null,
                     ] : null,
-                    'struktur_operasional' => $mahasiswa->kurikulum ? [
-                        'id' => $mahasiswa->kurikulum->id,
-                        'nama_struktur_mk' => $mahasiswa->kurikulum->display_name,
-                        'nama_kurikulum' => $mahasiswa->kurikulum->nama_kurikulum,
-                        'id_kurikulum_induk' => $mahasiswa->kurikulum->id_kurikulum_induk,
-                        'mulai_berlaku' => $mahasiswa->kurikulum->semesterMulai?->tahunAkademik
-                            ? trim($mahasiswa->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $mahasiswa->kurikulum->semesterMulai->nama_semester)
+                    'struktur_operasional' => $resolvedOperationalKurikulum ? [
+                        'id' => $resolvedOperationalKurikulum->id,
+                        'nama_struktur_mk' => $resolvedOperationalKurikulum->display_name,
+                        'nama_kurikulum' => $resolvedOperationalKurikulum->nama_kurikulum,
+                        'id_kurikulum_induk' => $resolvedOperationalKurikulum->id_kurikulum_induk,
+                        'mulai_berlaku' => $resolvedOperationalKurikulum->semesterMulai?->tahunAkademik
+                            ? trim($resolvedOperationalKurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $resolvedOperationalKurikulum->semesterMulai->nama_semester)
                             : null,
                     ] : null,
                 ],

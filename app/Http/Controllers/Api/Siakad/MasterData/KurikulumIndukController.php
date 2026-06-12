@@ -213,7 +213,7 @@ class KurikulumIndukController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $item = KurikulumInduk::withCount(['kurikulumOperasional', 'mahasiswas'])->findOrFail($id);
+        $item = KurikulumInduk::withCount(['kurikulumOperasional', 'riwayatMahasiswa'])->findOrFail($id);
 
         if ($item->kurikulum_operasional_count > 0) {
             return response()->json([
@@ -222,7 +222,7 @@ class KurikulumIndukController extends Controller
             ], 422);
         }
 
-        if ($item->mahasiswas_count > 0) {
+        if ($item->riwayat_mahasiswa_count > 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tahun kurikulum tidak dapat dihapus karena masih dipakai mahasiswa.',

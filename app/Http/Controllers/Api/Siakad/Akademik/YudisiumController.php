@@ -121,7 +121,7 @@ class YudisiumController extends Controller
 
     private function buildYudisiumSnapshot(string $mahasiswaId, ?string $kurikulumId): array
     {
-        $mahasiswa = Mahasiswa::with(['prodi', 'kurikulum', 'riwayatKurikulum.kurikulum'])->find($mahasiswaId);
+        $mahasiswa = Mahasiswa::with(['prodi', 'riwayatKurikulum.kurikulum'])->find($mahasiswaId);
         $resolvedKurikulumId = $kurikulumId ?: $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
         $kurikulum = $kurikulumId
             ? Kurikulum::find($kurikulumId)

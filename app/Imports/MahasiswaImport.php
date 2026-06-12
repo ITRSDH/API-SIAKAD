@@ -90,10 +90,6 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                     $tanggalMasuk
                 );
 
-                if (!$resolvedKurikulumId) {
-                    throw new \RuntimeException('Kurikulum aktif untuk program studi mahasiswa belum tersedia.');
-                }
-
                 // 1. Buat User terlebih dahulu
                 $user = User::create([
                     'name' => $namaMahasiswa,
@@ -121,18 +117,21 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                     'status' => $status,
                     'angkatan' => $angkatan,
                     'id_prodi' => $this->idProdi,
-                    'id_kurikulum' => $resolvedKurikulumId,
                     'user_id' => $user->id,
                 ]);
-                RiwayatKurikulumMahasiswa::create([
-                    'id_mahasiswa' => $mahasiswa->id,
-                    'id_kurikulum' => $resolvedKurikulumId,
-                    'tanggal_mulai' => $tanggalMasuk?->toDateString() ?? now()->toDateString(),
-                    'tanggal_selesai' => null,
-                    'is_active' => true,
-                    'catatan' => 'Kurikulum awal mahasiswa hasil import',
-                    'created_by' => null,
-                ]);
+
+                if ($resolvedKurikulumId) {
+                    RiwayatKurikulumMahasiswa::create([
+                        'id_mahasiswa' => $mahasiswa->id,
+                        'id_kurikulum' => $resolvedKurikulumId,
+                        'id_kurikulum_induk' => $this->mahasiswaCurriculumContextService->resolveOperationalToIndukId($resolvedKurikulumId),
+                        'tanggal_mulai' => $tanggalMasuk?->toDateString() ?? now()->toDateString(),
+                        'tanggal_selesai' => null,
+                        'is_active' => true,
+                        'catatan' => 'Kurikulum awal mahasiswa hasil import',
+                        'created_by' => null,
+                    ]);
+                }
             });
 
             $this->successCount++;
