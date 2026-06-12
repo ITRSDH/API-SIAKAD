@@ -23,12 +23,15 @@ class ProdiController extends Controller
             $prodiQuery = Prodi::query();
 
             if ($hasKaprodiColumn) {
-                $prodiQuery->with(['kaprodi:id,nama_dosen']);
+                $prodiQuery->with(['kaprodi:id,nama_dosen,nidn,nup']);
             }
 
-            $prodi = $prodiQuery->get();
+            $prodi = $prodiQuery
+                ->get()
+                ->map(fn(Prodi $item) => $this->serializeProdi($item, $hasKaprodiColumn))
+                ->values();
 
-            $dosenListQuery = Dosen::query()->select('id', 'nama_dosen', 'nup');
+            $dosenListQuery = Dosen::query()->select('id', 'nama_dosen', 'nup', 'nidn');
 
             if ($hasKaprodiColumn) {
                 $dosenListQuery->whereNotIn('id', function ($query) {
@@ -38,7 +41,10 @@ class ProdiController extends Controller
                 });
             }
 
-            $dosen_list = $dosenListQuery->get();
+            $dosen_list = $dosenListQuery
+                ->get()
+                ->map(fn(Dosen $dosen) => $this->serializeDosenOption($dosen))
+                ->values();
 
             return response()->json([
                 'success' => true,
@@ -78,7 +84,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil ditambahkan',
-                'data' => $prodi->load('kaprodi:id,nama_dosen')
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -111,12 +117,12 @@ class ProdiController extends Controller
                 'tahun_berdiri',
                 'gelar_lulusan',
                 'id_kaprodi'
-            )->with('kaprodi:id,nama_dosen')->findOrFail($id);
+            )->with('kaprodi:id,nama_dosen,nidn,nup')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Detail program studi',
-                'data' => $prodi
+                'data' => $this->serializeProdi($prodi)
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -157,7 +163,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil diperbarui',
-                'data' => $prodi->load('kaprodi:id,nama_dosen')
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -222,7 +228,7 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Kaprodi berhasil diperbarui',
-                'data' => $prodi->load('kaprodi:id,nama_dosen')
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -231,5 +237,29 @@ class ProdiController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function serializeProdi(Prodi $prodi, bool $hasKaprodiColumn = true): array
+    {
+        $data = $prodi->toArray();
+
+        if ($hasKaprodiColumn) {
+            $data['kaprodi'] = $prodi->kaprodi
+                ? $this->serializeDosenOption($prodi->kaprodi)
+                : null;
+        }
+
+        return $data;
+    }
+
+    private function serializeDosenOption(Dosen $dosen): array
+    {
+        return [
+            'id' => $dosen->id,
+            'nama_dosen' => $dosen->nama_dosen,
+            'nidn' => $dosen->nidn,
+            'nup' => $dosen->nup,
+            'identifier' => $dosen->nidn ?: $dosen->nup,
+        ];
     }
 }
