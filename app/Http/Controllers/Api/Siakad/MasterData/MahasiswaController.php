@@ -20,13 +20,15 @@ use App\Exports\MahasiswaExport;
 use App\Imports\MahasiswaImport;
 use App\Services\ActiveCurriculumService;
 use App\Services\MahasiswaCurriculumContextService;
+use App\Services\StudentAngkatanResolverService;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MahasiswaController extends Controller
 {
     public function __construct(
         private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService,
-        private readonly ActiveCurriculumService $activeCurriculumService
+        private readonly ActiveCurriculumService $activeCurriculumService,
+        private readonly StudentAngkatanResolverService $studentAngkatanResolverService
     ) {}
 
     public function index(): JsonResponse
@@ -113,11 +115,11 @@ class MahasiswaController extends Controller
 
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
             $result = DB::transaction(function () use ($request) {
+                $resolvedAngkatan = $this->resolveSubmittedAngkatan($request);
                 $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
                     null,
                     $request->input('id_prodi'),
-                    $request->input('angkatan'),
-                    $request->input('tanggal_masuk')
+                    $resolvedAngkatan
                 );
 
                 // 1. Buat User terlebih dahulu
@@ -137,6 +139,7 @@ class MahasiswaController extends Controller
 
                 // 3. Buat Mahasiswa dengan menghubungkan ke user yang baru dibuat
                 $mahasiswaData = $this->buildMahasiswaPayload($request);
+                $mahasiswaData['angkatan'] = $resolvedAngkatan;
                 $mahasiswaData['user_id'] = $user->id;
 
                 $mahasiswa = Mahasiswa::create($mahasiswaData);
@@ -216,26 +219,17 @@ class MahasiswaController extends Controller
                 $currentActiveKurikulumId = $mahasiswa->getCurrentKurikulumId();
 
                 $targetProdiId = $request->input('id_prodi', $mahasiswa->id_prodi);
-                $targetAngkatan = $request->input('angkatan', $mahasiswa->angkatan);
-                $targetTanggalMasuk = $request->input('tanggal_masuk', $mahasiswa->tanggal_masuk);
-                $existingTanggalMasuk = $mahasiswa->tanggal_masuk
-                    ? date('Y-m-d', strtotime((string) $mahasiswa->tanggal_masuk))
-                    : null;
-                $normalizedTargetTanggalMasuk = filled($targetTanggalMasuk)
-                    ? date('Y-m-d', strtotime((string) $targetTanggalMasuk))
-                    : null;
+                $targetAngkatan = $this->resolveSubmittedAngkatan($request, $mahasiswa->angkatan, $mahasiswa->nim);
 
                 $isChangingProdi = (string) $mahasiswa->id_prodi !== (string) $targetProdiId;
                 $isChangingAngkatan = (string) ($mahasiswa->angkatan ?? '') !== (string) ($targetAngkatan ?? '');
-                $isChangingTanggalMasuk = $existingTanggalMasuk !== $normalizedTargetTanggalMasuk;
-                $isChangingCurriculumContext = $isChangingProdi || $isChangingAngkatan || $isChangingTanggalMasuk;
+                $isChangingCurriculumContext = $isChangingProdi || $isChangingAngkatan;
 
                 if ($isChangingCurriculumContext) {
                     $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveRequestedOrMatchingKurikulumId(
                         null,
                         $targetProdiId,
-                        $targetAngkatan,
-                        $targetTanggalMasuk
+                        $targetAngkatan
                     );
 
                     $isChangingKurikulum = $currentActiveKurikulumId !== $resolvedKurikulumId;
@@ -251,10 +245,6 @@ class MahasiswaController extends Controller
                             $messages['angkatan'] = ['Angkatan mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
                         }
 
-                        if ($isChangingTanggalMasuk) {
-                            $messages['tanggal_masuk'] = ['Tanggal masuk mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
-                        }
-
                         if (empty($messages)) {
                             $messages['id_kurikulum'] = ['Konteks kurikulum mahasiswa tidak dapat diubah karena histori akademik sudah berjalan.'];
                         }
@@ -262,6 +252,8 @@ class MahasiswaController extends Controller
                         throw ValidationException::withMessages($messages);
                     }
                 }
+
+                $mahasiswaData['angkatan'] = $targetAngkatan;
 
                 $mahasiswa->update($mahasiswaData);
                 if ($isChangingCurriculumContext && !$resolvedKurikulumId) {
@@ -794,6 +786,20 @@ class MahasiswaController extends Controller
         ]);
 
         return $payload;
+    }
+
+    private function resolveSubmittedAngkatan(Request $request, $fallbackAngkatan = null, ?string $fallbackNim = null): ?int
+    {
+        $angkatanInput = $request->has('angkatan')
+            ? $request->input('angkatan')
+            : $fallbackAngkatan;
+
+        $nimInput = $request->input('nim', $fallbackNim);
+
+        return $this->studentAngkatanResolverService->resolve(
+            filled($angkatanInput) ? (string) $angkatanInput : null,
+            filled($nimInput) ? (string) $nimInput : null
+        );
     }
 
     private function syncActiveKurikulumHistory(

@@ -1697,7 +1697,7 @@ class KRSMahasiswaController extends Controller
         }
 
         if (!$activeKurikulumId) {
-            return "Sistem belum menemukan struktur kurikulum operasional yang cocok berdasarkan prodi, angkatan, dan tanggal masuk mahasiswa untuk semester {$semesterKe}.";
+            return "Sistem belum menemukan struktur kurikulum operasional yang cocok berdasarkan prodi dan angkatan mahasiswa untuk semester {$semesterKe}.";
         }
 
         return "Struktur kurikulum operasional mahasiswa sudah ditemukan, tetapi belum ada mata kuliah paket yang terdefinisi untuk semester {$semesterKe}.";

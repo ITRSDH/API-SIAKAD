@@ -6,6 +6,7 @@ use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\RiwayatKurikulumMahasiswa;
 use App\Models\User;
 use App\Services\MahasiswaCurriculumContextService;
+use App\Services\StudentAngkatanResolverService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -21,11 +22,13 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     private $rowCount = 0;
     private $idProdi;
     private MahasiswaCurriculumContextService $mahasiswaCurriculumContextService;
+    private StudentAngkatanResolverService $studentAngkatanResolverService;
 
     public function __construct($idProdi = null)
     {
         $this->idProdi = $idProdi;
         $this->mahasiswaCurriculumContextService = app(MahasiswaCurriculumContextService::class);
+        $this->studentAngkatanResolverService = app(StudentAngkatanResolverService::class);
     }
 
     public function model(array $row)
@@ -83,11 +86,19 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             $password = '12345678';
 
             DB::transaction(function () use ($nim, $nik, $namaMahasiswa, $status, $tempatLahir, $parsedTanggalLahir, $tanggalMasuk, $password, $jenisKelamin, $agama, $alamat, $row) {
-                $angkatan = $this->resolveAngkatan($row, $tanggalMasuk);
+                $angkatan = $this->resolveAngkatan($row);
+                if ($angkatan === null) {
+                    throw new \RuntimeException(
+                        sprintf(
+                            'NIM %s tidak dapat digunakan untuk menentukan angkatan. Isi kolom angkatan secara manual atau gunakan format NIM yang sesuai.',
+                            $nim
+                        )
+                    );
+                }
+
                 $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveMatchingKurikulumId(
                     $this->idProdi,
-                    $angkatan,
-                    $tanggalMasuk
+                    $angkatan
                 );
 
                 // 1. Buat User terlebih dahulu
@@ -242,17 +253,12 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
         return $this->rowCount;
     }
 
-    private function resolveAngkatan(array $row, $tanggalMasuk): ?int
+    private function resolveAngkatan(array $row): ?int
     {
-        if (!empty($row['angkatan']) && is_numeric($row['angkatan'])) {
-            return (int) $row['angkatan'];
-        }
+        $manualAngkatan = isset($row['angkatan']) ? (string) $row['angkatan'] : null;
+        $nim = isset($row['nim']) ? (string) $row['nim'] : null;
 
-        if ($tanggalMasuk instanceof \Carbon\Carbon) {
-            return (int) $tanggalMasuk->format('Y');
-        }
-
-        return null;
+        return $this->studentAngkatanResolverService->resolve($manualAngkatan, $nim);
     }
 
     private function normalizeStatus(?string $status): string

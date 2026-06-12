@@ -73,7 +73,14 @@ class KhsTemplateExportService
     private function buildRows(Collection $krsCollection, Collection $subjects, int $semesterKe): Collection
     {
         return $krsCollection
-            ->sortBy(fn(KRS $krs) => $krs->mahasiswa?->nim)
+            ->sortBy(function (KRS $krs) {
+                $nim = (string) ($krs->mahasiswa?->nim ?? '');
+
+                return [
+                    $this->extractNimSequenceNumber($nim),
+                    $nim,
+                ];
+            })
             ->values()
             ->map(function (KRS $krs, int $index) use ($subjects, $semesterKe) {
                 $detailsByKode = $krs->details
@@ -98,5 +105,24 @@ class KhsTemplateExportService
                     })->values()->all(),
                 ];
             });
+    }
+
+    private function extractNimSequenceNumber(?string $nim): int
+    {
+        $normalizedNim = trim((string) $nim);
+        if ($normalizedNim === '' || strlen($normalizedNim) <= 4) {
+            return PHP_INT_MAX;
+        }
+
+        $suffix = substr($normalizedNim, 4);
+        if ($suffix === false || $suffix === '') {
+            return PHP_INT_MAX;
+        }
+
+        if (preg_match('/^(\d+)/', $suffix, $matches) !== 1) {
+            return PHP_INT_MAX;
+        }
+
+        return (int) $matches[1];
     }
 }

@@ -15,9 +15,15 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\StudentAngkatanResolverService;
 
 class MahasiswaBaruController extends Controller
 {
+    public function __construct(
+        private readonly StudentAngkatanResolverService $studentAngkatanResolverService
+    ) {
+    }
+
     public function index(): JsonResponse
     {
         try {
@@ -127,8 +133,10 @@ class MahasiswaBaruController extends Controller
                 $prodi = Prodi::where('kode_prodi', $apiMahasiswa['prodi']['kode_prodi'])->first();
                 $idProdi = $prodi ? $prodi->id : null;
                 
-                // Extract angkatan from tanggal_daftar (year)
-                $angkatan = date('Y', strtotime($apiMahasiswa['tanggal_daftar']));
+                $angkatan = $this->studentAngkatanResolverService->resolve(
+                    null,
+                    (string) ($apiMahasiswa['nomor_pendaftaran'] ?? '')
+                );
                 
                 // Create User first
                 $user = User::create([
@@ -211,6 +219,11 @@ class MahasiswaBaruController extends Controller
                 'angkatan' => 'sometimes|integer|min:1900|max:' . (date('Y') + 10)
                 // Tambahkan validasi untuk field lain jika ada
             ]);
+
+            $data['angkatan'] = $this->studentAngkatanResolverService->resolve(
+                isset($data['angkatan']) ? (string) $data['angkatan'] : null,
+                isset($data['nim']) ? (string) $data['nim'] : (string) $mahasiswa->nim
+            );
 
             $mahasiswa->update($data);
 

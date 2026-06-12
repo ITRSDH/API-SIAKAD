@@ -7,8 +7,6 @@ use App\Models\MasterData\KurikulumInduk;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\RefJenisKurikulum;
 use App\Models\MasterData\Semester;
-use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -44,8 +42,7 @@ class MahasiswaCurriculumContextService
 
         return $this->resolveMatchingKurikulumId(
             $resolvedMahasiswa->id_prodi,
-            $resolvedMahasiswa->angkatan,
-            $resolvedMahasiswa->tanggal_masuk
+            $resolvedMahasiswa->angkatan
         );
     }
 
@@ -242,7 +239,7 @@ class MahasiswaCurriculumContextService
             return null;
         }
 
-        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
+        $cohortSortKey = $this->resolveCohortSortKey($angkatan);
         $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
             ->where('id_prodi', $prodiId)
             ->get();
@@ -255,7 +252,7 @@ class MahasiswaCurriculumContextService
             ->sortByDesc(fn(Kurikulum $kurikulum) => $this->buildKurikulumSortKey($kurikulum) ?? 0)
             ->values();
 
-        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan, $tanggalMasuk);
+        $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan);
 
         if ($cohortSortKey !== null) {
             $eligibleKurikulums = $sortedKurikulums
@@ -287,18 +284,8 @@ class MahasiswaCurriculumContextService
         return Mahasiswa::with(['riwayatKurikulum', 'riwayatKurikulumAktif'])->find($mahasiswa);
     }
 
-    private function resolveCohortSortKey($angkatan = null, $tanggalMasuk = null): ?int
+    private function resolveCohortSortKey($angkatan = null): ?int
     {
-        $tanggal = $this->normalizeDate($tanggalMasuk);
-        if ($tanggal) {
-            $year = (int) $tanggal->format('Y');
-            $month = (int) $tanggal->format('n');
-            $semesterOrder = $month >= 7 ? 1 : 2;
-            $academicStartYear = $semesterOrder === 1 ? $year : $year - 1;
-
-            return ($academicStartYear * 10) + $semesterOrder;
-        }
-
         if (filled($angkatan)) {
             return ((int) $angkatan * 10) + 1;
         }
@@ -306,9 +293,9 @@ class MahasiswaCurriculumContextService
         return null;
     }
 
-    private function resolvePreferredSemesterOrder($angkatan = null, $tanggalMasuk = null): ?int
+    private function resolvePreferredSemesterOrder($angkatan = null): ?int
     {
-        $cohortSortKey = $this->resolveCohortSortKey($angkatan, $tanggalMasuk);
+        $cohortSortKey = $this->resolveCohortSortKey($angkatan);
 
         return $cohortSortKey !== null ? (int) substr((string) $cohortSortKey, -1) : null;
     }
@@ -365,36 +352,6 @@ class MahasiswaCurriculumContextService
         }
 
         return $kurikulums->first();
-    }
-
-    private function normalizeDate($value): ?CarbonInterface
-    {
-        if ($value instanceof CarbonInterface) {
-            return $value;
-        }
-
-        if ($value instanceof DateTimeInterface) {
-            return now()->setDate(
-                (int) $value->format('Y'),
-                (int) $value->format('m'),
-                (int) $value->format('d')
-            )->setTime(
-                (int) $value->format('H'),
-                (int) $value->format('i'),
-                (int) $value->format('s')
-            );
-        }
-
-        if (blank($value)) {
-            return null;
-        }
-
-        $timestamp = strtotime((string) $value);
-        if ($timestamp === false) {
-            return null;
-        }
-
-        return now()->setTimestamp($timestamp);
     }
 
     private function normalizeSemesterType(?string $namaSemester): string
