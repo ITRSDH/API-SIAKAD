@@ -158,7 +158,7 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     {
         return [
             'nim' => 'nullable|max:20|unique:mahasiswa,nim',
-            'nik' => 'nullable|max:20|unique:mahasiswa,nik',
+            'nik' => 'nullable|max:20',
             'nama_mahasiswa' => 'nullable|string|max:255',
             'program_studi' => 'nullable|string|max:255',
             'jenis_kelamin' => 'nullable|string',
@@ -176,7 +176,6 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             'nim.max' => 'NIM maksimal 20 karakter',
             'nim.unique' => 'NIM sudah terdaftar',
             'nik.max' => 'NIK maksimal 20 karakter',
-            'nik.unique' => 'NIK sudah terdaftar',
             'nama_mahasiswa.max' => 'Nama Mahasiswa maksimal 255 karakter',
             'program_studi.max' => 'Program Studi maksimal 255 karakter',
             'jenis_kelamin.in' => 'Jenis Kelamin tidak valid. Pilihan: L, P',

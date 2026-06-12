@@ -99,7 +99,7 @@ class MahasiswaController extends Controller
             $request->validate([
                 'id_prodi' => 'required|exists:prodi,id',
                 'nim' => 'required|string|max:20|unique:mahasiswa,nim',
-                'nik' => 'nullable|string|max:20|unique:mahasiswa,nik',
+                'nik' => 'nullable|string|max:20',
                 'nama_mahasiswa' => 'required|string|max:255',
                 'jenis_kelamin' => 'nullable|in:L,P',
                 'tempat_lahir' => 'nullable|string|max:255',
@@ -196,7 +196,7 @@ class MahasiswaController extends Controller
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
                 'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
-                'nik' => 'sometimes|string|max:20|unique:mahasiswa,nik,' . $id,
+                'nik' => 'sometimes|string|max:20',
                 'nama_mahasiswa' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
                 'tanggal_lahir' => 'nullable|date',
