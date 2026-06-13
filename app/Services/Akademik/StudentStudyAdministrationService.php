@@ -149,12 +149,14 @@ class StudentStudyAdministrationService
             ->with(['creator:id,name', 'semester.tahunAkademik'])
             ->when(!empty($filters['id_semester']), fn($query) => $query->where('id_semester', $filters['id_semester']))
             ->get()
+            ->toBase()
             ->map(fn(KrsCollectiveBatch $batch) => $this->transformHistoricalBatch($batch));
 
         $importBatches = KhsImportBatch::query()
             ->with(['uploader:id,name', 'semester.tahunAkademik'])
             ->when(!empty($filters['id_semester']), fn($query) => $query->where('id_semester', $filters['id_semester']))
             ->get()
+            ->toBase()
             ->map(fn(KhsImportBatch $batch) => $this->transformImportBatch($batch));
 
         return $historicalBatches
@@ -379,6 +381,7 @@ class StudentStudyAdministrationService
         $base['filters'] = $batch->filters ?? [];
         $base['payload'] = $batch->payload ?? [];
         $base['items'] = $batch->items
+            ->toBase()
             ->map(function (KrsCollectiveBatchItem $item) {
                 return [
                     'id' => $item->id,
@@ -408,7 +411,7 @@ class StudentStudyAdministrationService
             'id_semester' => $batch->id_semester,
         ];
         $base['payload'] = [];
-        $base['errors'] = $batch->errors->map(function ($error) {
+        $base['errors'] = $batch->errors->toBase()->map(function ($error) {
             return [
                 'row_number' => $error->row_number,
                 'nim' => $error->nim,
@@ -417,7 +420,7 @@ class StudentStudyAdministrationService
                 'message' => $error->message,
             ];
         })->values()->all();
-        $base['revisions'] = $batch->revisions->map(function ($revision) {
+        $base['revisions'] = $batch->revisions->toBase()->map(function ($revision) {
             return [
                 'revision_number' => $revision->revision_number,
                 'reason' => $revision->reason,
