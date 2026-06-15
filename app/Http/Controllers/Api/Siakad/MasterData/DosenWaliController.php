@@ -52,7 +52,6 @@ class DosenWaliController extends Controller
                     $query->where(function ($q) use ($nama) {
                         $q->where('nim', 'like', "%{$nama}%")
                             ->orWhere('nama_mahasiswa', 'like', "%{$nama}%");
-                        $q->where('status', 'aktif');
                     });
                 })
 
