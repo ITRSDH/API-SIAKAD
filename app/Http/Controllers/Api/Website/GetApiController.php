@@ -25,7 +25,9 @@ class GetApiController extends Controller
     public function prestasi()
     {
         try {
-            $prestasi = Prestasi::with('prodi')->paginate(9);
+            $prestasi = Prestasi::with('prodi')
+                ->orderBy('tahun', 'desc')
+                ->paginate(9);
             
             return response()->json([
                 'status' => 'success',

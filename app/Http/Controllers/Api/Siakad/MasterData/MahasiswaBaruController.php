@@ -142,7 +142,7 @@ class MahasiswaBaruController extends Controller
                 $user = User::create([
                     'name' => $apiMahasiswa['nama_lengkap'],
                     'email' => $apiMahasiswa['email'],
-                    'password' => bcrypt('password123'), // Default password, should be changed later
+                    'password' => bcrypt('password'), // Default password, should be changed later
                     'status' => 'aktif'
                 ]);
                 
@@ -163,7 +163,6 @@ class MahasiswaBaruController extends Controller
                     'status' => 'PMB', // Status for pendaftar baru
                     'angkatan' => $angkatan,
                     // Fields that are not available from API but can be null
-                    'id_kelas_pararel' => null,
                     'id_dosen' => null,
                     'nama_orang_tua' => null,
                     'no_hp_orang_tua' => null,
