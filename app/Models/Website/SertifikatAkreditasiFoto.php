@@ -5,24 +5,27 @@ namespace App\Models\Website;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class SertifikatAkreditasi extends Model
+class SertifikatAkreditasiFoto extends Model
 {
     use HasUuids;
 
-    protected $table = 'sertifikat_akreditasi';
+    protected $table = 'sertifikat_akreditasi_foto';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
-        'nama',
-        'deskripsi',
+        'sertifikat_akreditasi_id',
+        'foto',
     ];
 
-    public function fotos()
+    public function sertifikat()
     {
-        return $this->hasMany(
-            SertifikatAkreditasiFoto::class,
+        return $this->belongsTo(
+            SertifikatAkreditasi::class,
             'sertifikat_akreditasi_id'
         );
     }

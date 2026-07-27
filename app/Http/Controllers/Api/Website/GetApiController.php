@@ -430,39 +430,49 @@ class GetApiController extends Controller
     public function sertifikatAkreditasi()
     {
         try {
-            $sertifikat = SertifikatAkreditasi::select('id','nama','deskripsi','foto_sertifikat',)
+    
+            $sertifikat = SertifikatAkreditasi::with('fotos')
+                ->select('id', 'nama', 'deskripsi')
                 ->get();
-            
+    
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data sertifikat akreditasi berhasil diambil',
                 'data' => $sertifikat
             ], 200);
+    
         } catch (\Exception $e) {
+    
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data sertifikat akreditasi',
                 'error' => $e->getMessage()
             ], 500);
+    
         }
     }
 
     public function sertifikatAkreditasiDetail($id)
     {
-         try {
-            $sertifikat = SertifikatAkreditasi::findOrFail($id);
-            
+        try {
+    
+            $sertifikat = SertifikatAkreditasi::with('fotos')
+                ->findOrFail($id);
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Data sertifikat akreditasi',
                 'data' => $sertifikat
             ], 200);
+    
         } catch (\Exception $e) {
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Sertifikat tidak ditemukan',
                 'error' => $e->getMessage()
             ], 404);
+    
         }
     }
 

@@ -8,13 +8,18 @@ use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class SertifikatAkreditasiController extends Controller
 {
     public function index(Request $request)
     {
         try {
-            $sertifikat = SertifikatAkreditasi::all();
+           $sertifikat = SertifikatAkreditasi::with([
+                'fotos' => function ($q) {
+                    $q->orderBy('created_at');
+                }
+            ])->get();
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar sertifikat akreditasi',
@@ -32,26 +37,96 @@ class SertifikatAkreditasiController extends Controller
     public function store(Request $request, ImageService $imageService)
     {
         try {
+    
+            Log::info('=== STORE SERTIFIKAT AKREDITASI START ===');
+    
+            Log::info('Request Data', [
+                'nama' => $request->nama,
+                'deskripsi' => $request->deskripsi,
+                'hasFile' => $request->hasFile('fotos'),
+                'jumlah_file' => $request->hasFile('fotos') ? count($request->file('fotos')) : 0,
+            ]);
+    
             $data = $request->validate([
                 'nama' => 'required|string|max:255',
                 'deskripsi' => 'required|string',
-                'foto_sertifikat' => 'required|image|mimes:jpeg,png,jpg,jpeg,webp|max:2048',
+                'fotos' => 'required|array|min:1',
+                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,jpeg,webp|max:2048',
             ]);
-
-            if ($request->hasFile('foto_sertifikat')) {
-                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('foto_sertifikat'), 75, 'sertifikat_akreditasi');
-                $data['foto_sertifikat'] = $newStoragePath;
+    
+            Log::info('Validasi berhasil');
+    
+            $sertifikat = SertifikatAkreditasi::create([
+                'nama' => $data['nama'],
+                'deskripsi' => $data['deskripsi'],
+            ]);
+    
+            Log::info('Sertifikat berhasil dibuat', [
+                'id' => $sertifikat->id
+            ]);
+    
+            if ($request->hasFile('fotos')) {
+    
+                foreach ($request->file('fotos') as $index => $foto) {
+    
+                    Log::info('Memproses gambar', [
+                        'index' => $index,
+                        'original_name' => $foto->getClientOriginalName(),
+                        'mime' => $foto->getMimeType(),
+                        'size' => $foto->getSize(),
+                    ]);
+    
+                    $path = $imageService->convertToWebpAndReplace(
+                        $foto,
+                        75,
+                        'sertifikat_akreditasi'
+                    );
+    
+                    Log::info('Gambar berhasil dikonversi', [
+                        'path' => $path
+                    ]);
+    
+                    $sertifikat->fotos()->create([
+                        'foto' => $path,
+                        'urutan' => $index + 1,
+                    ]);
+    
+                    Log::info('Foto berhasil disimpan ke database', [
+                        'urutan' => $index + 1
+                    ]);
+                }
+    
+            } else {
+    
+                Log::warning('Request tidak memiliki file fotos');
+    
             }
-
-            $sertifikat = SertifikatAkreditasi::create($data);
+    
+            Log::info('=== STORE SERTIFIKAT AKREDITASI SUCCESS ===');
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Sertifikat akreditasi berhasil ditambahkan',
-                'data' => $sertifikat
+                'data' => $sertifikat->load('fotos')
             ], 201);
+    
         } catch (ValidationException $e) {
+    
+            Log::error('Validation Error', [
+                'errors' => $e->errors()
+            ]);
+    
             throw $e;
+    
         } catch (\Exception $e) {
+    
+            Log::error('STORE SERTIFIKAT ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan sertifikat akreditasi',
@@ -63,7 +138,7 @@ class SertifikatAkreditasiController extends Controller
     public function show($id)
     {
         try {
-            $sertifikat = SertifikatAkreditasi::findOrFail($id);
+            $sertifikat = SertifikatAkreditasi::with('fotos')->findOrFail($id);
             return response()->json([
                 'success' => true,
                 'message' => 'Detail sertifikat akreditasi',
@@ -78,32 +153,62 @@ class SertifikatAkreditasiController extends Controller
         }
     }
 
-    public function update(Request $request, $id, ImageService $imageService)
+   public function update(Request $request, $id, ImageService $imageService)
     {
         try {
-            $sertifikat = SertifikatAkreditasi::findOrFail($id);
+    
+            $sertifikat = SertifikatAkreditasi::with('fotos')->findOrFail($id);
+    
             $data = $request->validate([
                 'nama' => 'sometimes|required|string|max:255',
                 'deskripsi' => 'sometimes|required|string',
-                'foto_sertifikat' => 'sometimes|required|image|mimes:jpeg,png,jpg,jpeg,webp|max:2048',
+                'fotos' => 'sometimes|array|min:1',
+                'fotos.*' => 'required|image|mimes:jpeg,png,jpg,jpeg,webp|max:2048',
             ]);
-
-            if ($request->hasFile('foto_sertifikat')) {
-                // Hapus gambar lama jika ada
-                $oldPath = $sertifikat->foto_sertifikat ?? null;
-                $newStoragePath = $imageService->convertToWebpAndReplace($request->file('foto_sertifikat'), 75, 'sertifikat_akreditasi', $oldPath);
-                $data['foto_sertifikat'] = $newStoragePath;
+    
+            $sertifikat->update([
+                'nama' => $data['nama'] ?? $sertifikat->nama,
+                'deskripsi' => $data['deskripsi'] ?? $sertifikat->deskripsi,
+            ]);
+    
+            if ($request->hasFile('fotos')) {
+    
+                // Hapus seluruh file lama
+                foreach ($sertifikat->fotos as $foto) {
+                    $imageService->deletePublicFileIfExists($foto->foto);
+                }
+    
+                // Hapus data foto lama
+                $sertifikat->fotos()->delete();
+    
+                // Upload foto baru
+                foreach ($request->file('fotos') as $index => $foto) {
+    
+                    $path = $imageService->convertToWebpAndReplace(
+                        $foto,
+                        75,
+                        'sertifikat_akreditasi'
+                    );
+    
+                    $sertifikat->fotos()->create([
+                        'foto' => $path,
+                        'urutan' => $index + 1,
+                    ]);
+                }
             }
-
-            $sertifikat->update($data);
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Sertifikat akreditasi berhasil diperbarui',
-                'data' => $sertifikat
+                'data' => $sertifikat->fresh()->load('fotos')
             ], 200);
+    
         } catch (ValidationException $e) {
+    
             throw $e;
+    
         } catch (\Exception $e) {
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui sertifikat akreditasi',
@@ -112,27 +217,35 @@ class SertifikatAkreditasiController extends Controller
         }
     }
 
-    public function destroy($id, ImageService $imageService)
+   public function destroy($id, ImageService $imageService)
     {
         try {
-            $sertifikat = SertifikatAkreditasi::findOrFail($id);
-            
-            // Hapus gambar jika ada
-            if ($sertifikat->foto_sertifikat && Storage::disk('public')->exists($sertifikat->foto_sertifikat)) {
-                $imageService->deletePublicFileIfExists($sertifikat->foto_sertifikat);
+    
+            $sertifikat = SertifikatAkreditasi::with('fotos')->findOrFail($id);
+    
+            // Hapus semua file foto
+            foreach ($sertifikat->fotos as $foto) {
+                $imageService->deletePublicFileIfExists($foto->foto);
             }
-            
+    
+            // Hapus data sertifikat
+            // Data pada tabel sertifikat_akreditasi_foto akan ikut terhapus
+            // karena menggunakan cascadeOnDelete()
             $sertifikat->delete();
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Sertifikat akreditasi berhasil dihapus'
             ], 200);
+    
         } catch (\Exception $e) {
+    
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus sertifikat akreditasi',
                 'error' => $e->getMessage()
             ], 500);
+    
         }
     }
 }

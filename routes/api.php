@@ -441,6 +441,7 @@ Route::prefix('v1')->group(function () {
 
     // Route TEST
     Route::get('kelas-kuliah-test', [\App\Http\Controllers\Api\Siakad\MasterData\KelaskuliahController::class, 'index'])->name('kelas-kuliah.index.test');
+    Route::apiResource('tes-sertifikat-akreditasi', SertifikatAkreditasiController::class);
 });
 
 // Route::middleware('jwt.token')->group(function () {
