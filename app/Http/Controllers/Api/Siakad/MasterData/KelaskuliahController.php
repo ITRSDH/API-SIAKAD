@@ -620,9 +620,9 @@ class KelasKuliahController extends Controller
         })->values();
     }
 
-    private function loadKelasForKrsRegistration(string $id): Kelaskuliah
+    private function loadKelasForKrsRegistration(string $id): KelasKuliah
     {
-        return Kelaskuliah::query()
+        return KelasKuliah::query()
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
                 'jadwal',
@@ -632,7 +632,7 @@ class KelasKuliahController extends Controller
 
     private function assessMahasiswaRegistrationCandidate(
         Mahasiswa $mahasiswa,
-        Kelaskuliah $kelasKuliah,
+        KelasKuliah $kelasKuliah,
         ?KRS $krs,
         ?string $targetMataKuliahId,
         int $candidateSks
@@ -856,7 +856,7 @@ class KelasKuliahController extends Controller
         });
     }
 
-    private function hasScheduleConflict(Collection $details, Kelaskuliah $kelasKuliah): bool
+    private function hasScheduleConflict(Collection $details, KelasKuliah $kelasKuliah): bool
     {
         foreach ($details as $detail) {
             $existingClass = $detail->kelasKuliah;
