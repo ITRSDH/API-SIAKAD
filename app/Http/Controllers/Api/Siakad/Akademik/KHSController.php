@@ -41,7 +41,7 @@ class KHSController extends Controller
         }
 
         $query = KHS::with([
-            'mahasiswa:id,nim,nama_mahasiswa',
+            'mahasiswa:id,nim,nama_mahasiswa,angkatan,id_prodi',
             'semester.tahunAkademik:id,tahun_akademik',
         ])->orderByDesc('generated_at');
 
@@ -69,7 +69,7 @@ class KHSController extends Controller
     public function show(string $id): JsonResponse
     {
         $query = KHS::with([
-            'mahasiswa:id,nim,nama_mahasiswa,id_prodi',
+            'mahasiswa:id,nim,nama_mahasiswa,angkatan,id_prodi',
             'mahasiswa.prodi:id,nama_prodi,id_kaprodi',
             'mahasiswa.prodi.kaprodi:id,nama_dosen,nidn',
             'semester.tahunAkademik:id,tahun_akademik',
@@ -208,7 +208,7 @@ class KHSController extends Controller
             }
 
             return $khs->load([
-                'mahasiswa:id,nim,nama_mahasiswa',
+                'mahasiswa:id,nim,nama_mahasiswa,angkatan,id_prodi',
                 'semester.tahunAkademik:id,tahun_akademik',
                 'details',
             ]);
