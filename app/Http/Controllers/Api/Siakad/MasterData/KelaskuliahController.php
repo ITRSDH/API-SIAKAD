@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class KelasKuliahController extends Controller
+class KelaskuliahController extends Controller
 {
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService
@@ -620,9 +620,9 @@ class KelasKuliahController extends Controller
         })->values();
     }
 
-    private function loadKelasForKrsRegistration(string $id): KelasKuliah
+    private function loadKelasForKrsRegistration(string $id): Kelaskuliah
     {
-        return KelasKuliah::query()
+        return Kelaskuliah::query()
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
                 'jadwal',
@@ -632,7 +632,7 @@ class KelasKuliahController extends Controller
 
     private function assessMahasiswaRegistrationCandidate(
         Mahasiswa $mahasiswa,
-        KelasKuliah $kelasKuliah,
+        Kelaskuliah $kelasKuliah,
         ?KRS $krs,
         ?string $targetMataKuliahId,
         int $candidateSks
@@ -856,7 +856,7 @@ class KelasKuliahController extends Controller
         });
     }
 
-    private function hasScheduleConflict(Collection $details, KelasKuliah $kelasKuliah): bool
+    private function hasScheduleConflict(Collection $details, Kelaskuliah $kelasKuliah): bool
     {
         foreach ($details as $detail) {
             $existingClass = $detail->kelasKuliah;
