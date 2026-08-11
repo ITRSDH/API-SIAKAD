@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class KelaskuliahController extends Controller
+class KelasKuliahController extends Controller
 {
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService
