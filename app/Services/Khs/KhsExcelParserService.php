@@ -372,14 +372,25 @@ class KhsExcelParserService
 
     private function extractSubjectIdentity(string $subjectHeader): array
     {
-        if (preg_match('/^(.*)\s+([A-Za-z0-9]+)$/', trim($subjectHeader), $matches)) {
+        // if (preg_match('/^(.*)\s+([A-Za-z0-9]+)$/', trim($subjectHeader), $matches)) {
+        //     return [
+        //         trim($matches[1]),
+        //         trim($matches[2]),
+        //     ];
+        // }
+
+        // return [trim($subjectHeader), trim($subjectHeader)];
+        if (preg_match('/^(.*?)\s+([A-Za-z0-9]+(?:[.][A-Za-z0-9]+)*)$/', $subjectHeader, $matches)) {
             return [
                 trim($matches[1]),
                 trim($matches[2]),
             ];
         }
 
-        return [trim($subjectHeader), trim($subjectHeader)];
+        return [
+            $subjectHeader,
+            $subjectHeader,
+        ];
     }
 
     private function normalizeNumeric(mixed $value, bool $integer = false): int|float|null
