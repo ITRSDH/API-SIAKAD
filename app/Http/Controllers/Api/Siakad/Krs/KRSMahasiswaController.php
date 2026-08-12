@@ -22,8 +22,7 @@ class KRSMahasiswaController extends Controller
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService,
         private readonly ActiveCurriculumService $activeCurriculumService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -1626,6 +1625,7 @@ class KRSMahasiswaController extends Controller
             KRSDetail::create([
                 'id_krs' => $krs->id,
                 'id_kelas_kuliah' => $selectedClass->id,
+                'id_mata_kuliah' => $mataKuliah->id,
                 'status' => KRSDetail::STATUS_TERDAFTAR,
             ]);
 
