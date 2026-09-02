@@ -102,6 +102,14 @@ class KHSController extends Controller
     {
         $this->normalizeDecimalInputs($request, ['ipk']);
 
+        // Client (misal jQuery $.post) bisa mengirim "true"/"false" sebagai string;
+        // rule 'boolean' hanya menerima [true,false,0,1,"0","1"].
+        if ($request->exists('is_final')) {
+            $request->merge([
+                'is_final' => $this->normalizeBooleanInput($request->input('is_final')),
+            ]);
+        }
+
         $validated = $request->validate([
             'id_mahasiswa' => 'required|uuid|exists:mahasiswa,id',
             'id_semester' => 'required|uuid|exists:semester,id',
@@ -393,12 +401,8 @@ class KHSController extends Controller
             ? $this->activeCurriculumService->resolveCurriculumContext($mahasiswa)
             : [
                 'id_kurikulum' => null,
-                'id_kurikulum_sumber' => null,
-                'id_kurikulum_dasar' => null,
-                'id_kurikulum_induk' => null,
                 'id_struktur_operasional' => null,
                 'id_kurikulum_operasional' => null,
-                'kurikulum_induk' => null,
                 'struktur_operasional' => null,
             ];
 
@@ -430,7 +434,6 @@ class KHSController extends Controller
             'summary' => [
                 'id_mahasiswa' => $mahasiswaId,
                 'id_semester' => $semesterId,
-                'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                 'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                 'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                 'total_sks_diambil' => $summary['total_sks_diambil'],
@@ -556,6 +559,27 @@ class KHSController extends Controller
     private function hasKeteranganColumn(): bool
     {
         return $this->hasKeteranganColumn ??= Schema::hasColumn('khs', 'keterangan');
+    }
+
+    private function normalizeBooleanInput(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return match (strtolower(trim($value))) {
+                '1', 'true', 'on', 'yes' => true,
+                '0', 'false', 'off', 'no' => false,
+                default => $value,
+            };
+        }
+
+        return (bool) $value;
     }
 
     private function normalizeDecimalInputs(Request $request, array $keys): void

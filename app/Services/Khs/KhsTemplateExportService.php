@@ -28,7 +28,11 @@ class KhsTemplateExportService
                     ->where('angkatan', $filters['angkatan']);
             })
             ->whereHas('details.kelasKuliah.kurikulumMataKuliah', function ($query) use ($semesterKe) {
-                $query->where('semester_ke', $semesterKe);
+                // MK paket semester target + MK ulang (repeat) dari semester sebelumnya
+                // — agar mahasiswa yang mengulang MK (misal gagal di semester 1, diulang di
+                // semester 3) tetap dapat kolom pada template import.
+                $query->where('semester_ke', '>', 0)
+                    ->where('semester_ke', '<=', $semesterKe);
             })
             ->get();
 
@@ -52,7 +56,9 @@ class KhsTemplateExportService
         return $krsCollection
             ->flatMap(function (KRS $krs) use ($semesterKe) {
                 return $krs->details->filter(function (KRSDetail $detail) use ($semesterKe) {
-                    return (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0) === $semesterKe;
+                    $detailSemesterKe = (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0);
+
+                    return $detailSemesterKe > 0 && $detailSemesterKe <= $semesterKe;
                 })->map(function (KRSDetail $detail) {
                     $mataKuliah = $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah;
 
@@ -85,7 +91,9 @@ class KhsTemplateExportService
             ->map(function (KRS $krs, int $index) use ($subjects, $semesterKe) {
                 $detailsByKode = $krs->details
                     ->filter(function (KRSDetail $detail) use ($semesterKe) {
-                        return (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0) === $semesterKe;
+                        $detailSemesterKe = (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0);
+
+                        return $detailSemesterKe > 0 && $detailSemesterKe <= $semesterKe;
                     })
                     ->keyBy(fn(KRSDetail $detail) => $detail->kode_mata_kuliah);
 
@@ -93,14 +101,21 @@ class KhsTemplateExportService
                     'no' => $index + 1,
                     'nim' => $krs->mahasiswa?->nim,
                     'nama' => $krs->mahasiswa?->nama_mahasiswa,
-                    'subjects' => $subjects->map(function (array $subject) use ($detailsByKode) {
+                    'subjects' => $subjects->map(function (array $subject) use ($detailsByKode, $semesterKe) {
                         /** @var KRSDetail|null $detail */
                         $detail = $detailsByKode->get($subject['kode_mk']);
+                        $detailSemesterKe = $detail
+                            ? (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0)
+                            : 0;
 
                         return [
                             'kode_mk' => $subject['kode_mk'],
                             'nama_mk' => $subject['nama_mk'],
                             'sks' => (int) ($detail?->sks ?? $subject['sks']),
+                            'taken' => (bool) $detail,
+                            'is_repeat' => $detail !== null && $detailSemesterKe > 0 && $detailSemesterKe < $semesterKe,
+                            'status' => $detail?->status,
+                            'semester_ke' => $detailSemesterKe > 0 ? $detailSemesterKe : null,
                         ];
                     })->values()->all(),
                 ];

@@ -26,7 +26,6 @@ class DatabaseSeeder extends Seeder
             // Data Master
             // JenjangPendidikanSeeder::class,
             ProdiSeeder::class,
-            RefJenisKurikulumSeeder::class,
             TahunAkademikSeeder::class,
             // JenisKelasSeeder::class,
             // RuangSeeder::class,
@@ -34,7 +33,6 @@ class DatabaseSeeder extends Seeder
 
             // Logika Bisnis
             SemesterSeeder::class,
-            // KurikulumSeeder::class,
             // MataKuliahSeeder::class,
             // KelasPararelSeeder::class,
             // DosenSeeder::class,

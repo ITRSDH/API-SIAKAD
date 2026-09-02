@@ -1,5 +1,6 @@
 ###
-@base_url = http://localhost:8001/api/v1
+# @base_url = http://localhost:8001/api/v1
+@base_url = http://api-siakad-ver3-nginx/api/v1
 ###
 @token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXBpL3YxL2F1dGgvbG9naW4iLCJpYXQiOjE3NzY5Mzc5NTgsImV4cCI6MTc3Njk0MTU1OCwibmJmIjoxNzc2OTM3OTU4LCJqdGkiOiJEcHFiSUNOM2J1OVJiUFg3Iiwic3ViIjoiYTE4ZGRkNWYtNWVjOC00MDM4LTk2ZmMtMmM2MmRiN2QzZjg1IiwicHJ2IjoiMjNiZDVjODk0OWY2MDBhZGIzOWU3MDFjNDAwODcyZGI3YTU5NzZmNyIsInN0YXR1cyI6ImFrdGlmIn0.cWhr0CSVmVxrAaUwhgBodtMMSBEvTESYifUg13xyVcU
 ### Login
@@ -7,8 +8,8 @@ POST {{ base_url }}/auth/login
 Content-Type: application/json
 
 {
-  "username": "0325002B",
-  "password": "12345678"
+  "username": "admin@example.com",
+  "password": "password"
 }
 
 ### Logout

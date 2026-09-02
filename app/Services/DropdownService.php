@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Kurikulum;
-use App\Models\MasterData\KurikulumInduk;
 use App\Models\MasterData\KurikulumMataKuliah;
 use App\Models\MasterData\Prodi;
 use App\Models\MasterData\TahunAkademik;
@@ -19,7 +18,7 @@ class DropdownService
         $available = [
             'prodi'     => fn() => $this->prodi(),
             'semester'  => fn() => $this->semester(),
-            'kurikulum_induk'  => fn() => $this->kurikulum_induk(),
+            'kurikulum'  => fn() => $this->kurikulum(),
             'kurikulum_matakuliah'  => fn() => $this->kurikulum_matakuliah(),
             'dosen_pengajar'  => fn() => $this->dosen_pengajar(),
             'dosen_wali'  => fn() => $this->dosen_wali(),
@@ -67,9 +66,13 @@ class DropdownService
 
     private function kurikulum_matakuliah()
     {
-        return KurikulumMataKuliah::with(['mataKuliah', 'kurikulum.kurikulumInduk'])
+        return KurikulumMataKuliah::with(['mataKuliah', 'kurikulum.semesterMulai.tahunAkademik'])
             ->get()
             ->map(function ($item) {
+                $mulaiBerlaku = $item->kurikulum?->semesterMulai?->tahunAkademik
+                    ? trim($item->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->kurikulum->semesterMulai->nama_semester)
+                    : null;
+
                 return [
                     'id' => $item->id,
                     'matakuliah' => $item->mataKuliah->kode_mk
@@ -79,50 +82,34 @@ class DropdownService
                         . ' (Semester ' . $item->semester_ke . ')'
                         . '  '
                         . ($item->kurikulum?->nama_kurikulum ?? $item->kurikulum?->nama_struktur_mk)
+                        . ($mulaiBerlaku ? ' (Mulai ' . $mulaiBerlaku . ')' : ''),
                 ];
             });
     }
 
-    private function kurikulum_induk()
+    private function kurikulum()
     {
-        return KurikulumInduk::with([
+        return Kurikulum::with([
             'prodi:id,nama_prodi,jenjang_pendidikan',
-            'jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
-            'kurikulumOperasional:id,id_kurikulum_induk,id_semester',
-            'kurikulumOperasional.semesterMulai:id,id_tahun_akademik,nama_semester',
-            'kurikulumOperasional.semesterMulai.tahunAkademik:id,tahun_akademik',
+            'semesterMulai.tahunAkademik:id,tahun_akademik',
         ])
-            ->orderByDesc('tahun_kurikulum')
-            ->orderBy('kode_kurikulum')
+            ->orderBy('nama_struktur_mk')
             ->get()
             ->map(function ($item) {
-                $mulaiBerlaku = $item->kurikulumOperasional
-                    ->filter(fn ($operasional) => $operasional->semesterMulai && $operasional->semesterMulai->tahunAkademik)
-                    ->sortBy(fn ($operasional) => [
-                        $operasional->semesterMulai->tahunAkademik->tahun_akademik,
-                        $operasional->semesterMulai->nama_semester,
-                    ])
-                    ->map(fn ($operasional) => trim($operasional->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $operasional->semesterMulai->nama_semester))
-                    ->first();
+                $mulaiBerlaku = $item->semesterMulai?->tahunAkademik
+                    ? trim($item->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->semesterMulai->nama_semester)
+                    : null;
 
                 return [
                     'id' => $item->id,
                     'id_prodi' => $item->id_prodi,
-                    'id_jenis_kurikulum' => $item->id_jenis_kurikulum,
-                    'nama_kurikulum' => $item->nama_kurikulum,
-                    'keterangan' => $item->nama_kurikulum,
                     'kode_kurikulum' => $item->kode_kurikulum,
-                    'tahun_kurikulum' => $item->tahun_kurikulum,
+                    'nama_struktur_mk' => $item->nama_struktur_mk,
+                    'nama_kurikulum' => $item->nama_kurikulum,
                     'mulai_berlaku' => $mulaiBerlaku,
-                    'jenis_kurikulum' => $item->jenisKurikulum ? [
-                        'id' => $item->jenisKurikulum->id,
-                        'kode_jenis' => $item->jenisKurikulum->kode_jenis,
-                        'nama_jenis_kurikulum' => $item->jenisKurikulum->nama_jenis_kurikulum,
-                    ] : null,
-                    'kurikulum_induk' => collect([
+                    'kurikulum' => collect([
                         $item->kode_kurikulum,
-                        $item->nama_kurikulum,
-                        $item->jenisKurikulum?->kode_jenis,
+                        $item->nama_struktur_mk,
                         $mulaiBerlaku ? 'Mulai ' . $mulaiBerlaku : null,
                         $item->prodi ? '(' . $item->prodi->jenjang_pendidikan . ') ' . $item->prodi->nama_prodi : null,
                     ])->filter()->implode(' - '),

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Akademik\KRS;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\KonversiMataKuliah;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\MataKuliah;
@@ -16,7 +18,7 @@ class CurriculumConversionService
 
     public function getRecognizedSourceCourseIdsForTarget(string $mahasiswaId, string $targetCourseId, ?string $targetKurikulumId = null): array
     {
-        $mahasiswa = Mahasiswa::with('riwayatKurikulum')->find($mahasiswaId);
+        $mahasiswa = Mahasiswa::find($mahasiswaId);
         if (!$mahasiswa) {
             return [$targetCourseId];
         }
@@ -26,11 +28,7 @@ class CurriculumConversionService
             return [$targetCourseId];
         }
 
-        $sourceKurikulumIds = $mahasiswa->riwayatKurikulum
-            ->pluck('id_kurikulum')
-            ->filter(fn($id) => filled($id) && $id !== $resolvedTargetKurikulumId)
-            ->unique()
-            ->values();
+        $sourceKurikulumIds = $this->resolveSourceKurikulumIds($mahasiswa, $resolvedTargetKurikulumId);
 
         if ($sourceKurikulumIds->isEmpty()) {
             return [$targetCourseId];
@@ -52,7 +50,7 @@ class CurriculumConversionService
 
     public function resolveTranscriptCourse(string $mahasiswaId, string $sourceCourseId, ?string $targetKurikulumId = null): ?MataKuliah
     {
-        $mahasiswa = Mahasiswa::with('riwayatKurikulum')->find($mahasiswaId);
+        $mahasiswa = Mahasiswa::find($mahasiswaId);
         if (!$mahasiswa) {
             return MataKuliah::find($sourceCourseId);
         }
@@ -62,11 +60,7 @@ class CurriculumConversionService
             return MataKuliah::find($sourceCourseId);
         }
 
-        $sourceKurikulumIds = $mahasiswa->riwayatKurikulum
-            ->pluck('id_kurikulum')
-            ->filter(fn($id) => filled($id) && $id !== $resolvedTargetKurikulumId)
-            ->unique()
-            ->values();
+        $sourceKurikulumIds = $this->resolveSourceKurikulumIds($mahasiswa, $resolvedTargetKurikulumId);
 
         $conversion = null;
         if ($sourceKurikulumIds->isNotEmpty()) {
@@ -97,5 +91,34 @@ class CurriculumConversionService
             ->first();
 
         return $matchedByCode ?: $sourceCourse;
+    }
+
+    /**
+     * Struktur kurikulum "asal" diturunkan dari KRS historis mahasiswa
+     * (mata kuliah yang pernah ditempuh) — pengganti histori penugasan
+     * mahasiswa ke kurikulum yang sudah dihapus.
+     */
+    private function resolveSourceKurikulumIds(Mahasiswa $mahasiswa, string $targetKurikulumId): Collection
+    {
+        $sourceKurikulumIds = KRSDetail::query()
+            ->whereHas('krs', function ($query) use ($mahasiswa) {
+                $query->where('id_mahasiswa', $mahasiswa->id);
+            })
+            ->whereHas('kelasKuliah.kurikulumMataKuliah', function ($query) use ($targetKurikulumId) {
+                $query->where('id_kurikulum', '!=', $targetKurikulumId);
+            })
+            ->with('kelasKuliah.kurikulumMataKuliah:id,id_kurikulum')
+            ->limit(200)
+            ->get()
+            ->pluck('kelasKuliah.kurikulumMataKuliah.id_kurikulum')
+            ->filter(fn($id) => filled($id))
+            ->unique()
+            ->values();
+
+        if ($sourceKurikulumIds->isEmpty()) {
+            return collect([$targetKurikulumId]);
+        }
+
+        return $sourceKurikulumIds;
     }
 }

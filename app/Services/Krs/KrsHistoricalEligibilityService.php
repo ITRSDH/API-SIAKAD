@@ -51,7 +51,6 @@ class KrsHistoricalEligibilityService
         $query = Mahasiswa::query()
             ->with([
                 'prodi:id,nama_prodi',
-                'riwayatKurikulumAktif:id,id_mahasiswa,id_kurikulum,is_active,tanggal_mulai',
             ])
             ->where(function ($builder) {
                 $builder->whereNull('status')
@@ -98,11 +97,8 @@ class KrsHistoricalEligibilityService
             $hasClasses = $availableClasses > 0;
             $hasExisting = $existing !== null;
             $semesterTarget = $this->calculateHistoricalSemester($mahasiswa->angkatan, $semester);
-            $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumId($mahasiswa);
-            $resolvedKurikulumIndukId = $this->mahasiswaCurriculumContextService->resolveMahasiswaKurikulumIndukId($mahasiswa);
             $resolvedOperationalKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
             $resolvedOperationalKurikulum = $this->activeCurriculumService->resolveActiveKurikulum($mahasiswa);
-            $resolvedKurikulumInduk = $resolvedOperationalKurikulum?->kurikulumInduk;
             $messages = [];
 
             if ($hasExisting) {
@@ -120,32 +116,15 @@ class KrsHistoricalEligibilityService
                 'angkatan' => $mahasiswa->angkatan,
                 'id_prodi' => $mahasiswa->id_prodi,
                 'prodi' => $mahasiswa->prodi,
-                'id_kurikulum_induk' => $resolvedKurikulumIndukId,
                 'id_struktur_operasional' => $resolvedOperationalKurikulumId,
-                'id_kurikulum_mahasiswa' => $resolvedKurikulumId,
                 'id_kurikulum_operasional' => $resolvedOperationalKurikulumId,
-                'id_kurikulum_dasar' => $resolvedKurikulumIndukId,
                 'kurikulum_context' => [
-                    'id_kurikulum_induk' => $resolvedKurikulumIndukId,
                     'id_struktur_operasional' => $resolvedOperationalKurikulumId,
-                    'id_kurikulum_mahasiswa' => $resolvedKurikulumId,
-                    'kurikulum_induk' => $resolvedKurikulumInduk ? [
-                        'id' => $resolvedKurikulumInduk->id,
-                        'nama_kurikulum' => $resolvedKurikulumInduk->nama_kurikulum,
-                        'keterangan' => $resolvedKurikulumInduk->nama_kurikulum,
-                        'kode_kurikulum' => $resolvedKurikulumInduk->kode_kurikulum,
-                        'tahun_kurikulum' => $resolvedKurikulumInduk->tahun_kurikulum,
-                        'jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum ? [
-                            'id' => $resolvedKurikulumInduk->jenisKurikulum->id,
-                            'kode_jenis' => $resolvedKurikulumInduk->jenisKurikulum->kode_jenis,
-                            'nama_jenis_kurikulum' => $resolvedKurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
-                        ] : null,
-                    ] : null,
+                    'id_kurikulum_operasional' => $resolvedOperationalKurikulumId,
                     'struktur_operasional' => $resolvedOperationalKurikulum ? [
                         'id' => $resolvedOperationalKurikulum->id,
                         'nama_struktur_mk' => $resolvedOperationalKurikulum->display_name,
                         'nama_kurikulum' => $resolvedOperationalKurikulum->nama_kurikulum,
-                        'id_kurikulum_induk' => $resolvedOperationalKurikulum->id_kurikulum_induk,
                         'mulai_berlaku' => $resolvedOperationalKurikulum->semesterMulai?->tahunAkademik
                             ? trim($resolvedOperationalKurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $resolvedOperationalKurikulum->semesterMulai->nama_semester)
                             : null,
@@ -170,9 +149,8 @@ class KrsHistoricalEligibilityService
     {
         return KelasKuliah::query()
             ->with([
-                'kurikulumMataKuliah.kurikulum:id,id_kurikulum_induk,nama_struktur_mk',
-                'kurikulumMataKuliah.kurikulum.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-                'kurikulumMataKuliah.kurikulum.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+                'kurikulumMataKuliah.kurikulum:id,id_prodi,nama_struktur_mk,id_semester',
+                'kurikulumMataKuliah.kurikulum.semesterMulai.tahunAkademik',
                 'kurikulumMataKuliah.mataKuliah:id,kode_mk,nama_mk,sks',
             ])
             ->where('id_semester', $filters['id_semester'])
@@ -192,26 +170,12 @@ class KrsHistoricalEligibilityService
                     'id' => $kelas->id,
                     'nama_kelas' => $kelas->nama_kelas,
                     'id_struktur_operasional' => $kelas->kurikulumMataKuliah?->id_kurikulum,
-                    'id_kurikulum_induk' => $kelas->kurikulumMataKuliah?->kurikulum?->id_kurikulum_induk,
                     'id_kurikulum' => $kelas->kurikulumMataKuliah?->id_kurikulum,
                     'nama_struktur_operasional' => $kelas->kurikulumMataKuliah?->kurikulum?->display_name,
-                    'nama_kurikulum_induk' => $kelas->kurikulumMataKuliah?->kurikulum?->kurikulumInduk?->nama_kurikulum,
                     'nama_kurikulum' => $kelas->kurikulumMataKuliah?->kurikulum?->display_name,
                     'kurikulum_context' => [
-                        'id_kurikulum_induk' => $kelas->kurikulumMataKuliah?->kurikulum?->id_kurikulum_induk,
                         'id_struktur_operasional' => $kelas->kurikulumMataKuliah?->id_kurikulum,
-                        'kurikulum_induk' => $kelas->kurikulumMataKuliah?->kurikulum?->kurikulumInduk ? [
-                            'id' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->id,
-                            'nama_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->nama_kurikulum,
-                            'keterangan' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->nama_kurikulum,
-                            'kode_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->kode_kurikulum,
-                            'tahun_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->tahun_kurikulum,
-                            'jenis_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->jenisKurikulum ? [
-                                'id' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->jenisKurikulum->id,
-                                'kode_jenis' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->jenisKurikulum->kode_jenis,
-                                'nama_jenis_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->kurikulumInduk->jenisKurikulum->nama_jenis_kurikulum,
-                            ] : null,
-                        ] : null,
+                        'id_kurikulum_operasional' => $kelas->kurikulumMataKuliah?->id_kurikulum,
                         'struktur_operasional' => $kelas->kurikulumMataKuliah?->kurikulum ? [
                             'id' => $kelas->kurikulumMataKuliah->kurikulum->id,
                             'nama_struktur_mk' => $kelas->kurikulumMataKuliah->kurikulum->display_name,
@@ -246,7 +210,6 @@ class KrsHistoricalEligibilityService
         $students = Mahasiswa::query()
             ->with([
                 'prodi:id,nama_prodi',
-                'riwayatKurikulum:id,id_mahasiswa,id_kurikulum,is_active,tanggal_mulai',
             ])
             ->whereIn('id', $studentIds->all())
             ->get()

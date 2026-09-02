@@ -28,6 +28,7 @@ class KhsImportValidationService
                     'total_valid' => 0,
                     'total_error' => count($payload['rows'] ?? []),
                     'total_warning' => 0,
+                    'total_mk_skipped' => 0,
                     'total_mahasiswa_found' => 0,
                     'total_mahasiswa_missing' => count($payload['rows'] ?? []),
                     'total_mk_matched' => 0,
@@ -66,6 +67,7 @@ class KhsImportValidationService
         $warnings = [];
         $mkMatched = 0;
         $mkMismatched = 0;
+        $mkSkipped = 0;
         $mahasiswaFound = 0;
         $mahasiswaMissing = 0;
         $keteranganMismatch = 0;
@@ -92,13 +94,23 @@ class KhsImportValidationService
                 $rowErrors[] = 'KRS mahasiswa pada semester yang dipilih tidak ditemukan.';
             }
 
-            $subjectResults = collect($row['subjects'] ?? [])->map(function (array $subject) use ($krs, &$rowErrors, &$rowWarnings, &$mkMatched, &$mkMismatched, &$mutuMismatch) {
+            $subjectResults = [];
+            foreach ($row['subjects'] ?? [] as $originalSubject) {
+                $subject = (array) $originalSubject;
                 $match = null;
                 if ($krs) {
                     $match = $krs->details->first(function (KRSDetail $detail) use ($subject) {
-                        return $detail->kode_mata_kuliah === $subject['kode_mk'];
+                        return $detail->kode_mata_kuliah === ($subject['kode_mk'] ?? null);
                     });
                 }
+
+                $isBlank = $this->isSubjectBlank($subject);
+                $skipped = false;
+                $resolved = [
+                    'nilai_huruf' => null,
+                    'bobot_nilai' => null,
+                    'mutu' => null,
+                ];
 
                 if ($match) {
                     $mkMatched++;
@@ -113,29 +125,50 @@ class KhsImportValidationService
                     if ($match->status === KRSDetail::STATUS_DROP) {
                         $rowErrors[] = 'Mata kuliah ' . $subject['kode_mk'] . ' berstatus drop pada KRS mahasiswa.';
                     }
+
+                    if ($isBlank) {
+                        $rowErrors[] = 'Nilai angka untuk mata kuliah ' . $subject['kode_mk'] . ' wajib diisi.';
+                    } else {
+                        $resolved = $this->resolveSubjectGrade($subject, $rowErrors);
+
+                        if (
+                            $resolved['mutu'] !== null
+                            && $subject['mutu'] !== null
+                            && round((float) $subject['mutu'], 2) !== round((float) $resolved['mutu'], 2)
+                        ) {
+                            $mutuMismatch++;
+                            $rowWarnings[] = 'Mutu Excel untuk mata kuliah ' . $subject['kode_mk'] . ' tidak sesuai hasil hitung sistem.';
+                        }
+                    }
+                } elseif ($isBlank && ($subject['kode_mk'] ?? '') !== '') {
+                    // MK tidak ada di KRS mahasiswa dan semua sel nilainya kosong =
+                    // mahasiswa memang tidak mengambil MK tersebut pada semester ini → dilewati.
+                    $skipped = true;
+                    $mkSkipped++;
                 } else {
                     $mkMismatched++;
-                    $rowErrors[] = 'Mata kuliah ' . $subject['kode_mk'] . ' tidak ditemukan pada KRS mahasiswa.';
+                    $rowErrors[] = 'Mahasiswa tidak mengambil mata kuliah ' . $subject['kode_mk']
+                        . ' pada KRS-nya semester ini. Nilai untuk mata kuliah yang bukan diambil di KRS tidak dapat diinput.';
+                    $resolved = $this->resolveSubjectGrade($subject, $rowErrors);
+
+                    if (
+                        $resolved['mutu'] !== null
+                        && $subject['mutu'] !== null
+                        && round((float) $subject['mutu'], 2) !== round((float) $resolved['mutu'], 2)
+                    ) {
+                        $mutuMismatch++;
+                        $rowWarnings[] = 'Mutu Excel untuk mata kuliah ' . $subject['kode_mk'] . ' tidak sesuai hasil hitung sistem.';
+                    }
                 }
 
-                $resolved = $this->resolveSubjectGrade($subject, $rowErrors);
-
-                if (
-                    $resolved['mutu'] !== null
-                    && $subject['mutu'] !== null
-                    && round((float) $subject['mutu'], 2) !== round((float) $resolved['mutu'], 2)
-                ) {
-                    $mutuMismatch++;
-                    $rowWarnings[] = 'Mutu Excel untuk mata kuliah ' . $subject['kode_mk'] . ' tidak sesuai hasil hitung sistem.';
-                }
-
-                return array_merge($subject, $resolved, [
+                $subjectResults[] = array_merge($subject, $resolved, [
                     'matched' => (bool) $match,
+                    'skipped' => $skipped,
                     'id_krs_detail' => $match?->id,
                     'id_kelas_kuliah' => $match?->id_kelas_kuliah,
                     'id_mata_kuliah' => $match?->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id,
                 ]);
-            })->all();
+            }
 
             if (($row['keterangan'] ?? null) === null) {
                 $rowErrors[] = 'Keterangan wajib diisi.';
@@ -197,6 +230,7 @@ class KhsImportValidationService
                 'total_valid' => $validCount,
                 'total_error' => count($errors),
                 'total_warning' => count($warnings),
+                'total_mk_skipped' => $mkSkipped,
                 'total_mahasiswa_found' => $mahasiswaFound,
                 'total_mahasiswa_missing' => $mahasiswaMissing,
                 'total_mk_matched' => $mkMatched,
@@ -208,6 +242,14 @@ class KhsImportValidationService
             'errors' => $errors,
             'warnings' => $warnings,
         ];
+    }
+
+    private function isSubjectBlank(array $subject): bool
+    {
+        return ($subject['nilai_akhir'] ?? null) === null
+            && ($subject['nilai_huruf'] ?? null) === null
+            && ($subject['mutu'] ?? null) === null
+            && ($subject['bobot_nilai'] ?? null) === null;
     }
 
     private function buildSubjectSummary(Collection $subjects): array

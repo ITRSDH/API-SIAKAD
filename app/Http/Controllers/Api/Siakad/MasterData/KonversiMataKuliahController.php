@@ -16,12 +16,8 @@ class KonversiMataKuliahController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = KonversiMataKuliah::with([
-            'kurikulumAsal:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumAsal.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumAsal.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
-            'kurikulumTujuan:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumTujuan.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumTujuan.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            'kurikulumAsal:id,id_prodi,nama_struktur_mk',
+            'kurikulumTujuan:id,id_prodi,nama_struktur_mk',
             'mataKuliahAsal:id,kode_mk,nama_mk,sks',
             'mataKuliahTujuan:id,kode_mk,nama_mk,sks',
             'createdBy:id,name',
@@ -44,12 +40,8 @@ class KonversiMataKuliahController extends Controller
     public function show(string $id): JsonResponse
     {
         $rule = KonversiMataKuliah::with([
-            'kurikulumAsal:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumAsal.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumAsal.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
-            'kurikulumTujuan:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumTujuan.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumTujuan.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            'kurikulumAsal:id,id_prodi,nama_struktur_mk',
+            'kurikulumTujuan:id,id_prodi,nama_struktur_mk',
             'mataKuliahAsal:id,kode_mk,nama_mk,sks',
             'mataKuliahTujuan:id,kode_mk,nama_mk,sks',
             'createdBy:id,name',
@@ -195,12 +187,8 @@ class KonversiMataKuliahController extends Controller
     private function relations(): array
     {
         return [
-            'kurikulumAsal:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumAsal.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumAsal.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
-            'kurikulumTujuan:id,id_prodi,kode_kurikulum,nama_struktur_mk,id_kurikulum_induk',
-            'kurikulumTujuan.kurikulumInduk:id,nama_kurikulum,kode_kurikulum,tahun_kurikulum,id_jenis_kurikulum',
-            'kurikulumTujuan.kurikulumInduk.jenisKurikulum:id,kode_jenis,nama_jenis_kurikulum',
+            'kurikulumAsal:id,id_prodi,nama_struktur_mk',
+            'kurikulumTujuan:id,id_prodi,nama_struktur_mk',
             'mataKuliahAsal:id,kode_mk,nama_mk,sks',
             'mataKuliahTujuan:id,kode_mk,nama_mk,sks',
             'createdBy:id,name',

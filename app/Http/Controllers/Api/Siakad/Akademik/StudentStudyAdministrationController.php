@@ -65,6 +65,7 @@ class StudentStudyAdministrationController extends Controller
             'id_semester' => 'required|uuid|exists:semester,id',
             'id_prodi' => 'nullable|uuid|exists:prodi,id',
             'angkatan' => 'nullable|integer|min:1900|max:2100',
+            'q' => 'nullable|string|max:120',
         ]);
 
         return response()->json([
@@ -90,6 +91,78 @@ class StudentStudyAdministrationController extends Controller
             'success' => true,
             'data' => $batch,
         ]);
+    }
+
+    /**
+     * Simpan nilai manual (grid masal) langsung ke krs_detail.
+     * Khusus admin/BAAK; menulis seperti import (tanpa penilaian/komponen).
+     */
+    public function saveManualNilai(Request $request): JsonResponse
+    {
+        $this->authorizeAdminOnly($request);
+
+        $validated = $request->validate([
+            'id_semester' => 'required|uuid|exists:semester,id',
+            'id_prodi' => 'required|uuid|exists:prodi,id',
+            'angkatan' => 'nullable|integer|min:1900|max:2100',
+            'semester_ke' => 'required|integer|min:1|max:14',
+            'rows' => 'required|array|max:500',
+            'rows.*.id_mahasiswa' => 'required|uuid|exists:mahasiswa,id',
+            'rows.*.courses' => 'present|array',
+            'rows.*.courses.*.id_kelas_kuliah' => 'required|uuid|exists:kelas_kuliah,id',
+            'rows.*.courses.*.nilai_akhir' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $results = $this->service->saveManualScores($validated);
+
+        $successCount = collect($results)->where('status', 'success')->count();
+        $failedCount = collect($results)->where('status', 'failed')->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => $failedCount
+                ? "Nilai tersimpan untuk {$successCount} mahasiswa; {$failedCount} gagal."
+                : "Nilai berhasil disimpan untuk {$successCount} mahasiswa.",
+            'data' => [
+                'results' => $results,
+            ],
+        ]);
+    }
+
+    /**
+     * Konteks nilai existing untuk grid masal (Input Nilai — manual).
+     * Admin-only.
+     */
+    public function manualNilaiContext(Request $request): JsonResponse
+    {
+        $this->authorizeAdminOnly($request);
+
+        $validated = $request->validate([
+            'id_semester' => 'required|uuid|exists:semester,id',
+            'id_prodi' => 'nullable|uuid|exists:prodi,id',
+            'angkatan' => 'nullable|integer|min:1900|max:2100',
+            'semester_ke' => 'nullable|integer|min:1|max:14',
+            'q' => 'nullable|string|max:120',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->service->manualNilaiContext($validated),
+        ]);
+    }
+
+    private function authorizeAdminOnly(Request $request): void
+    {
+        $user = $request->user();
+
+        if ($user && $user->hasRole('admin')) {
+            return;
+        }
+
+        throw new HttpResponseException(response()->json([
+            'success' => false,
+            'message' => 'Fitur input nilai manual hanya untuk admin/BAAK.',
+        ], 403));
     }
 
     private function authorizeWorkspaceAccess(Request $request): void

@@ -4,6 +4,7 @@ namespace App\Services\Akademik;
 
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KRS;
+use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KhsImportBatch;
 use App\Models\Akademik\KrsCollectiveBatch;
 use App\Models\Akademik\KrsCollectiveBatchItem;
@@ -185,6 +186,14 @@ class StudentStudyAdministrationService
 
         if (!empty($filters['angkatan'])) {
             $studentQuery->where('angkatan', $filters['angkatan']);
+        }
+
+        if (!empty($filters['q'])) {
+            $search = trim($filters['q']);
+            $studentQuery->where(function ($builder) use ($search) {
+                $builder->where('nama_mahasiswa', 'like', '%' . $search . '%')
+                    ->orWhere('nim', 'like', '%' . $search . '%');
+            });
         }
 
         $students = $studentQuery
@@ -467,5 +476,312 @@ class StudentStudyAdministrationService
         }
 
         return 'uploaded';
+    }
+
+    /**
+     * Menyimpan nilai akhir dari input manual (grid masal) langsung ke krs_detail.
+     *
+     * Meniru cara import nilai: menulis ke `KRSDetail` via `inputNilai` tanpa
+     * menyentuh tabel nilai/komponen/penilaian. Khusus fitur "Input Nilai manual"
+     * di halaman Input Nilai; hanya boleh dipakai oleh admin (guard di controller).
+     *
+     * @return array<int, array{id_mahasiswa: string, nim: string, nama_mahasiswa: string, status: string, message: string}>
+     */
+    public function saveManualScores(array $payload): array
+    {
+        $results = [];
+        $studentRows = $payload['rows'] ?? [];
+
+        foreach ($studentRows as $row) {
+            $studentId = $row['id_mahasiswa'] ?? null;
+            $courses = $row['courses'] ?? [];
+
+            if (!$studentId) {
+                $results[] = $this->manualResult($studentId, '', '', 'failed', 'ID mahasiswa tidak diberikan.');
+                continue;
+            }
+
+            $student = Mahasiswa::query()->find($studentId);
+
+            if (!$student) {
+                $results[] = $this->manualResult($studentId, '', '', 'failed', 'Mahasiswa tidak ditemukan.');
+                continue;
+            }
+
+            if (empty($courses)) {
+                $results[] = $this->manualResult(
+                    $studentId,
+                    $student->nim,
+                    $student->nama_mahasiswa,
+                    'skipped',
+                    'Tidak ada mata kuliah yang diisi untuk mahasiswa ini.'
+                );
+                continue;
+            }
+
+            $krs = KRS::query()
+                ->with('details')
+                ->where('id_mahasiswa', $studentId)
+                ->where('id_semester', $payload['id_semester'] ?? null)
+                ->first();
+
+            if (!$krs) {
+                $results[] = $this->manualResult(
+                    $studentId,
+                    $student->nim,
+                    $student->nama_mahasiswa,
+                    'failed',
+                    'KRS semester ini belum ditemukan untuk mahasiswa.'
+                );
+                continue;
+            }
+
+            if ($krs->status_approval !== KRS::STATUS_APPROVED) {
+                $results[] = $this->manualResult(
+                    $studentId,
+                    $student->nim,
+                    $student->nama_mahasiswa,
+                    'failed',
+                    'KRS mahasiswa belum di-approve sehingga nilai tidak dapat diinput manual.'
+                );
+                continue;
+            }
+
+            $finalKhs = KHS::query()
+                ->where('id_mahasiswa', $studentId)
+                ->where('id_semester', $payload['id_semester'] ?? null)
+                ->where('is_final', true)
+                ->exists();
+
+            if ($finalKhs) {
+                $results[] = $this->manualResult(
+                    $studentId,
+                    $student->nim,
+                    $student->nama_mahasiswa,
+                    'failed',
+                    'Mahasiswa sudah memiliki KHS final pada semester ini; nilai tidak dapat diubah via input manual.'
+                );
+                continue;
+            }
+
+            $detailByKelas = $krs->details->keyBy('id_kelas_kuliah');
+            $saved = 0;
+            $errors = [];
+
+            foreach ($courses as $course) {
+                $kelasId = $course['id_kelas_kuliah'] ?? null;
+                $nilaiAkhir = $course['nilai_akhir'] ?? null;
+
+                if (!$kelasId) {
+                    $errors[] = 'Ada mata kuliah tanpa kelas.';
+                    continue;
+                }
+
+                if ($nilaiAkhir === null || $nilaiAkhir === '' || !is_numeric($nilaiAkhir)) {
+                    continue; // Kosong = memang tidak diisi.
+                }
+
+                $numericScore = (float) $nilaiAkhir;
+
+                if ($numericScore < 0 || $numericScore > 100) {
+                    $errors[] = 'Ada nilai di luar rentang 0–100.';
+                    continue;
+                }
+
+                $detail = $detailByKelas->get($kelasId);
+
+                if (!$detail) {
+                    $errors[] = 'Mahasiswa tidak terdaftar pada salah satu kelas.';
+                    continue;
+                }
+
+                if ($detail->status === KRSDetail::STATUS_DROP) {
+                    $errors[] = 'Ada mata kuliah berstatus drop.';
+                    continue;
+                }
+
+                $grading = KRSDetail::convertNumericScore($numericScore);
+                $detail->inputNilai($numericScore, $grading['nilai_huruf'], $grading['bobot_nilai']);
+                $saved++;
+            }
+
+            if ($saved === 0) {
+                $message = $errors
+                    ? implode(' ', array_unique($errors))
+                    : 'Tidak ada nilai valid yang dapat disimpan untuk mahasiswa ini.';
+
+                $results[] = $this->manualResult(
+                    $studentId,
+                    $student->nim,
+                    $student->nama_mahasiswa,
+                    'failed',
+                    $message
+                );
+                continue;
+            }
+
+            $message = $errors
+                ? "{$saved} nilai tersimpan. " . implode(' ', array_unique($errors))
+                : "{$saved} nilai berhasil disimpan.";
+
+            $results[] = $this->manualResult(
+                $studentId,
+                $student->nim,
+                $student->nama_mahasiswa,
+                'success',
+                $message
+            );
+        }
+
+        return $results;
+    }
+
+    private function manualResult(
+        ?string $idMahasiswa,
+        string $nim,
+        string $namaMahasiswa,
+        string $status,
+        string $message
+    ): array {
+        return [
+            'id_mahasiswa' => (string) $idMahasiswa,
+            'nim' => $nim,
+            'nama_mahasiswa' => $namaMahasiswa,
+            'status' => $status,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * Konteks nilai existing untuk grid masal halaman Input Nilai (Manual).
+     *
+     * Mengembalikan per mahasiswa: daftar nilai yang sudah tersimpan pada
+     * KRS semester terpilih (id_kelas_kuliah → nilai_akhir). Admin-only.
+     *
+     * Hanya mahasiswa yang KRS-nya sudah di-approve pada semester terpilih yang
+     * dikembalikan (sudah melakukan KRS), dan diberi penanda `has_final_khs`
+     * agar UI bisa me-stabilo hijau mahasiswa yang KHS final-nya sudah ada.
+     * Setiap kursus disertai `status` (semua status, termasuk terdaftar), `semester_ke`
+     * dan `category` (paket/ulang/tambahan) untuk penanda visual di grid.
+     *
+     * @return array<int, array{
+     *   id_mahasiswa: string, nim: string, nama_mahasiswa: string,
+     *   prodi: string|null, status_approval: string|null, is_locked: bool,
+     *   has_final_khs: bool, existing_khs: array|null,
+     *   courses: array<int, array{id_kelas_kuliah: string, nilai_akhir: float|null,
+     *     status: string|null, semester_ke: int|null, category: string|null}>
+     * }>
+     */
+    public function manualNilaiContext(array $payload): array
+    {
+        $semesterId = $payload['id_semester'] ?? null;
+        $targetSemesterKe = (int) ($payload['semester_ke'] ?? 0);
+        $studentQuery = Mahasiswa::query()
+            ->where(function ($builder) {
+                $builder->whereNull('status')
+                    ->orWhere('status', '!=', 'nonaktif');
+            });
+
+        if (!empty($payload['id_prodi'])) {
+            $studentQuery->where('id_prodi', $payload['id_prodi']);
+        }
+
+        if (!empty($payload['angkatan'])) {
+            $studentQuery->where('angkatan', $payload['angkatan']);
+        }
+
+        if (!empty($payload['q'])) {
+            $search = trim($payload['q']);
+            $studentQuery->where(function ($builder) use ($search) {
+                $builder->where('nama_mahasiswa', 'like', '%' . $search . '%')
+                    ->orWhere('nim', 'like', '%' . $search . '%');
+            });
+        }
+
+        $students = $studentQuery
+            ->with('prodi:id,nama_prodi')
+            ->orderBy('angkatan')
+            ->orderBy('nim')
+            ->get();
+
+        $studentIds = $students->pluck('id')->all();
+
+        $krsMap = KRS::query()
+            ->with(['details.kelasKuliah.kurikulumMataKuliah.mataKuliah:id,kode_mk,nama_mk,sks'])
+            ->where('id_semester', $semesterId)
+            ->whereIn('id_mahasiswa', $studentIds)
+            ->where('status_approval', KRS::STATUS_APPROVED)
+            ->get()
+            ->keyBy('id_mahasiswa');
+
+        $khsMap = KHS::query()
+            ->where('id_semester', $semesterId)
+            ->whereIn('id_mahasiswa', $studentIds)
+            ->get()
+            ->keyBy('id_mahasiswa');
+
+        return $students
+            ->filter(fn(Mahasiswa $student) => $krsMap->has($student->id))
+            ->values()
+            ->map(function (Mahasiswa $student) use ($krsMap, $khsMap, $targetSemesterKe) {
+                $krs = $krsMap->get($student->id);
+                $khs = $khsMap->get($student->id);
+                $courses = $krs
+                    ? $krs->details
+                        ->map(fn($detail) => [
+                            'id_kelas_kuliah' => $detail->id_kelas_kuliah,
+                            'id_mata_kuliah' => $detail->kelasKuliah?->kurikulumMataKuliah?->id_mata_kuliah,
+                            'kode_mk' => $detail->kode_mata_kuliah,
+                            'nama_mk' => $detail->nama_mata_kuliah,
+                            'sks' => (int) ($detail->sks ?? 0),
+                            'nilai_akhir' => $detail->nilai_akhir !== null
+                                ? (float) $detail->nilai_akhir
+                                : null,
+                            'status' => $detail->status,
+                            'semester_ke' => $detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke !== null
+                                ? (int) $detail->kelasKuliah->kurikulumMataKuliah->semester_ke
+                                : null,
+                            'category' => $this->categorizeDetail($detail, $targetSemesterKe),
+                        ])
+                        ->values()
+                        ->all()
+                    : [];
+
+                return [
+                    'id_mahasiswa' => $student->id,
+                    'nim' => $student->nim,
+                    'nama_mahasiswa' => $student->nama_mahasiswa,
+                    'prodi' => $student->prodi?->nama_prodi,
+                    'status_approval' => $krs?->status_approval,
+                    'is_locked' => (bool) ($krs?->is_locked ?? false),
+                    'has_final_khs' => (bool) ($khs?->is_final ?? false),
+                    'existing_khs' => $khs ? [
+                        'id' => $khs->id,
+                        'is_final' => (bool) $khs->is_final,
+                    ] : null,
+                    'courses' => $courses,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function categorizeDetail(KRSDetail $detail, int $targetSemesterKe): ?string
+    {
+        if ($targetSemesterKe <= 0) {
+            return null;
+        }
+
+        $detailSemesterKe = (int) ($detail->kelasKuliah?->kurikulumMataKuliah?->semester_ke ?? 0);
+
+        if ($detailSemesterKe === $targetSemesterKe) {
+            return 'paket';
+        }
+
+        if ($detailSemesterKe > 0 && $detailSemesterKe < $targetSemesterKe) {
+            return 'ulang';
+        }
+
+        return 'tambahan';
     }
 }

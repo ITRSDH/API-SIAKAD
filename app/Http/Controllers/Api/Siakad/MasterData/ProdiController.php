@@ -74,7 +74,7 @@ class ProdiController extends Controller
                 'nama_prodi' => 'required|string|max:100',
                 'jenjang_pendidikan' => 'required|string|max:100',
                 'id_kaprodi' => 'nullable|exists:dosen,id',
-                'akreditasi' => 'nullable|in:A,B,C,Unggul',
+                'akreditasi' => 'nullable|string|max:50',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);
@@ -153,7 +153,7 @@ class ProdiController extends Controller
                 'nama_prodi' => 'sometimes|required|string|max:100',
                 'jenjang_pendidikan' => 'sometimes|required|string|max:100',
                 'id_kaprodi' => 'sometimes|nullable|exists:dosen,id',
-                'akreditasi' => 'nullable|in:A,B,C,Unggul',
+                'akreditasi' => 'nullable|string|max:50',
                 'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);

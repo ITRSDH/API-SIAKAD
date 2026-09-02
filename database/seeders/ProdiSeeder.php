@@ -27,7 +27,7 @@ class ProdiSeeder extends Seeder
                 'jenjang_pendidikan' => 'D3',
                 'nama_prodi' => 'Keperawatan',
                 'kode_prodi' => 'D3-KEP',
-                'akreditasi' => 'A',
+                'akreditasi' => 'Unggul',
                 'tahun_berdiri' => 2000, // Contoh tahun
                 'gelar_lulusan' => 'Ahli Madya Keperawatan',
                 'created_at' => now(),
@@ -38,7 +38,7 @@ class ProdiSeeder extends Seeder
                 'jenjang_pendidikan' => 'D3',
                 'nama_prodi' => 'Kebidanan',
                 'kode_prodi' => 'D3-KBD',
-                'akreditasi' => 'B',
+                'akreditasi' => 'Baik Sekali',
                 'tahun_berdiri' => 2005, // Contoh tahun
                 'gelar_lulusan' => 'Ahli Madya Kebidanan',
                 'created_at' => now(),
@@ -49,7 +49,7 @@ class ProdiSeeder extends Seeder
                 'jenjang_pendidikan' => 'S1',
                 'nama_prodi' => 'Sarjana Keperawatan',
                 'kode_prodi' => 'S1-KEP',
-                'akreditasi' => 'A',
+                'akreditasi' => 'Unggul',
                 'tahun_berdiri' => 2010, // Contoh tahun                
                 'gelar_lulusan' => 'Sarjana Keperawatan',
                 'created_at' => now(),
@@ -60,7 +60,7 @@ class ProdiSeeder extends Seeder
                 'jenjang_pendidikan' => 'Ners',
                 'nama_prodi' => 'Profesi Ners',
                 'kode_prodi' => 'NERS',
-                'akreditasi' => 'A',
+                'akreditasi' => 'Unggul',
                 'tahun_berdiri' => 2015, // Contoh tahun                
                 'gelar_lulusan' => 'Ners',
                 'created_at' => now(),

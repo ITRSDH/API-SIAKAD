@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Mahasiswa extends Model
 {
@@ -54,75 +53,12 @@ class Mahasiswa extends Model
         return $this->belongsTo(Prodi::class, 'id_prodi');
     }
 
-    public function riwayatKurikulum(): HasMany
-    {
-        return $this->hasMany(RiwayatKurikulumMahasiswa::class, 'id_mahasiswa')
-            ->orderByDesc('tanggal_mulai')
-            ->orderByDesc('created_at');
-    }
-
-    public function riwayatKurikulumAktif(): HasOne
-    {
-        return $this->hasOne(RiwayatKurikulumMahasiswa::class, 'id_mahasiswa')
-            ->where('is_active', true)
-            ->latest('tanggal_mulai')
-            ->latest('created_at');
-    }
-
     public function getCurrentKurikulumId(): ?string
     {
-        if ($this->relationLoaded('riwayatKurikulumAktif')) {
-            return $this->riwayatKurikulumAktif?->id_kurikulum;
-        }
-
-        if ($this->relationLoaded('riwayatKurikulum')) {
-            $activeHistoryId = $this->riwayatKurikulum
-                ->firstWhere('is_active', true)?->id_kurikulum;
-
-            if (filled($activeHistoryId)) {
-                return $activeHistoryId;
-            }
-        }
-
-        $activeHistoryId = $this->riwayatKurikulumAktif()->value('id_kurikulum');
-        if (filled($activeHistoryId)) {
-            return $activeHistoryId;
-        }
-
-        return null;
-    }
-
-    public function getCurrentKurikulumIndukId(): ?string
-    {
-        if ($this->relationLoaded('riwayatKurikulumAktif')) {
-            $activeIndukId = $this->riwayatKurikulumAktif?->id_kurikulum_induk;
-            if (filled($activeIndukId)) {
-                return $activeIndukId;
-            }
-        }
-
-        if ($this->relationLoaded('riwayatKurikulum')) {
-            $activeIndukId = $this->riwayatKurikulum
-                ->firstWhere('is_active', true)?->id_kurikulum_induk;
-
-            if (filled($activeIndukId)) {
-                return $activeIndukId;
-            }
-        }
-
-        $activeHistoryIndukId = $this->riwayatKurikulumAktif()->value('id_kurikulum_induk');
-        if (filled($activeHistoryIndukId)) {
-            return $activeHistoryIndukId;
-        }
-
-        $currentKurikulumId = $this->getCurrentKurikulumId();
-        if (!$currentKurikulumId) {
-            return null;
-        }
-
-        return Kurikulum::query()
-            ->where('id', $currentKurikulumId)
-            ->value('id_kurikulum_induk');
+        // Mahasiswa tidak terikat langsung ke kurikulum. Struktur kurikulum
+        // (sebagai struktur mata kuliah) disaring berdasarkan prodi + angkatan.
+        return app(\App\Services\MahasiswaCurriculumContextService::class)
+            ->resolveMatchingKurikulumId($this->id_prodi, $this->angkatan);
     }
 
     public function getCurrentKurikulum(): ?Kurikulum

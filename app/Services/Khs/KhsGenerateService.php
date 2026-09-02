@@ -63,7 +63,11 @@ class KhsGenerateService
                     $krs = $this->resolveSemesterKrs($mahasiswaId, $batch->id_semester);
 
                     $subjectMap = collect($row['subjects'] ?? [])
-                        ->filter(fn(array $subject) => (bool) ($subject['matched'] ?? false))
+                        ->filter(function (array $subject) {
+                            return (bool) ($subject['matched'] ?? false)
+                                && !($subject['skipped'] ?? false)
+                                && ($subject['nilai_akhir'] ?? null) !== null;
+                        })
                         ->keyBy('id_krs_detail');
 
                     if ($subjectMap->isEmpty()) {

@@ -3,9 +3,7 @@
 namespace App\Imports;
 
 use App\Models\MasterData\Mahasiswa;
-use App\Models\MasterData\RiwayatKurikulumMahasiswa;
 use App\Models\User;
-use App\Services\MahasiswaCurriculumContextService;
 use App\Services\StudentAngkatanResolverService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -21,13 +19,11 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
     private $successCount = 0;
     private $rowCount = 0;
     private $idProdi;
-    private MahasiswaCurriculumContextService $mahasiswaCurriculumContextService;
     private StudentAngkatanResolverService $studentAngkatanResolverService;
 
     public function __construct($idProdi = null)
     {
         $this->idProdi = $idProdi;
-        $this->mahasiswaCurriculumContextService = app(MahasiswaCurriculumContextService::class);
         $this->studentAngkatanResolverService = app(StudentAngkatanResolverService::class);
     }
 
@@ -96,11 +92,6 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                     );
                 }
 
-                $resolvedKurikulumId = $this->mahasiswaCurriculumContextService->resolveMatchingKurikulumId(
-                    $this->idProdi,
-                    $angkatan
-                );
-
                 // 1. Buat User terlebih dahulu
                 $user = User::create([
                     'name' => $namaMahasiswa,
@@ -130,19 +121,6 @@ class MahasiswaImport implements ToModel, WithHeadingRow, WithValidation, WithBa
                     'id_prodi' => $this->idProdi,
                     'user_id' => $user->id,
                 ]);
-
-                if ($resolvedKurikulumId) {
-                    RiwayatKurikulumMahasiswa::create([
-                        'id_mahasiswa' => $mahasiswa->id,
-                        'id_kurikulum' => $resolvedKurikulumId,
-                        'id_kurikulum_induk' => $this->mahasiswaCurriculumContextService->resolveOperationalToIndukId($resolvedKurikulumId),
-                        'tanggal_mulai' => $tanggalMasuk?->toDateString() ?? now()->toDateString(),
-                        'tanggal_selesai' => null,
-                        'is_active' => true,
-                        'catatan' => 'Kurikulum awal mahasiswa hasil import',
-                        'created_by' => null,
-                    ]);
-                }
             });
 
             $this->successCount++;

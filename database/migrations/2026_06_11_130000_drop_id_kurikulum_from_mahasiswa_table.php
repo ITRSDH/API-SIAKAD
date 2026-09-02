@@ -8,10 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('mahasiswa', function (Blueprint $table) {
-            $table->dropForeign(['id_kurikulum']);
-            $table->dropColumn('id_kurikulum');
-        });
+        // Mahasiswa tidak lagi terikat langsung ke kurikulum (id_kurikulum di
+        // tabel mahasiswa sudah tidak berlaku). Kolom ini hanya ada di database
+        // lama; pada fresh install tidak pernah dibuat sehingga di-skip.
+        if (Schema::hasColumn('mahasiswa', 'id_kurikulum')) {
+            Schema::table('mahasiswa', function (Blueprint $table) {
+                $table->dropForeign(['id_kurikulum']);
+                $table->dropColumn('id_kurikulum');
+            });
+        }
     }
 
     public function down(): void

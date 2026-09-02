@@ -252,11 +252,29 @@ class KhsTemplateExport implements FromArray, WithEvents
                     for ($row = $dataStartRow; $row <= $highestRow; $row++) {
                         $sheet->getRowDimension($row)->setRowHeight(22);
 
+                        // Penanda visual per sel: abu-abu = MK tidak diambil, amber = MK ulang.
+                        $templateRow = $this->template['rows'][$row - $dataStartRow] ?? null;
+
                         for ($subjectIndex = 0; $subjectIndex < $subjectCount; $subjectIndex++) {
                             $scoreColumn = Coordinate::stringFromColumnIndex($headerStart + ($subjectIndex * 2));
                             $lambangColumn = Coordinate::stringFromColumnIndex($headerStart + ($subjectIndex * 2) + 1);
                             $mutuColumn = Coordinate::stringFromColumnIndex($mutuStartIndex + $subjectIndex);
                             $bobotColumn = Coordinate::stringFromColumnIndex($bobotStartIndex + $subjectIndex);
+
+                            $templateCell = $templateRow['subjects'][$subjectIndex] ?? null;
+                            $isNotTaken = is_array($templateCell) && ($templateCell['taken'] ?? true) === false;
+                            $isRepeat = is_array($templateCell) && ($templateCell['taken'] ?? false) === true && ($templateCell['is_repeat'] ?? false) === true;
+
+                            if ($isNotTaken || $isRepeat) {
+                                $fillColor = $isNotTaken ? 'D9D9D9' : 'FFF3CD';
+                                foreach ([$scoreColumn, $lambangColumn, $mutuColumn, $bobotColumn] as $fillColumn) {
+                                    $sheet->getStyle($fillColumn . $row)
+                                        ->getFill()
+                                        ->setFillType(Fill::FILL_SOLID)
+                                        ->getStartColor()
+                                        ->setRGB($fillColor);
+                                }
+                            }
 
                             $sheet->setCellValue(
                                 $lambangColumn . $row,

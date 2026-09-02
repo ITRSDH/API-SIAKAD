@@ -11,6 +11,7 @@ use App\Models\MasterData\PeriodeKrs;
 use App\Models\MasterData\Semester;
 use App\Services\ActiveCurriculumService;
 use App\Services\CurriculumConversionService;
+use App\Services\Krs\CourseRegistrationValidationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -21,17 +22,18 @@ class KRSMahasiswaController extends Controller
 {
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService,
-        private readonly ActiveCurriculumService $activeCurriculumService
+        private readonly ActiveCurriculumService $activeCurriculumService,
+        private readonly CourseRegistrationValidationService $courseRegistrationValidationService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -39,7 +41,7 @@ class KRSMahasiswaController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn(KRS $krs) => $this->transformKRS($krs));
+            ->map(fn (KRS $krs) => $this->transformKRS($krs));
 
         return response()->json([
             'success' => true,
@@ -51,19 +53,19 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
         $semester = $this->getActiveSemester();
 
-        if (!$semester) {
+        if (! $semester) {
             return response()->json([
                 'success' => false,
-                'message' => 'Semester aktif tidak ditemukan'
+                'message' => 'Semester aktif tidak ditemukan',
             ], 404);
         }
 
@@ -95,24 +97,24 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
         $semester = $this->getActiveSemester();
 
-        if (!$semester) {
+        if (! $semester) {
             return response()->json([
                 'success' => false,
-                'message' => 'Semester aktif tidak ditemukan'
+                'message' => 'Semester aktif tidak ditemukan',
             ], 404);
         }
 
         $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             return response()->json([
                 'success' => false,
                 'message' => $eligibility['message'],
@@ -129,7 +131,7 @@ class KRSMahasiswaController extends Controller
             ->where('id_semester', $semester->id)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             $result = DB::transaction(function () use ($mahasiswa, $semester) {
                 $krs = KRS::create([
                     'id_mahasiswa' => $mahasiswa->id,
@@ -174,10 +176,10 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -186,10 +188,10 @@ class KRSMahasiswaController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
@@ -213,22 +215,22 @@ class KRSMahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
         $semester = Semester::find($request->id_semester);
         $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             return response()->json([
                 'success' => false,
                 'message' => $eligibility['message'],
@@ -288,7 +290,7 @@ class KRSMahasiswaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat KRS: ' . $e->getMessage()
+                'message' => 'Gagal membuat KRS: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -297,10 +299,10 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -312,10 +314,10 @@ class KRSMahasiswaController extends Controller
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->first();
 
-            if (!$krs) {
+            if (! $krs) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'KRS tidak ditemukan'
+                    'message' => 'KRS tidak ditemukan',
                 ], 404);
             }
 
@@ -331,17 +333,17 @@ class KRSMahasiswaController extends Controller
             }
         }
 
-        if (!$semester) {
+        if (! $semester) {
             return response()->json([
                 'success' => false,
-                'message' => 'Semester tidak ditemukan'
+                'message' => 'Semester tidak ditemukan',
             ], 404);
         }
 
         $mahasiswaSemester = $this->hitungSemesterKrs($mahasiswa, $semester);
         $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
 
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             return response()->json([
                 'success' => true,
                 'data' => [],
@@ -372,7 +374,7 @@ class KRSMahasiswaController extends Controller
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
                 'jadwal',
-                'dosen_pengajar.dosen'
+                'dosen_pengajar.dosen',
             ])
             ->get();
 
@@ -393,9 +395,9 @@ class KRSMahasiswaController extends Controller
             $availabilityReason = null;
             if ($isSelected) {
                 $availabilityReason = 'Mata kuliah sudah ada di KRS';
-            } elseif (!$semesterAllowed) {
+            } elseif (! $semesterAllowed) {
                 $availabilityReason = 'Mata kuliah belum sesuai semester tempuh mahasiswa';
-            } elseif (!$prasyaratCheck['passed']) {
+            } elseif (! $prasyaratCheck['passed']) {
                 $availabilityReason = $prasyaratCheck['message'];
             } elseif ($wouldExceedSks) {
                 $availabilityReason = "Penambahan kelas ini akan melebihi batas maksimal {$maxSks} SKS";
@@ -442,10 +444,10 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -457,10 +459,10 @@ class KRSMahasiswaController extends Controller
                 ->where('id_mahasiswa', $mahasiswa->id)
                 ->first();
 
-            if (!$krs) {
+            if (! $krs) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'KRS tidak ditemukan'
+                    'message' => 'KRS tidak ditemukan',
                 ], 404);
             }
 
@@ -474,10 +476,10 @@ class KRSMahasiswaController extends Controller
             }
         }
 
-        if (!$semester || !$krs) {
+        if (! $semester || ! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'Draft KRS semester aktif belum tersedia'
+                'message' => 'Draft KRS semester aktif belum tersedia',
             ], 404);
         }
 
@@ -503,7 +505,7 @@ class KRSMahasiswaController extends Controller
                 $sourceCourseId = $detail->id_mata_kuliah
                     ?? $detail->mataKuliah?->id
                     ?? $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
-                if (!filled($sourceCourseId)) {
+                if (! filled($sourceCourseId)) {
                     return null;
                 }
 
@@ -519,8 +521,8 @@ class KRSMahasiswaController extends Controller
                     );
                 });
             })
-            ->filter(fn(Collection $items) => $items->isNotEmpty())
-            ->filter(fn($items, $mataKuliahId) => filled($mataKuliahId));
+            ->filter(fn (Collection $items) => $items->isNotEmpty())
+            ->filter(fn ($items, $mataKuliahId) => filled($mataKuliahId));
 
         $result = [];
 
@@ -540,7 +542,7 @@ class KRSMahasiswaController extends Controller
                 ? $this->curriculumConversionService->resolveTranscriptCourse($mahasiswa->id, $sourceCourseId, $activeKurikulumId)
                 : null;
 
-            if (!$mataKuliah) {
+            if (! $mataKuliah) {
                 continue;
             }
 
@@ -565,7 +567,7 @@ class KRSMahasiswaController extends Controller
                     $kelasPenuh = $kelas->isPenuh();
 
                     $availabilityReason = null;
-                    if (!$prasyaratCheck['passed']) {
+                    if (! $prasyaratCheck['passed']) {
                         $availabilityReason = $prasyaratCheck['message'];
                     } elseif ($wouldExceedSks) {
                         $availabilityReason = "Penambahan kelas ini akan melebihi batas maksimal {$maxSks} SKS";
@@ -639,16 +641,16 @@ class KRSMahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -657,36 +659,36 @@ class KRSMahasiswaController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
-        if (!$krs->isEditable()) {
+        if (! $krs->isEditable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak dapat diubah pada status saat ini'
+                'message' => 'KRS tidak dapat diubah pada status saat ini',
             ], 400);
         }
 
         $kelasKuliah = KelasKuliah::with([
             'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
-            'jadwal'
+            'jadwal',
         ])->findOrFail($request->id_kelas_kuliah);
 
         if ($krs->mahasiswa->id_prodi !== $kelasKuliah->id_prodi) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah tidak sesuai dengan program studi mahasiswa'
+                'message' => 'Mata kuliah tidak sesuai dengan program studi mahasiswa',
             ], 400);
         }
 
         if ($krs->id_semester !== $kelasKuliah->id_semester) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah tidak ditawarkan pada semester ini'
+                'message' => 'Mata kuliah tidak ditawarkan pada semester ini',
             ], 400);
         }
 
@@ -697,7 +699,7 @@ class KRSMahasiswaController extends Controller
         if ($semesterTempuh < 1 || ($semesterPaket > 0 && $semesterPaket > $semesterTempuh)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah belum sesuai dengan semester tempuh mahasiswa pada periode akademik aktif'
+                'message' => 'Mata kuliah belum sesuai dengan semester tempuh mahasiswa pada periode akademik aktif',
             ], 400);
         }
 
@@ -708,7 +710,7 @@ class KRSMahasiswaController extends Controller
         if ($existingDetail) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah sudah ada di KRS'
+                'message' => 'Mata kuliah sudah ada di KRS',
             ], 400);
         }
 
@@ -716,7 +718,7 @@ class KRSMahasiswaController extends Controller
         if ($targetMataKuliahId && in_array($targetMataKuliahId, $this->getSelectedMataKuliahIds($krs), true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah ini sudah terdaftar di KRS pada kelas lain'
+                'message' => 'Mata kuliah ini sudah terdaftar di KRS pada kelas lain',
             ], 400);
         }
 
@@ -727,7 +729,7 @@ class KRSMahasiswaController extends Controller
         $isOverrideRequested = $request->boolean('force_override');
         $canForceOverride = $this->canForceSksOverride($request);
 
-        if (!$prasyaratCheck['passed']) {
+        if (! $prasyaratCheck['passed']) {
             return response()->json([
                 'success' => false,
                 'message' => $prasyaratCheck['message'],
@@ -738,43 +740,43 @@ class KRSMahasiswaController extends Controller
         }
 
         if ($currentSks + $mataKuliahSks > $maxSks) {
-            if (!$isOverrideRequested || !$canForceOverride) {
+            if (! $isOverrideRequested || ! $canForceOverride) {
                 $message = $canForceOverride
                     ? "Total SKS melebihi batas maksimal ({$maxSks} SKS). Gunakan override jika ini memang disetujui kampus."
                     : "Total SKS melebihi batas maksimal ({$maxSks} SKS)";
 
                 return response()->json([
                     'success' => false,
-                    'message' => $message
+                    'message' => $message,
                 ], 400);
             }
 
-            if (!filled($request->override_note)) {
+            if (! filled($request->override_note)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Catatan override wajib diisi saat melampaui batas maksimal SKS'
+                    'message' => 'Catatan override wajib diisi saat melampaui batas maksimal SKS',
                 ], 422);
             }
         }
 
-        if ($isOverrideRequested && !$canForceOverride) {
+        if ($isOverrideRequested && ! $canForceOverride) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki hak untuk melakukan override batas SKS'
+                'message' => 'Anda tidak memiliki hak untuk melakukan override batas SKS',
             ], 403);
         }
 
         if ($kelasKuliah->isPenuh()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kelas sudah penuh'
+                'message' => 'Kelas sudah penuh',
             ], 400);
         }
 
         if ($this->hasJadwalKonflik($krs, $kelasKuliah)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Jadwal bertabrakan dengan mata kuliah lain'
+                'message' => 'Jadwal bertabrakan dengan mata kuliah lain',
             ], 400);
         }
 
@@ -816,7 +818,7 @@ class KRSMahasiswaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menambahkan mata kuliah: ' . $e->getMessage()
+                'message' => 'Gagal menambahkan mata kuliah: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -825,10 +827,10 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -836,17 +838,17 @@ class KRSMahasiswaController extends Controller
             ->where('id_mahasiswa', $mahasiswa->id)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
-        if (!$krs->isEditable()) {
+        if (! $krs->isEditable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak dapat diubah pada status saat ini'
+                'message' => 'KRS tidak dapat diubah pada status saat ini',
             ], 400);
         }
 
@@ -854,10 +856,10 @@ class KRSMahasiswaController extends Controller
             ->where('id_kelas_kuliah', $kelasKuliahId)
             ->first();
 
-        if (!$detail) {
+        if (! $detail) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mata kuliah tidak ditemukan di KRS'
+                'message' => 'Mata kuliah tidak ditemukan di KRS',
             ], 404);
         }
 
@@ -882,7 +884,7 @@ class KRSMahasiswaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghapus mata kuliah: ' . $e->getMessage()
+                'message' => 'Gagal menghapus mata kuliah: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -901,32 +903,32 @@ class KRSMahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
         $krs = $this->loadKRSForResponse($request->id_krs);
 
-        if (!$krs || $krs->id_mahasiswa !== $mahasiswa->id) {
+        if (! $krs || $krs->id_mahasiswa !== $mahasiswa->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
-        if (!$krs->isEditable()) {
+        if (! $krs->isEditable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak dapat diajukan pada status saat ini'
+                'message' => 'KRS tidak dapat diajukan pada status saat ini',
             ], 400);
         }
 
@@ -936,7 +938,7 @@ class KRSMahasiswaController extends Controller
         }
 
         $validationSummary = $this->buildValidationSummary($krs);
-        if (!$validationSummary['is_valid']) {
+        if (! $validationSummary['is_valid']) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS belum dapat diajukan karena masih ada validasi yang belum terpenuhi',
@@ -961,7 +963,7 @@ class KRSMahasiswaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengajukan KRS: ' . $e->getMessage()
+                'message' => 'Gagal mengajukan KRS: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -982,19 +984,19 @@ class KRSMahasiswaController extends Controller
 
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
         $krs = $this->loadKRSForResponse($request->id_krs);
 
-        if (!$krs || $krs->id_mahasiswa !== $mahasiswa->id) {
+        if (! $krs || $krs->id_mahasiswa !== $mahasiswa->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
@@ -1008,10 +1010,10 @@ class KRSMahasiswaController extends Controller
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data mahasiswa tidak ditemukan'
+                'message' => 'Data mahasiswa tidak ditemukan',
             ], 404);
         }
 
@@ -1041,7 +1043,7 @@ class KRSMahasiswaController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -1065,21 +1067,21 @@ class KRSMahasiswaController extends Controller
             if ($periodeKrs->status !== 'aktif') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Periode KRS untuk semester ini belum aktif'
+                    'message' => 'Periode KRS untuk semester ini belum aktif',
                 ], 400);
             }
 
             if ($today->lt($periodeKrs->tanggal_mulai)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Periode pengajuan KRS belum dimulai'
+                    'message' => 'Periode pengajuan KRS belum dimulai',
                 ], 400);
             }
 
             if ($today->gt($periodeKrs->tanggal_selesai)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Periode pengajuan KRS telah berakhir'
+                    'message' => 'Periode pengajuan KRS telah berakhir',
                 ], 400);
             }
 
@@ -1089,14 +1091,14 @@ class KRSMahasiswaController extends Controller
         if ($today->lt($semester->tanggal_mulai)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Periode pengajuan KRS belum dimulai'
+                'message' => 'Periode pengajuan KRS belum dimulai',
             ], 400);
         }
 
         if ($today->gt($semester->tanggal_selesai)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Periode pengajuan KRS telah berakhir'
+                'message' => 'Periode pengajuan KRS telah berakhir',
             ], 400);
         }
 
@@ -1105,55 +1107,9 @@ class KRSMahasiswaController extends Controller
 
     private function validatePrerequisites(string $mahasiswaId, $mataKuliah): array
     {
-        $requirements = [];
-
-        foreach ($mataKuliah->prasyarat ?? [] as $prasyarat) {
-            $mkPrasyarat = $prasyarat->mataKuliahPrasyarat;
-
-            if (!$mkPrasyarat) {
-                continue;
-            }
-
-            $hasPassed = KRSDetail::whereHas('krs', function ($query) use ($mahasiswaId) {
-                $query->where('id_mahasiswa', $mahasiswaId)
-                    ->where('status_approval', KRS::STATUS_APPROVED);
-            })
-                ->whereHas('kelasKuliah.kurikulumMataKuliah.mataKuliah', function ($query) use ($mahasiswaId, $mkPrasyarat) {
-                    $equivalentCourseIds = $this->curriculumConversionService
-                        ->getRecognizedSourceCourseIdsForTarget($mahasiswaId, $mkPrasyarat->id);
-
-                    $query->whereIn('mata_kuliah.id', $equivalentCourseIds);
-                })
-                ->where('status', KRSDetail::STATUS_LULUS)
-                ->where('bobot_nilai', '>=', $prasyarat->min_bobot_nilai)
-                ->exists();
-
-            $requirements[] = [
-                'id_mata_kuliah_prasyarat' => $mkPrasyarat->id,
-                'kode_mk' => $mkPrasyarat->kode_mk,
-                'nama_mk' => $mkPrasyarat->nama_mk,
-                'min_bobot_nilai' => $prasyarat->min_bobot_nilai,
-                'is_passed' => $hasPassed,
-            ];
-        }
-
-        $missing = array_values(array_filter($requirements, fn($item) => !$item['is_passed']));
-
-        if (count($missing) > 0) {
-            $first = $missing[0];
-
-            return [
-                'passed' => false,
-                'message' => "Prasyarat {$first['kode_mk']} - {$first['nama_mk']} belum terpenuhi",
-                'requirements' => $requirements,
-            ];
-        }
-
-        return [
-            'passed' => true,
-            'message' => null,
-            'requirements' => $requirements,
-        ];
+        // Delegasi ke sumber kebenaran tunggal; keluaran (termasuk
+        // id_mata_kuliah_prasyarat pada requirements) dipertahankan identik.
+        return $this->courseRegistrationValidationService->validatePrerequisites($mahasiswaId, $mataKuliah);
     }
 
     private function krsRelations(): array
@@ -1183,12 +1139,8 @@ class KRSMahasiswaController extends Controller
             ? $this->activeCurriculumService->resolveCurriculumContext($krs->mahasiswa)
             : [
                 'id_kurikulum' => null,
-                'id_kurikulum_sumber' => null,
-                'id_kurikulum_dasar' => null,
-                'id_kurikulum_induk' => null,
                 'id_struktur_operasional' => null,
                 'id_kurikulum_operasional' => null,
-                'kurikulum_induk' => null,
                 'struktur_operasional' => null,
             ];
 
@@ -1282,7 +1234,7 @@ class KRSMahasiswaController extends Controller
 
         $activeKurikulumId = $mahasiswa ? $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa) : null;
 
-        if (!$mahasiswa || !$semester || !$activeKurikulumId) {
+        if (! $mahasiswa || ! $semester || ! $activeKurikulumId) {
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
@@ -1331,7 +1283,7 @@ class KRSMahasiswaController extends Controller
         foreach ($packageItems as $packageItem) {
             $mataKuliah = $packageItem->mataKuliah;
 
-            if (!$mataKuliah) {
+            if (! $mataKuliah) {
                 continue;
             }
 
@@ -1391,7 +1343,7 @@ class KRSMahasiswaController extends Controller
 
         foreach ($details as $detail) {
             $kelas = $detail->kelasKuliah;
-            if (!$kelas) {
+            if (! $kelas) {
                 continue;
             }
 
@@ -1414,22 +1366,22 @@ class KRSMahasiswaController extends Controller
             'max_sks_actual_ok' => $totalSks <= $maxSks,
             'schedule_conflict' => $hasScheduleConflict,
             'can_edit' => $krs->isEditable(),
-            'can_submit' => $krs->isEditable() && $details->count() > 0 && ($totalSks <= $maxSks || (bool) $krs->is_sks_override) && !$hasScheduleConflict,
-            'is_valid' => $details->count() > 0 && ($totalSks <= $maxSks || (bool) $krs->is_sks_override) && !$hasScheduleConflict,
+            'can_submit' => $krs->isEditable() && $details->count() > 0 && ($totalSks <= $maxSks || (bool) $krs->is_sks_override) && ! $hasScheduleConflict,
+            'is_valid' => $details->count() > 0 && ($totalSks <= $maxSks || (bool) $krs->is_sks_override) && ! $hasScheduleConflict,
         ];
     }
 
     private function hasJadwalKonflikForDetailCollection($details, string $currentKelasId): bool
     {
         $currentDetail = $details->firstWhere('id_kelas_kuliah', $currentKelasId);
-        if (!$currentDetail || !$currentDetail->kelasKuliah) {
+        if (! $currentDetail || ! $currentDetail->kelasKuliah) {
             return false;
         }
 
         $currentJadwals = $currentDetail->kelasKuliah->jadwal;
 
         foreach ($details as $detail) {
-            if ($detail->id_kelas_kuliah === $currentKelasId || !$detail->kelasKuliah) {
+            if ($detail->id_kelas_kuliah === $currentKelasId || ! $detail->kelasKuliah) {
                 continue;
             }
 
@@ -1437,7 +1389,7 @@ class KRSMahasiswaController extends Controller
                 foreach ($detail->kelasKuliah->jadwal as $otherJadwal) {
                     if (
                         $currentJadwal->hari === $otherJadwal->hari &&
-                        $this->isTimeOverlap(
+                        $this->courseRegistrationValidationService->isTimeOverlap(
                             $currentJadwal->jam_mulai,
                             $currentJadwal->jam_selesai,
                             $otherJadwal->jam_mulai,
@@ -1462,7 +1414,7 @@ class KRSMahasiswaController extends Controller
     {
         $user = $request->user();
 
-        if (!$user || !method_exists($user, 'hasAnyRole')) {
+        if (! $user || ! method_exists($user, 'hasAnyRole')) {
             return false;
         }
 
@@ -1508,7 +1460,6 @@ class KRSMahasiswaController extends Controller
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
-                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
@@ -1521,12 +1472,11 @@ class KRSMahasiswaController extends Controller
             ];
         }
 
-        if (!$activeKurikulumId) {
+        if (! $activeKurikulumId) {
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
-                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
@@ -1546,7 +1496,6 @@ class KRSMahasiswaController extends Controller
                 'summary' => [
                     'semester_ke' => $semesterKe,
                     'kurikulum_context' => $curriculumContext,
-                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'generated_count' => 0,
@@ -1554,7 +1503,6 @@ class KRSMahasiswaController extends Controller
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'id_kurikulum' => $curriculumContext['id_kurikulum_operasional'] ?? $activeKurikulumId,
@@ -1566,11 +1514,12 @@ class KRSMahasiswaController extends Controller
         foreach ($packageItems as $packageItem) {
             $mataKuliah = $packageItem->mataKuliah;
 
-            if (!$mataKuliah) {
+            if (! $mataKuliah) {
                 $unresolvedItems[] = [
                     'id_kurikulum_mata_kuliah' => $packageItem->id,
                     'reason' => 'Data mata kuliah pada kurikulum tidak ditemukan',
                 ];
+
                 continue;
             }
 
@@ -1592,6 +1541,7 @@ class KRSMahasiswaController extends Controller
                     'nama_mk' => $mataKuliah->nama_mk,
                     'reason' => 'Kelas kuliah untuk paket semester ini belum tersedia',
                 ];
+
                 continue;
             }
 
@@ -1606,10 +1556,10 @@ class KRSMahasiswaController extends Controller
                     return false;
                 }
 
-                return !$this->hasClassScheduleConflict($selectedClasses, $candidate);
+                return ! $this->hasClassScheduleConflict($selectedClasses, $candidate);
             });
 
-            if (!$selectedClass) {
+            if (! $selectedClass) {
                 $reason = $this->resolvePackageClassFailureReason($candidateClasses, $selectedClasses, $generatedSks, $maxSks);
 
                 $unresolvedItems[] = [
@@ -1619,6 +1569,7 @@ class KRSMahasiswaController extends Controller
                     'nama_mk' => $mataKuliah->nama_mk,
                     'reason' => $reason,
                 ];
+
                 continue;
             }
 
@@ -1640,7 +1591,6 @@ class KRSMahasiswaController extends Controller
             'summary' => [
                 'semester_ke' => $semesterKe,
                 'kurikulum_context' => $curriculumContext,
-                'id_kurikulum_induk' => $curriculumContext['id_kurikulum_induk'] ?? null,
                 'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                 'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                 'generated_count' => $generatedCount,
@@ -1657,7 +1607,7 @@ class KRSMahasiswaController extends Controller
             ->whereHas('kelasKuliah.kurikulumMataKuliah')
             ->with('kelasKuliah.kurikulumMataKuliah')
             ->get()
-            ->map(fn(KRSDetail $detail) => $detail->kelasKuliah?->kurikulumMataKuliah?->id_mata_kuliah)
+            ->map(fn (KRSDetail $detail) => $detail->kelasKuliah?->kurikulumMataKuliah?->id_mata_kuliah)
             ->filter()
             ->unique()
             ->values()
@@ -1696,7 +1646,7 @@ class KRSMahasiswaController extends Controller
             return "Ada {$availableClassCount} kelas kuliah untuk semester {$semesterKe}, tetapi paket kurikulum otomatis yang cocok belum ditemukan. Mata kuliah masih bisa ditambahkan manual dari penawaran kelas.";
         }
 
-        if (!$activeKurikulumId) {
+        if (! $activeKurikulumId) {
             return "Sistem belum menemukan struktur kurikulum operasional yang cocok berdasarkan prodi dan angkatan mahasiswa untuk semester {$semesterKe}.";
         }
 
@@ -1705,25 +1655,8 @@ class KRSMahasiswaController extends Controller
 
     private function hasClassScheduleConflict(Collection $selectedClasses, KelasKuliah $candidate): bool
     {
-        foreach ($selectedClasses as $selectedClass) {
-            foreach ($candidate->jadwal as $candidateJadwal) {
-                foreach ($selectedClass->jadwal as $selectedJadwal) {
-                    if (
-                        $candidateJadwal->hari === $selectedJadwal->hari &&
-                        $this->isTimeOverlap(
-                            $candidateJadwal->jam_mulai,
-                            $candidateJadwal->jam_selesai,
-                            $selectedJadwal->jam_mulai,
-                            $selectedJadwal->jam_selesai
-                        )
-                    ) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        // Identik dengan primitive shared; delegasikan ke sumber kebenaran tunggal.
+        return $this->courseRegistrationValidationService->hasScheduleConflict($selectedClasses, $candidate);
     }
 
     private function resolvePackageClassFailureReason(
@@ -1732,9 +1665,9 @@ class KRSMahasiswaController extends Controller
         int $generatedSks,
         int $maxSks
     ): string {
-        $hasNonFullClass = $candidateClasses->contains(fn(KelasKuliah $candidate) => !$candidate->isPenuh());
+        $hasNonFullClass = $candidateClasses->contains(fn (KelasKuliah $candidate) => ! $candidate->isPenuh());
 
-        if (!$hasNonFullClass) {
+        if (! $hasNonFullClass) {
             return 'Semua kelas untuk mata kuliah paket ini sudah penuh';
         }
 
@@ -1744,15 +1677,15 @@ class KRSMahasiswaController extends Controller
             return ($generatedSks + $candidateSks) <= $maxSks;
         });
 
-        if (!$hasWithinSksLimit) {
+        if (! $hasWithinSksLimit) {
             return "Penambahan mata kuliah paket ini akan melebihi batas maksimal {$maxSks} SKS";
         }
 
         $hasWithoutConflict = $candidateClasses->contains(function (KelasKuliah $candidate) use ($selectedClasses) {
-            return !$candidate->isPenuh() && !$this->hasClassScheduleConflict($selectedClasses, $candidate);
+            return ! $candidate->isPenuh() && ! $this->hasClassScheduleConflict($selectedClasses, $candidate);
         });
 
-        if (!$hasWithoutConflict) {
+        if (! $hasWithoutConflict) {
             return 'Semua pilihan kelas untuk mata kuliah paket ini bentrok dengan paket yang sudah tergenerate';
         }
 
@@ -1822,7 +1755,7 @@ class KRSMahasiswaController extends Controller
         $newJadwals = $newKelas->jadwal;
 
         foreach ($existingDetails as $detail) {
-            if (!$detail->kelasKuliah) {
+            if (! $detail->kelasKuliah) {
                 continue;
             }
 
@@ -1832,7 +1765,7 @@ class KRSMahasiswaController extends Controller
                 foreach ($existingJadwals as $existingJadwal) {
                     if (
                         $newJadwal->hari === $existingJadwal->hari &&
-                        $this->isTimeOverlap(
+                        $this->courseRegistrationValidationService->isTimeOverlap(
                             $newJadwal->jam_mulai,
                             $newJadwal->jam_selesai,
                             $existingJadwal->jam_mulai,
@@ -1850,7 +1783,7 @@ class KRSMahasiswaController extends Controller
 
     private function isSemesterBefore(?Semester $candidate, Semester $reference): bool
     {
-        if (!$candidate || !$candidate->tahunAkademik || !$reference->tahunAkademik) {
+        if (! $candidate || ! $candidate->tahunAkademik || ! $reference->tahunAkademik) {
             return true;
         }
 
@@ -1869,10 +1802,5 @@ class KRSMahasiswaController extends Controller
         $normalized = strtolower(trim((string) $semesterName));
 
         return str_contains($normalized, 'genap') ? 2 : 1;
-    }
-
-    private function isTimeOverlap(string $start1, string $end1, string $start2, string $end2): bool
-    {
-        return ($start1 < $end2) && ($start2 < $end1);
     }
 }
