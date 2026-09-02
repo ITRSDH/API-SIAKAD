@@ -161,7 +161,10 @@ class MahasiswaBaruController extends Controller
                     'asal_sekolah' => $apiMahasiswa['asal_sekolah'],
                     'id_prodi' => $idProdi,
                     'status' => 'PMB', // Status for pendaftar baru
-                    'angkatan' => $angkatan,
+                    'angkatan' => $apiMahasiswa['tahun_angkatan'] ?? null,
+                    'nik' => $apiMahasiswa['nik'] ?? null,
+                    'tempat_lahir' => $apiMahasiswa['tempat_lahir'] ?? null,
+                    'tanggal_masuk' => $apiMahasiswa['tanggal_masuk'] ?? null,
                     // Fields that are not available from API but can be null
                     'id_dosen' => null,
                     'nama_orang_tua' => null,
