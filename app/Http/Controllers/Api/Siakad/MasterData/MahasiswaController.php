@@ -118,7 +118,7 @@ class MahasiswaController extends Controller
                 // 1. Buat User terlebih dahulu
                 $password = $request->filled('password')
                     ? Hash::make($request->password)
-                    : Hash::make($request->tanggal_lahir ? date('dmY', strtotime($request->tanggal_lahir)) : 'password');
+                    : Hash::make('12345678');
 
                 $user = User::create([
                     'name' => $request->nama_mahasiswa,

@@ -35,8 +35,8 @@ class MataKuliahImport implements ToModel, WithHeadingRow, WithValidation
             'sks_praktek_lapangan' => $row['sks_praktek_lapangan'] ?? 0,
             'sks_simulasi' => $row['sks_simulasi'] ?? 0,
             'sks' => $totalSks,
-            'jenis_mk' => $row['jenis_mk'],
-            'kelompok_mk' => $row['kelompok_mk'],
+            'jenis_mk' => $row['jenis_mk'] ?? null,
+            'kelompok_mk' => $row['kelompok_mk'] ?? null,
         ]);
     }
 
@@ -49,8 +49,8 @@ class MataKuliahImport implements ToModel, WithHeadingRow, WithValidation
             'sks_praktikum' => 'nullable|integer|min:0',
             'sks_praktek_lapangan' => 'nullable|integer|min:0',
             'sks_simulasi' => 'nullable|integer|min:0',
-            'jenis_mk' => 'required|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
-            'kelompok_mk' => 'required|in:MPK,MKK,MKB,MPB,MBB,MKDK',
+            'jenis_mk' => 'nullable|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
+            'kelompok_mk' => 'nullable|in:MPK,MKK,MKB,MPB,MBB,MKDK',
         ];
     }
 
@@ -61,9 +61,7 @@ class MataKuliahImport implements ToModel, WithHeadingRow, WithValidation
             'kode_mk.max' => 'Kode Mata Kuliah maksimal 20 karakter',
             'nama_mk.required' => 'Nama Mata Kuliah wajib diisi',
             'nama_mk.max' => 'Nama Mata Kuliah maksimal 255 karakter',
-            'jenis_mk.required' => 'Jenis Mata Kuliah wajib diisi',
             'jenis_mk.in' => 'Jenis Mata Kuliah tidak valid. Pilihan: wajib_prodi, wajib_nasional, pilihan, peminatan, tugas_akhir/skripsi/tesis/disertasi',
-            'kelompok_mk.required' => 'Kelompok Mata Kuliah wajib diisi',
             'kelompok_mk.in' => 'Kelompok Mata Kuliah tidak valid. Pilihan: MPK, MKK, MKB, MPB, MBB, MKDK',
         ];
     }

@@ -99,8 +99,8 @@ class MataKuliahController extends Controller
                 'sks_praktikum' => 'nullable|integer|min:0',
                 'sks_praktek_lapangan' => 'nullable|integer|min:0',
                 'sks_simulasi' => 'nullable|integer|min:0',
-                'jenis_mk' => 'required|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
-                'kelompok_mk' => 'required|in:MPK,MKK,MKB,MPB,MBB,MKDK',
+                'jenis_mk' => 'nullable|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
+                'kelompok_mk' => 'nullable|in:MPK,MKK,MKB,MPB,MBB,MKDK',
             ]);
 
             // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
@@ -204,8 +204,8 @@ class MataKuliahController extends Controller
                 'sks_praktikum' => 'nullable|integer|min:0',
                 'sks_praktek_lapangan' => 'nullable|integer|min:0',
                 'sks_simulasi' => 'nullable|integer|min:0',
-                'jenis_mk' => 'required|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
-                'kelompok_mk' => 'required|in:MPK,MKK,MKB,MPB,MBB,MKDK',
+                'jenis_mk' => 'nullable|in:wajib_prodi,wajib_nasional,pilihan,peminatan,tugas_akhir/skripsi/tesis/disertasi',
+                'kelompok_mk' => 'nullable|in:MPK,MKK,MKB,MPB,MBB,MKDK',
             ]);
 
             // Hitung total SKS berdasarkan penjumlahan semua jenis SKS
