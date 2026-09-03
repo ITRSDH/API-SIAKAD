@@ -142,7 +142,7 @@ class MahasiswaBaruController extends Controller
                 $user = User::create([
                     'name' => $apiMahasiswa['nama_lengkap'],
                     'email' => $apiMahasiswa['email'],
-                    'password' => bcrypt('password'), // Default password, should be changed later
+                    'password' => bcrypt('12345678'), // Default password, should be changed later
                     'status' => 'aktif'
                 ]);
                 
