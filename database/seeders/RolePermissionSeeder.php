@@ -40,7 +40,19 @@ class RolePermissionSeeder extends Seeder
             'akademik.krs-historical.batches.show',
         ];
 
+        $generateKelasPermissions = [
+            'akademik.kelas-kuliah-generate.candidates',
+            'akademik.kelas-kuliah-generate.create',
+        ];
+
         foreach ($historicalPermissions as $permissionName) {
+            Permission::firstOrCreate([
+                'name' => $permissionName,
+                'guard_name' => 'api',
+            ]);
+        }
+
+        foreach ($generateKelasPermissions as $permissionName) {
             Permission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'api',
@@ -52,6 +64,7 @@ class RolePermissionSeeder extends Seeder
         foreach ($rolesWithHistoricalAccess as $roleName) {
             $role = Role::findByName($roleName, 'api');
             $role->givePermissionTo($historicalPermissions);
+            $role->givePermissionTo($generateKelasPermissions);
         }
     }
 }

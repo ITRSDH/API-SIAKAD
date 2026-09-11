@@ -171,6 +171,11 @@ Route::prefix('v1')->group(function () {
 
         // End Master Data
 
+        Route::name('akademik.kelas-kuliah-generate.')->prefix('kelas-kuliah/generate')->group(function () {
+            Route::get('candidates', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'generateCandidates'])->name('candidates');
+            Route::post('create', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'generateCreate'])->name('create');
+        });
+
         Route::name('akademik.krs-historical.')->prefix('krs-historical')->group(function () {
             Route::get('filters', [KRSHistoricalController::class, 'filters'])->name('filters');
             Route::get('eligible-mahasiswa', [KRSHistoricalController::class, 'eligibleMahasiswa'])->name('eligible-mahasiswa');

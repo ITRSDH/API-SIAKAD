@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MasterData\GenerateKelasKuliahCandidateRequest;
+use App\Http\Requests\MasterData\GenerateKelasKuliahCreateRequest;
 use App\Http\Requests\MasterData\RegisterKrsRequest;
 use App\Http\Requests\MasterData\StoreKelasKuliahRequest;
 use App\Http\Requests\MasterData\UpdateKelasKuliahRequest;
@@ -10,6 +12,7 @@ use App\Models\Akademik\KRS;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
+use App\Services\KelasKuliahGenerationService;
 use App\Services\KelasKuliahService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +22,8 @@ use Illuminate\Support\Facades\DB;
 class KelasKuliahController extends Controller
 {
     public function __construct(
-        private readonly KelasKuliahService $kelasKuliahService
+        private readonly KelasKuliahService $kelasKuliahService,
+        private readonly KelasKuliahGenerationService $kelasKuliahGenerationService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -358,6 +362,54 @@ class KelasKuliahController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus kelas kuliah',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Daftar mata kuliah calon pembuatan kelas (per prodi + kurikulum + semester_ke).
+     */
+    public function generateCandidates(GenerateKelasKuliahCandidateRequest $request): JsonResponse
+    {
+        try {
+            $data = $this->kelasKuliahGenerationService->candidates($request->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar mata kuliah calon kelas berhasil diambil.',
+                'data' => $data['data'],
+                'meta' => ['summary' => $data['summary']],
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil daftar mata kuliah calon kelas.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Buat kelas kuliah masal untuk mata kuliah yang dipilih (satu klik).
+     */
+    public function generateCreate(GenerateKelasKuliahCreateRequest $request): JsonResponse
+    {
+        try {
+            $data = $this->kelasKuliahGenerationService->create(
+                $request->validated(),
+                (string) auth('api')->id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => $data['message'] ?? 'Proses pembuatan kelas kuliah massal selesai.',
+                'data' => $data,
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat membuat kelas kuliah massal.',
                 'error' => $e->getMessage(),
             ], 500);
         }
