@@ -13,7 +13,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('kurikulum') && ! Schema::hasColumn('kurikulum', 'keterangan')) {
             Schema::table('kurikulum', function (Blueprint $table) {
-                $table->text('keterangan')->nullable()->after('is_locked');
+                $table->text('keterangan')->nullable();
             });
         }
     }
