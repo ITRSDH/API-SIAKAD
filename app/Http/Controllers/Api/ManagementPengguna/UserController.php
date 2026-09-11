@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api\ManagementPengguna;
 
-use Exception;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Models\RefreshToken as RefreshTokenModel;
+use App\Models\User;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Models\RefreshToken as RefreshTokenModel;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -18,11 +18,12 @@ class UserController extends Controller
         try {
             $users = User::with('roles')->get();
             $role = Role::get();
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'users' => $users,
-                    'role' => $role
+                    'role' => $role,
                 ],
             ]);
         } catch (Exception $e) {
@@ -86,7 +87,7 @@ class UserController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:users,email,' . $id,
+                'email' => 'sometimes|email|unique:users,email,'.$id,
                 'password' => 'sometimes|min:6|confirmed',
                 'status' => 'sometimes|in:aktif,tidak-aktif',
             ]);
@@ -132,7 +133,7 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to delete user.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

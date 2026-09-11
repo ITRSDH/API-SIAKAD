@@ -2,10 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Website\Faq;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\Website\Faq;
-use Illuminate\Support\Str;
 
 class FaqControllerTest extends TestCase
 {
@@ -22,8 +21,8 @@ class FaqControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    '*' => ['id', 'pertanyaan', 'jawaban', 'created_at']
-                ]
+                    '*' => ['id', 'pertanyaan', 'jawaban', 'created_at'],
+                ],
             ]);
     }
 
@@ -52,7 +51,7 @@ class FaqControllerTest extends TestCase
     {
         $faq = Faq::factory()->create();
 
-        $response = $this->getJson('/api/v1/faq/' . $faq->id);
+        $response = $this->getJson('/api/v1/faq/'.$faq->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -62,7 +61,7 @@ class FaqControllerTest extends TestCase
                     'id' => $faq->id,
                     'pertanyaan' => $faq->pertanyaan,
                     'jawaban' => $faq->jawaban,
-                ]
+                ],
             ]);
     }
 
@@ -74,7 +73,7 @@ class FaqControllerTest extends TestCase
             'jawaban' => 'Ini adalah jawaban update.',
         ];
 
-        $response = $this->putJson('/api/v1/faq/' . $faq->id, $data);
+        $response = $this->putJson('/api/v1/faq/'.$faq->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -93,7 +92,7 @@ class FaqControllerTest extends TestCase
     {
         $faq = Faq::factory()->create();
 
-        $response = $this->deleteJson('/api/v1/faq/' . $faq->id);
+        $response = $this->deleteJson('/api/v1/faq/'.$faq->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -102,7 +101,7 @@ class FaqControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('faq', [
-            'id' => $faq->id
+            'id' => $faq->id,
         ]);
     }
 }

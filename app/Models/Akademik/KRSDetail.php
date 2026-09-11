@@ -4,19 +4,22 @@ namespace App\Models\Akademik;
 
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\MataKuliah;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class KRSDetail extends Model
 {
     use HasFactory, HasUuids;
 
     protected $table = 'krs_detail';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -39,8 +42,11 @@ class KRSDetail extends Model
     ];
 
     const STATUS_TERDAFTAR = 'terdaftar';
+
     const STATUS_DROP = 'drop';
+
     const STATUS_LULUS = 'lulus';
+
     const STATUS_TIDAK_LULUS = 'tidak_lulus';
 
     // Relasi ke KRS
@@ -147,7 +153,7 @@ class KRSDetail extends Model
     {
         $mutu = (float) $bobot_nilai;
         $status = $mutu >= 2.0 ? self::STATUS_LULUS : self::STATUS_TIDAK_LULUS;
-        
+
         return $this->update([
             'nilai_akhir' => $nilai_akhir,
             'nilai_huruf' => $nilai_huruf,
@@ -163,7 +169,7 @@ class KRSDetail extends Model
         $komponen = $this->nilaiKomponen()
             ->with('komponenPenilaian')
             ->get()
-            ->filter(fn($item) => $item->komponenPenilaian && $item->komponenPenilaian->is_active);
+            ->filter(fn ($item) => $item->komponenPenilaian && $item->komponenPenilaian->is_active);
 
         $nilaiAkhir = $komponen->sum(function ($item) {
             $nilai = $item->nilai ?? 0;

@@ -34,7 +34,7 @@ class KelulusanController extends Controller
             'yudisium.transkrip:id,id_mahasiswa,total_sks_lulus,ipk',
         ])->find($id);
 
-        if (!$kelulusan) {
+        if (! $kelulusan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelulusan tidak ditemukan',
@@ -59,7 +59,7 @@ class KelulusanController extends Controller
         ]);
 
         $yudisium = Yudisium::where('id_mahasiswa', $validated['id_mahasiswa'])->first();
-        if (!$yudisium) {
+        if (! $yudisium) {
             return response()->json([
                 'success' => false,
                 'message' => 'Yudisium belum tersedia',

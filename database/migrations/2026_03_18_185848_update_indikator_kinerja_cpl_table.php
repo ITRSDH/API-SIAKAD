@@ -24,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('indikator_kinerja_cpl', function (Blueprint $table) {
-             $table->string('kategori_ik_cpl')
+            $table->string('kategori_ik_cpl')
                 ->nullable(false)
                 ->change();
         });

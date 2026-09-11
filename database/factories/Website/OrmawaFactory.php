@@ -4,7 +4,6 @@ namespace Database\Factories\Website;
 
 use App\Models\Website\Ormawa;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class OrmawaFactory extends Factory
 {
@@ -13,7 +12,7 @@ class OrmawaFactory extends Factory
     public function definition()
     {
         $kategoriList = ['akademik', 'seni', 'olahraga', 'sosial'];
-        
+
         $namaOrmawa = [
             'Himpunan Mahasiswa Informatika',
             'Unit Kegiatan Mahasiswa Seni Tari',
@@ -30,7 +29,7 @@ class OrmawaFactory extends Factory
         ];
 
         return [
-            'nama' => $this->faker->randomElement($namaOrmawa) . ' ' . $this->faker->numberBetween(1, 10),
+            'nama' => $this->faker->randomElement($namaOrmawa).' '.$this->faker->numberBetween(1, 10),
             'kategori' => $this->faker->randomElement($kategoriList),
             'deskripsi' => $this->faker->paragraph(3),
             'gambar' => null, // Will be uploaded manually or via ImageService

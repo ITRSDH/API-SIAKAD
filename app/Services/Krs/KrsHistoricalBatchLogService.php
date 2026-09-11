@@ -45,11 +45,11 @@ class KrsHistoricalBatchLogService
             ->orderByDesc('executed_at')
             ->orderByDesc('created_at');
 
-        if (!empty($filters['id_semester'])) {
+        if (! empty($filters['id_semester'])) {
             $query->where('id_semester', $filters['id_semester']);
         }
 
-        if (!empty($filters['action_type'])) {
+        if (! empty($filters['action_type'])) {
             $query->where('action_type', $filters['action_type']);
         }
 

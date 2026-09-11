@@ -13,15 +13,14 @@ class KhsImportValidationService
         private readonly KhsCalculationService $calculationService,
         private readonly KhsRemarkService $remarkService,
         private readonly GradeConversionService $gradeConversionService
-    ) {
-    }
+    ) {}
 
     public function validateParsedPayload(array $payload, array $context = []): array
     {
         $semesterId = $context['id_semester'] ?? null;
         $semesterKe = (int) ($payload['metadata']['semester_ke'] ?? 0);
         $usesSeparatedIpkColumn = $semesterKe > 1 || (($payload['metadata']['tail_mode'] ?? null) === 'separated');
-        if (!$semesterId) {
+        if (! $semesterId) {
             return [
                 'summary' => [
                     'total_rows' => count($payload['rows'] ?? []),
@@ -83,14 +82,14 @@ class KhsImportValidationService
             $mahasiswa = $mahasiswaByNim->get($row['nim']);
             $krs = $mahasiswa ? $krsCollection->get($mahasiswa->id) : null;
 
-            if (!$mahasiswa) {
+            if (! $mahasiswa) {
                 $mahasiswaMissing++;
                 $rowErrors[] = 'Mahasiswa dengan NIM tersebut tidak ditemukan.';
             } else {
                 $mahasiswaFound++;
             }
 
-            if ($mahasiswa && !$krs) {
+            if ($mahasiswa && ! $krs) {
                 $rowErrors[] = 'KRS mahasiswa pada semester yang dipilih tidak ditemukan.';
             }
 
@@ -119,15 +118,15 @@ class KhsImportValidationService
                         && filled($match->nama_mata_kuliah)
                         && mb_strtoupper(trim((string) $subject['nama_mk'])) !== mb_strtoupper(trim((string) $match->nama_mata_kuliah))
                     ) {
-                        $rowWarnings[] = 'Nama mata kuliah Excel untuk kode ' . $subject['kode_mk'] . ' berbeda dengan data KRS.';
+                        $rowWarnings[] = 'Nama mata kuliah Excel untuk kode '.$subject['kode_mk'].' berbeda dengan data KRS.';
                     }
 
                     if ($match->status === KRSDetail::STATUS_DROP) {
-                        $rowErrors[] = 'Mata kuliah ' . $subject['kode_mk'] . ' berstatus drop pada KRS mahasiswa.';
+                        $rowErrors[] = 'Mata kuliah '.$subject['kode_mk'].' berstatus drop pada KRS mahasiswa.';
                     }
 
                     if ($isBlank) {
-                        $rowErrors[] = 'Nilai angka untuk mata kuliah ' . $subject['kode_mk'] . ' wajib diisi.';
+                        $rowErrors[] = 'Nilai angka untuk mata kuliah '.$subject['kode_mk'].' wajib diisi.';
                     } else {
                         $resolved = $this->resolveSubjectGrade($subject, $rowErrors);
 
@@ -137,7 +136,7 @@ class KhsImportValidationService
                             && round((float) $subject['mutu'], 2) !== round((float) $resolved['mutu'], 2)
                         ) {
                             $mutuMismatch++;
-                            $rowWarnings[] = 'Mutu Excel untuk mata kuliah ' . $subject['kode_mk'] . ' tidak sesuai hasil hitung sistem.';
+                            $rowWarnings[] = 'Mutu Excel untuk mata kuliah '.$subject['kode_mk'].' tidak sesuai hasil hitung sistem.';
                         }
                     }
                 } elseif ($isBlank && ($subject['kode_mk'] ?? '') !== '') {
@@ -147,8 +146,8 @@ class KhsImportValidationService
                     $mkSkipped++;
                 } else {
                     $mkMismatched++;
-                    $rowErrors[] = 'Mahasiswa tidak mengambil mata kuliah ' . $subject['kode_mk']
-                        . ' pada KRS-nya semester ini. Nilai untuk mata kuliah yang bukan diambil di KRS tidak dapat diinput.';
+                    $rowErrors[] = 'Mahasiswa tidak mengambil mata kuliah '.$subject['kode_mk']
+                        .' pada KRS-nya semester ini. Nilai untuk mata kuliah yang bukan diambil di KRS tidak dapat diinput.';
                     $resolved = $this->resolveSubjectGrade($subject, $rowErrors);
 
                     if (
@@ -157,7 +156,7 @@ class KhsImportValidationService
                         && round((float) $subject['mutu'], 2) !== round((float) $resolved['mutu'], 2)
                     ) {
                         $mutuMismatch++;
-                        $rowWarnings[] = 'Mutu Excel untuk mata kuliah ' . $subject['kode_mk'] . ' tidak sesuai hasil hitung sistem.';
+                        $rowWarnings[] = 'Mutu Excel untuk mata kuliah '.$subject['kode_mk'].' tidak sesuai hasil hitung sistem.';
                     }
                 }
 
@@ -178,7 +177,7 @@ class KhsImportValidationService
             $resolvedIpk = $usesSeparatedIpkColumn
                 ? $this->resolveManualIpk($row, $rowErrors)
                 : $summary['ips'];
-            if (($row['keterangan'] ?? null) !== null && !$this->remarkService->matchesExcelRemark($summary['ips'], $row['keterangan'])) {
+            if (($row['keterangan'] ?? null) !== null && ! $this->remarkService->matchesExcelRemark($summary['ips'], $row['keterangan'])) {
                 $keteranganMismatch++;
                 $rowWarnings[] = 'Keterangan Excel tidak sesuai dengan rule sistem berdasarkan IPS.';
             }
@@ -255,7 +254,7 @@ class KhsImportValidationService
     private function buildSubjectSummary(Collection $subjects): array
     {
         $eligible = $subjects
-            ->filter(fn(array $subject) => $subject['mutu'] !== null && $subject['sks'] !== null)
+            ->filter(fn (array $subject) => $subject['mutu'] !== null && $subject['sks'] !== null)
             ->map(function (array $subject) {
                 $mutu = (float) $subject['mutu'];
                 $bobotNilai = $subject['bobot_nilai'] ?? round(((int) $subject['sks']) * $mutu, 2);
@@ -300,19 +299,19 @@ class KhsImportValidationService
         $sks = (int) ($subject['sks'] ?? 0);
 
         if ($nilaiAkhir === null) {
-            $rowErrors[] = 'Nilai angka untuk mata kuliah ' . $subject['kode_mk'] . ' wajib diisi.';
+            $rowErrors[] = 'Nilai angka untuk mata kuliah '.$subject['kode_mk'].' wajib diisi.';
         }
 
         if ($nilaiAkhir !== null && ($nilaiAkhir < 0 || $nilaiAkhir > 100)) {
-            $rowErrors[] = 'Nilai angka untuk mata kuliah ' . $subject['kode_mk'] . ' tidak valid.';
+            $rowErrors[] = 'Nilai angka untuk mata kuliah '.$subject['kode_mk'].' tidak valid.';
         }
 
         if ($bobotNilai !== null && $bobotNilai < 0) {
-            $rowErrors[] = 'Bobot nilai untuk mata kuliah ' . $subject['kode_mk'] . ' tidak valid.';
+            $rowErrors[] = 'Bobot nilai untuk mata kuliah '.$subject['kode_mk'].' tidak valid.';
         }
 
         if ($mutu !== null && ($mutu < 0 || $mutu > 4)) {
-            $rowErrors[] = 'Mutu untuk mata kuliah ' . $subject['kode_mk'] . ' harus berada pada rentang 0 sampai 4.';
+            $rowErrors[] = 'Mutu untuk mata kuliah '.$subject['kode_mk'].' harus berada pada rentang 0 sampai 4.';
         }
 
         if ($nilaiHuruf === null && $mutu === null && $nilaiAkhir !== null) {
@@ -325,7 +324,7 @@ class KhsImportValidationService
                 $nilaiHuruf = $fallback['nilai_huruf'];
                 $mutu = $fallback['bobot_nilai'];
             } else {
-                $rowErrors[] = 'Nilai huruf untuk mata kuliah ' . $subject['kode_mk'] . ' tidak dikenali.';
+                $rowErrors[] = 'Nilai huruf untuk mata kuliah '.$subject['kode_mk'].' tidak dikenali.';
             }
         } elseif ($nilaiHuruf === null && $mutu !== null && $nilaiAkhir !== null) {
             $fallback = $this->gradeConversionService->convertNumericScore((float) $nilaiAkhir);

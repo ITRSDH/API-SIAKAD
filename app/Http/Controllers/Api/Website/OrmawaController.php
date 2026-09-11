@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Website\Ormawa;
 use App\Http\Requests\Website\StoreOrmawaRequest;
 use App\Http\Requests\Website\UpdateOrmawaRequest;
+use App\Models\Website\Ormawa;
 use App\Services\ImageService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class OrmawaController extends Controller
@@ -16,18 +16,19 @@ class OrmawaController extends Controller
     {
         try {
             $ormawa = Ormawa::select([
-                'id', 'nama', 'deskripsi', 'kategori', 'gambar', 'created_at', 'updated_at'
+                'id', 'nama', 'deskripsi', 'kategori', 'gambar', 'created_at', 'updated_at',
             ])->orderBy('created_at', 'desc')->get();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar ormawa',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data ormawa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -43,16 +44,17 @@ class OrmawaController extends Controller
             }
 
             $ormawa = Ormawa::create($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Ormawa berhasil ditambahkan',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan ormawa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -61,16 +63,17 @@ class OrmawaController extends Controller
     {
         try {
             $ormawa = Ormawa::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail ormawa',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ormawa tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -89,16 +92,17 @@ class OrmawaController extends Controller
             }
 
             $ormawa->update($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Ormawa berhasil diperbarui',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui ormawa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -107,22 +111,23 @@ class OrmawaController extends Controller
     {
         try {
             $ormawa = Ormawa::findOrFail($id);
-            
+
             // Hapus gambar jika ada
             if ($ormawa->gambar && Storage::disk('public')->exists($ormawa->gambar)) {
                 $imageService->deletePublicFileIfExists($ormawa->gambar);
             }
-            
+
             $ormawa->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Ormawa berhasil dihapus'
+                'message' => 'Ormawa berhasil dihapus',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus ormawa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

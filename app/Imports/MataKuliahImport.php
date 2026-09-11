@@ -3,10 +3,10 @@
 namespace App\Imports;
 
 use App\Models\MasterData\MataKuliah;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Illuminate\Support\Str;
 
 class MataKuliahImport implements ToModel, WithHeadingRow, WithValidation
 {
@@ -20,9 +20,9 @@ class MataKuliahImport implements ToModel, WithHeadingRow, WithValidation
     public function model(array $row)
     {
         // Hitung total SKS
-        $totalSks = ($row['sks_tatap_muka'] ?? 0) + 
-                   ($row['sks_praktikum'] ?? 0) + 
-                   ($row['sks_praktek_lapangan'] ?? 0) + 
+        $totalSks = ($row['sks_tatap_muka'] ?? 0) +
+                   ($row['sks_praktikum'] ?? 0) +
+                   ($row['sks_praktek_lapangan'] ?? 0) +
                    ($row['sks_simulasi'] ?? 0);
 
         return new MataKuliah([

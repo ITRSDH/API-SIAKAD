@@ -24,7 +24,7 @@ class SemesterController extends Controller
     {
         $data = Semester::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Semester tidak ditemukan',
@@ -66,7 +66,7 @@ class SemesterController extends Controller
     {
         $data = Semester::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Semester tidak ditemukan',
@@ -74,7 +74,7 @@ class SemesterController extends Controller
         }
 
         $validated = $request->validate([
-            'semester' => 'sometimes|required|string|max:30|unique:semester,semester,' . $id,
+            'semester' => 'sometimes|required|string|max:30|unique:semester,semester,'.$id,
             'tahun_ajaran' => 'sometimes|required|string|max:255',
             'tanggal_mulai' => 'sometimes|required|date',
             'tanggal_selesai' => 'sometimes|required|date',
@@ -94,7 +94,7 @@ class SemesterController extends Controller
     {
         $data = Semester::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Semester tidak ditemukan',

@@ -3,24 +3,30 @@
 namespace App\Models\Akademik;
 
 use App\Models\MasterData\KelasKuliah;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PertemuanKuliah extends Model
 {
     use HasFactory, HasUuids;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_TERJADWAL = 'terjadwal';
+
     public const STATUS_SELESAI = 'selesai';
+
     public const STATUS_DIBATALKAN = 'dibatalkan';
 
     protected $table = 'pertemuan_kuliah';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

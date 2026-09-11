@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Website;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateProfileDosenRequest extends FormRequest
 {
@@ -30,7 +29,7 @@ class UpdateProfileDosenRequest extends FormRequest
             'status' => 'sometimes|required|string|max:100',
             'id_prodi' => 'nullable|uuid|exists:prodi,id',
             'biografi' => 'nullable|string',
-            'foto' => 'nullable|mimes:jpeg,png,jpg,webp|max:5120'
+            'foto' => 'nullable|mimes:jpeg,png,jpg,webp|max:5120',
         ];
     }
 }

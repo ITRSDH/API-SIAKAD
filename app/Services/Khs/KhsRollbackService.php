@@ -4,9 +4,9 @@ namespace App\Services\Khs;
 
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KHSDetail;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KhsImportBatch;
 use App\Models\Akademik\KhsRevision;
+use App\Models\Akademik\KRSDetail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +19,7 @@ class KhsRollbackService
     {
         $batch = KhsImportBatch::query()->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return [
                 'rolled_back' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -60,7 +60,7 @@ class KhsRollbackService
                 /** @var KHS|null $khs */
                 $khs = KHS::query()->with('details')->find($khsId);
 
-                if (!$khs) {
+                if (! $khs) {
                     continue;
                 }
 
@@ -151,7 +151,7 @@ class KhsRollbackService
 
         foreach ($snapshots as $detailId => $snapshot) {
             $detail = $currentDetails->get($detailId);
-            if (!$detail) {
+            if (! $detail) {
                 continue;
             }
 

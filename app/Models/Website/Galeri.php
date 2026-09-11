@@ -11,11 +11,14 @@ class Galeri extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'galeri';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
-   protected $fillable = [
+    protected $fillable = [
         'judul',
         'kategori',
         'gambar',

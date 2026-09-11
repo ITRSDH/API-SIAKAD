@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use Illuminate\Http\Request;
-use App\Models\MasterData\ProfileLulusan;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\MasterData\ProfileLulusan;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProfileLulusanController extends Controller
 {
@@ -21,13 +21,13 @@ class ProfileLulusanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Profile Lulusan berhasil diambil',
-                'data' => $profileLulusan
+                'data' => $profileLulusan,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data Profile Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -43,7 +43,7 @@ class ProfileLulusanController extends Controller
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
                 'deskripsi_profile_lulusan_english' => 'nullable|string',
-                'profesi_lulusan' => 'nullable|string'
+                'profesi_lulusan' => 'nullable|string',
             ]);
 
             $data = $request->all();
@@ -54,13 +54,13 @@ class ProfileLulusanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Profile Lulusan berhasil dibuat',
-                'data' => $profileLulusan
+                'data' => $profileLulusan,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat Profile Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -76,13 +76,13 @@ class ProfileLulusanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Profile Lulusan berhasil diambil',
-                'data' => $profileLulusan
+                'data' => $profileLulusan,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profile Lulusan tidak ditemukan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -94,11 +94,11 @@ class ProfileLulusanController extends Controller
     {
         try {
             $request->validate([
-                'kode_pl' => 'required|string|max:100|unique:profile_lulusan,kode_pl,' . $id,
+                'kode_pl' => 'required|string|max:100|unique:profile_lulusan,kode_pl,'.$id,
                 'profile_lulusan' => 'required|string|max:255',
                 'deskripsi_profile_lulusan_indonesia' => 'required|string',
                 'deskripsi_profile_lulusan_english' => 'nullable|string',
-                'profesi_lulusan' => 'nullable|string'
+                'profesi_lulusan' => 'nullable|string',
             ]);
 
             $profileLulusan = ProfileLulusan::where('id_prodi', $id_prodi)
@@ -109,13 +109,13 @@ class ProfileLulusanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Profile Lulusan berhasil diperbarui',
-                'data' => $profileLulusan
+                'data' => $profileLulusan,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui Profile Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -132,13 +132,13 @@ class ProfileLulusanController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Profile Lulusan berhasil dihapus'
+                'message' => 'Profile Lulusan berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus Profile Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Siakad\Akademik;
 
 use App\Http\Controllers\Controller;
 use App\Models\Akademik\KHS;
+use App\Models\Akademik\NilaiTransfer;
 use App\Models\Akademik\Transkrip;
 use App\Models\Akademik\TranskripDetail;
 use App\Models\MasterData\Mahasiswa;
@@ -16,8 +17,7 @@ class TranskripController extends Controller
 {
     public function __construct(
         private readonly CurriculumConversionService $curriculumConversionService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -63,7 +63,7 @@ class TranskripController extends Controller
 
         $transkrip = $query->find($id);
 
-        if (!$transkrip) {
+        if (! $transkrip) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transkrip tidak ditemukan',
@@ -100,7 +100,7 @@ class TranskripController extends Controller
         ]);
 
         $mahasiswa = Mahasiswa::find($validated['id_mahasiswa']);
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa tidak ditemukan',
@@ -181,7 +181,7 @@ class TranskripController extends Controller
 
         foreach ($khsList as $khs) {
             $semesterLabel = trim(
-                ($khs->semester?->tahunAkademik?->tahun_akademik ?? '') . ' ' .
+                ($khs->semester?->tahunAkademik?->tahun_akademik ?? '').' '.
                 ($khs->semester?->nama_semester ?? '')
             );
 
@@ -209,9 +209,39 @@ class TranskripController extends Controller
             }
         }
 
+        // Tambahkan seluruh mata kuliah yang telah diakui dari konversi nilai RPL / Transfer
+        $transferredList = NilaiTransfer::with('mataKuliah')
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->get();
+
+        foreach ($transferredList as $transfer) {
+            $canonicalCourse = $transfer->id_mata_kuliah
+                ? $this->curriculumConversionService->resolveTranscriptCourse($mahasiswaId, $transfer->id_mata_kuliah)
+                : null;
+
+            $sks = (int) ($canonicalCourse?->sks ?? $transfer->sks_diakui);
+            $indeks = $transfer->nilai_indeks_diakui !== null ? (float) $transfer->nilai_indeks_diakui : 0.0;
+            // Bobot nilai kumulatif adalah SKS * indeks mutu (misal: 3 SKS * 4.0 = 12.0)
+            $weightedBobot = round($sks * $indeks, 2);
+
+            $flattened->push([
+                'id_khs_detail' => null,
+                'id_krs_detail' => null,
+                'id_mata_kuliah' => $canonicalCourse?->id ?? $transfer->id_mata_kuliah,
+                'kode_mk' => $canonicalCourse?->kode_mk ?? $transfer->mataKuliah?->kode_mk ?? $transfer->kode_mata_kuliah_asal,
+                'nama_mk' => $canonicalCourse?->nama_mk ?? $transfer->mataKuliah?->nama_mk ?? $transfer->nama_mata_kuliah_asal,
+                'sks' => $sks,
+                'nilai_akhir' => $transfer->nilai_angka_diakui !== null ? (float) $transfer->nilai_angka_diakui : null,
+                'nilai_huruf' => $transfer->nilai_huruf_diakui,
+                'bobot_nilai' => $weightedBobot,
+                'status' => 'lulus',
+                'semester_label' => 'Konversi RPL / Transfer',
+            ]);
+        }
+
         $bestPerCourse = $flattened
-            ->filter(fn($item) => !empty($item['id_mata_kuliah']) || !empty($item['kode_mk']))
-            ->groupBy(fn($item) => $item['id_mata_kuliah'] ?: $item['kode_mk'])
+            ->filter(fn ($item) => ! empty($item['id_mata_kuliah']) || ! empty($item['kode_mk']))
+            ->groupBy(fn ($item) => $item['id_mata_kuliah'] ?: $item['kode_mk'])
             ->map(function ($items) {
                 return $items->sortByDesc(function ($item) {
                     return [
@@ -223,7 +253,7 @@ class TranskripController extends Controller
             ->values();
 
         $totalSksLulus = (int) $bestPerCourse->sum('sks');
-        $totalBobot = (float) $bestPerCourse->sum(fn($item) => (float) ($item['bobot_nilai'] ?? 0));
+        $totalBobot = (float) $bestPerCourse->sum(fn ($item) => (float) ($item['bobot_nilai'] ?? 0));
 
         $ipk = $totalSksLulus > 0 ? round($totalBobot / $totalSksLulus, 2) : 0;
 
@@ -244,10 +274,14 @@ class TranskripController extends Controller
             ->where('is_final', true)
             ->exists();
 
-        if (!$hasFinalizedKhs) {
+        $hasTransfer = NilaiTransfer::query()
+            ->where('id_mahasiswa', $mahasiswaId)
+            ->exists();
+
+        if (! $hasFinalizedKhs && ! $hasTransfer) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transkrip belum dapat diproses karena belum ada KHS final',
+                'message' => 'Transkrip belum dapat diproses karena belum ada KHS final atau Nilai Transfer yang diakui',
             ], 422);
         }
 
@@ -258,7 +292,7 @@ class TranskripController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 

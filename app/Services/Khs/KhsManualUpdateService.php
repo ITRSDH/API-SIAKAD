@@ -4,8 +4,8 @@ namespace App\Services\Khs;
 
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KHSDetail;
-use App\Models\Akademik\KRS;
 use App\Models\Akademik\KhsImportBatch;
+use App\Models\Akademik\KRS;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -17,8 +17,7 @@ class KhsManualUpdateService
         private readonly GradeConversionService $gradeConversionService,
         private readonly KhsCalculationService $calculationService,
         private readonly KhsRevisionService $revisionService
-    ) {
-    }
+    ) {}
 
     public function updateDetail(KHS $khs, KHSDetail $detail, array $payload, ?string $actorId = null): array
     {
@@ -57,7 +56,7 @@ class KhsManualUpdateService
 
             $khs->refresh()->load(['details', 'mahasiswa']);
             $summary = $this->calculationService->calculateSummary(
-                $khs->details->map(fn(KHSDetail $item) => [
+                $khs->details->map(fn (KHSDetail $item) => [
                     'sks' => (int) $item->sks,
                     'mutu' => $item->mutu !== null ? (float) $item->mutu : null,
                     'bobot_nilai' => $item->bobot_nilai !== null ? (float) $item->bobot_nilai : null,
@@ -112,7 +111,7 @@ class KhsManualUpdateService
             );
 
             $summary = $this->calculationService->calculateSummary(
-                $khs->details->map(fn(KHSDetail $item) => [
+                $khs->details->map(fn (KHSDetail $item) => [
                     'sks' => (int) $item->sks,
                     'mutu' => $item->mutu !== null ? (float) $item->mutu : null,
                     'bobot_nilai' => $item->bobot_nilai !== null ? (float) $item->bobot_nilai : null,
@@ -267,7 +266,7 @@ class KhsManualUpdateService
             $mutu = $fallback['bobot_nilai'];
         } elseif ($nilaiHuruf !== null && $mutu === null) {
             $fallback = $this->gradeConversionService->convertLetterGrade($nilaiHuruf);
-            if (!$fallback) {
+            if (! $fallback) {
                 throw new \InvalidArgumentException('Nilai huruf tidak dikenali.');
             }
 
@@ -305,14 +304,14 @@ class KhsManualUpdateService
             ->where('id_semester', $khs->id_semester)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return 1;
         }
 
         $semesterKe = $krs->details
             ->pluck('kelasKuliah.kurikulumMataKuliah.semester_ke')
-            ->filter(fn($value) => $value !== null)
-            ->map(fn($value) => (int) $value)
+            ->filter(fn ($value) => $value !== null)
+            ->map(fn ($value) => (int) $value)
             ->values();
 
         return $semesterKe->isNotEmpty() ? (int) $semesterKe->max() : 1;

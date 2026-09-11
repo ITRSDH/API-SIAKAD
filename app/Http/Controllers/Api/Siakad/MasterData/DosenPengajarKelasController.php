@@ -20,19 +20,19 @@ class DosenPengajarKelasController extends Controller
             $dosenPengajar = DosenPengajarKelas::with([
                 'dosen:id,nama_dosen,nidn',
                 // Pastikan foreign key ke kurikulumMataKuliah (misal: id_kurikulum_mata_kuliah) di-select
-                'kelas:id,nama_kelas,id_prodi,id_kurikulum_mata_kuliah', 
+                'kelas:id,nama_kelas,id_prodi,id_kurikulum_mata_kuliah',
                 // Pastikan foreign key ke mataKuliah (misal: id_mata_kuliah) di-select
-                'kelas.kurikulumMataKuliah:id,id_mata_kuliah', 
-                'kelas.kurikulumMataKuliah.mataKuliah:id,sks'
+                'kelas.kurikulumMataKuliah:id,id_mata_kuliah',
+                'kelas.kurikulumMataKuliah.mataKuliah:id,sks',
             ])
-            ->where('id_kelas_kuliah', $id_kelas_kuliah)
-            ->get();
+                ->where('id_kelas_kuliah', $id_kelas_kuliah)
+                ->get();
 
             if ($dosenPengajar->isEmpty()) {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Tidak ada dosen pengajar untuk kelas kuliah ini',
-                    'data' => []
+                    'data' => [],
                 ], 200);
             }
 
@@ -58,14 +58,14 @@ class DosenPengajarKelasController extends Controller
                 'status' => 'success',
                 'message' => 'Data dosen pengajar kelas berhasil diambil',
                 'sks_matakuliah' => $sksMatakuliah,
-                'data' => $data
+                'data' => $data,
             ], 200);
 
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mengambil data',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -84,7 +84,7 @@ class DosenPengajarKelasController extends Controller
             ])
                 ->with([
                     'dosen:id,nama_dosen,nidn',
-                    'kelas:id,nama_kelas,id_prodi'
+                    'kelas:id,nama_kelas,id_prodi',
                 ])
                 ->findOrFail($id);
 
@@ -101,13 +101,13 @@ class DosenPengajarKelasController extends Controller
                     'urutan' => $dosenPengajar->urutan,
                     'dosen' => $dosenPengajar->dosen,
                     'kelas' => $dosenPengajar->kelas,
-                ]
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mengambil data',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -127,7 +127,7 @@ class DosenPengajarKelasController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -141,9 +141,10 @@ class DosenPengajarKelasController extends Controller
 
             if ($existingAssignment) {
                 DB::rollBack();
+
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Dosen sudah ditugaskan pada kelas ini'
+                    'message' => 'Dosen sudah ditugaskan pada kelas ini',
                 ], 422);
             }
 
@@ -179,14 +180,15 @@ class DosenPengajarKelasController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Dosen pengajar kelas berhasil ditambahkan',
-                'data' => $dosenPengajar
+                'data' => $dosenPengajar,
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menambahkan dosen pengajar kelas',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -205,7 +207,7 @@ class DosenPengajarKelasController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -224,9 +226,10 @@ class DosenPengajarKelasController extends Controller
 
                 if ($exists) {
                     DB::rollBack();
+
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Dosen sudah ditugaskan pada kelas ini'
+                        'message' => 'Dosen sudah ditugaskan pada kelas ini',
                     ], 422);
                 }
 
@@ -253,15 +256,15 @@ class DosenPengajarKelasController extends Controller
                     'sks_substansi_total',
                     'rencana_tatap_muka',
                     'realisasi_tatap_muka',
-                    'urutan'
+                    'urutan',
                 ])
-                ->filter(fn($v) => !is_null($v))
+                ->filter(fn ($v) => ! is_null($v))
                 ->toArray();
 
             if (empty($dataUpdate)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Tidak ada data yang diperbarui'
+                    'message' => 'Tidak ada data yang diperbarui',
                 ], 400);
             }
 
@@ -270,7 +273,7 @@ class DosenPengajarKelasController extends Controller
             // 🔁 relasi tetap di-load (id_kelas_kuliah & id_registrasi_dosen tetap dari DB)
             $dosenPengajar->load([
                 'dosen:id,nama_dosen,nidn',
-                'kelas:id,nama_kelas,id_prodi'
+                'kelas:id,nama_kelas,id_prodi',
             ]);
 
             DB::commit();
@@ -278,7 +281,7 @@ class DosenPengajarKelasController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Dosen pengajar kelas berhasil diperbarui',
-                'data' => $dosenPengajar
+                'data' => $dosenPengajar,
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
@@ -286,7 +289,7 @@ class DosenPengajarKelasController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat update',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -304,14 +307,15 @@ class DosenPengajarKelasController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Dosen pengajar kelas berhasil dihapus'
+                'message' => 'Dosen pengajar kelas berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menghapus dosen pengajar kelas',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -319,7 +323,7 @@ class DosenPengajarKelasController extends Controller
     private function findTeachingConflict(string $dosenId, string $kelasId): ?array
     {
         $kelas = KelasKuliah::with(['jadwal', 'dosen_pengajar.dosen'])->find($kelasId);
-        if (!$kelas || $kelas->jadwal->isEmpty()) {
+        if (! $kelas || $kelas->jadwal->isEmpty()) {
             return null;
         }
 
@@ -327,7 +331,7 @@ class DosenPengajarKelasController extends Controller
             $conflict = JadwalKuliah::with([
                 'kelas:id,nama_kelas,id_prodi',
                 'kelas.dosen_pengajar.dosen:id,nama_dosen,nidn',
-                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
             ])
                 ->where('id_kelas_kuliah', '!=', $kelasId)
                 ->where('hari', $jadwal->hari)

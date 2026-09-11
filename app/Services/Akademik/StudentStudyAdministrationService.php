@@ -3,21 +3,19 @@
 namespace App\Services\Akademik;
 
 use App\Models\Akademik\KHS;
-use App\Models\Akademik\KRS;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KhsImportBatch;
+use App\Models\Akademik\KRS;
 use App\Models\Akademik\KrsCollectiveBatch;
 use App\Models\Akademik\KrsCollectiveBatchItem;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\Mahasiswa;
 use App\Services\Krs\KrsHistoricalEligibilityService;
-use Illuminate\Support\Collection;
 
 class StudentStudyAdministrationService
 {
     public function __construct(
         private readonly KrsHistoricalEligibilityService $historicalEligibilityService
-    ) {
-    }
+    ) {}
 
     public function filters(): array
     {
@@ -32,11 +30,11 @@ class StudentStudyAdministrationService
                     ->orWhere('status', '!=', 'nonaktif');
             });
 
-        if (!empty($filters['id_prodi'])) {
+        if (! empty($filters['id_prodi'])) {
             $studentQuery->where('id_prodi', $filters['id_prodi']);
         }
 
-        if (!empty($filters['angkatan'])) {
+        if (! empty($filters['angkatan'])) {
             $studentQuery->where('angkatan', $filters['angkatan']);
         }
 
@@ -60,7 +58,7 @@ class StudentStudyAdministrationService
         $krsCollection = collect();
         $khsCollection = collect();
 
-        if (!empty($filters['id_semester'])) {
+        if (! empty($filters['id_semester'])) {
             $krsCollection = KRS::query()
                 ->with('details')
                 ->where('id_semester', $filters['id_semester'])
@@ -76,7 +74,7 @@ class StudentStudyAdministrationService
         $studentsWithKrs = $krsCollection->pluck('id_mahasiswa')->unique();
         $studentsReadyForKhs = $krsCollection
             ->filter(function (KRS $krs) {
-                if (!$krs->is_locked || $krs->status_approval !== KRS::STATUS_APPROVED) {
+                if (! $krs->is_locked || $krs->status_approval !== KRS::STATUS_APPROVED) {
                     return false;
                 }
 
@@ -85,7 +83,7 @@ class StudentStudyAdministrationService
                     return false;
                 }
 
-                return $details->every(fn($detail) => method_exists($detail, 'isFinalScored') && $detail->isFinalScored());
+                return $details->every(fn ($detail) => method_exists($detail, 'isFinalScored') && $detail->isFinalScored());
             })
             ->pluck('id_mahasiswa')
             ->unique();
@@ -148,21 +146,21 @@ class StudentStudyAdministrationService
     {
         $historicalBatches = KrsCollectiveBatch::query()
             ->with(['creator:id,name', 'semester.tahunAkademik'])
-            ->when(!empty($filters['id_semester']), fn($query) => $query->where('id_semester', $filters['id_semester']))
+            ->when(! empty($filters['id_semester']), fn ($query) => $query->where('id_semester', $filters['id_semester']))
             ->get()
             ->toBase()
-            ->map(fn(KrsCollectiveBatch $batch) => $this->transformHistoricalBatch($batch));
+            ->map(fn (KrsCollectiveBatch $batch) => $this->transformHistoricalBatch($batch));
 
         $importBatches = KhsImportBatch::query()
             ->with(['uploader:id,name', 'semester.tahunAkademik'])
-            ->when(!empty($filters['id_semester']), fn($query) => $query->where('id_semester', $filters['id_semester']))
+            ->when(! empty($filters['id_semester']), fn ($query) => $query->where('id_semester', $filters['id_semester']))
             ->get()
             ->toBase()
-            ->map(fn(KhsImportBatch $batch) => $this->transformImportBatch($batch));
+            ->map(fn (KhsImportBatch $batch) => $this->transformImportBatch($batch));
 
         return $historicalBatches
             ->merge($importBatches)
-            ->sortByDesc(fn(array $batch) => $batch['executed_at_sort'] ?? '')
+            ->sortByDesc(fn (array $batch) => $batch['executed_at_sort'] ?? '')
             ->values()
             ->all();
     }
@@ -180,19 +178,19 @@ class StudentStudyAdministrationService
                     ->orWhere('status', '!=', 'nonaktif');
             });
 
-        if (!empty($filters['id_prodi'])) {
+        if (! empty($filters['id_prodi'])) {
             $studentQuery->where('id_prodi', $filters['id_prodi']);
         }
 
-        if (!empty($filters['angkatan'])) {
+        if (! empty($filters['angkatan'])) {
             $studentQuery->where('angkatan', $filters['angkatan']);
         }
 
-        if (!empty($filters['q'])) {
+        if (! empty($filters['q'])) {
             $search = trim($filters['q']);
             $studentQuery->where(function ($builder) use ($search) {
-                $builder->where('nama_mahasiswa', 'like', '%' . $search . '%')
-                    ->orWhere('nim', 'like', '%' . $search . '%');
+                $builder->where('nama_mahasiswa', 'like', '%'.$search.'%')
+                    ->orWhere('nim', 'like', '%'.$search.'%');
             });
         }
 
@@ -224,7 +222,7 @@ class StudentStudyAdministrationService
             $krs = $krsCollection->get($student->id);
             $existingKhs = $khsCollection->get($student->id);
 
-            if (!$krs) {
+            if (! $krs) {
                 return [
                     'id_mahasiswa' => $student->id,
                     'nim' => $student->nim,
@@ -236,7 +234,7 @@ class StudentStudyAdministrationService
                 ];
             }
 
-            if ($krs->status_approval !== KRS::STATUS_APPROVED || !$krs->is_locked) {
+            if ($krs->status_approval !== KRS::STATUS_APPROVED || ! $krs->is_locked) {
                 return [
                     'id_mahasiswa' => $student->id,
                     'nim' => $student->nim,
@@ -249,8 +247,8 @@ class StudentStudyAdministrationService
             }
 
             $details = $krs->details ?? collect();
-            $pendingCount = $details->filter(fn($detail) => $detail->status === \App\Models\Akademik\KRSDetail::STATUS_TERDAFTAR)->count();
-            $finalCount = $details->filter(fn($detail) => method_exists($detail, 'isFinalScored') && $detail->isFinalScored())->count();
+            $pendingCount = $details->filter(fn ($detail) => $detail->status === \App\Models\Akademik\KRSDetail::STATUS_TERDAFTAR)->count();
+            $finalCount = $details->filter(fn ($detail) => method_exists($detail, 'isFinalScored') && $detail->isFinalScored())->count();
 
             return [
                 'id_mahasiswa' => $student->id,
@@ -496,15 +494,17 @@ class StudentStudyAdministrationService
             $studentId = $row['id_mahasiswa'] ?? null;
             $courses = $row['courses'] ?? [];
 
-            if (!$studentId) {
+            if (! $studentId) {
                 $results[] = $this->manualResult($studentId, '', '', 'failed', 'ID mahasiswa tidak diberikan.');
+
                 continue;
             }
 
             $student = Mahasiswa::query()->find($studentId);
 
-            if (!$student) {
+            if (! $student) {
                 $results[] = $this->manualResult($studentId, '', '', 'failed', 'Mahasiswa tidak ditemukan.');
+
                 continue;
             }
 
@@ -516,6 +516,7 @@ class StudentStudyAdministrationService
                     'skipped',
                     'Tidak ada mata kuliah yang diisi untuk mahasiswa ini.'
                 );
+
                 continue;
             }
 
@@ -525,7 +526,7 @@ class StudentStudyAdministrationService
                 ->where('id_semester', $payload['id_semester'] ?? null)
                 ->first();
 
-            if (!$krs) {
+            if (! $krs) {
                 $results[] = $this->manualResult(
                     $studentId,
                     $student->nim,
@@ -533,6 +534,7 @@ class StudentStudyAdministrationService
                     'failed',
                     'KRS semester ini belum ditemukan untuk mahasiswa.'
                 );
+
                 continue;
             }
 
@@ -544,6 +546,7 @@ class StudentStudyAdministrationService
                     'failed',
                     'KRS mahasiswa belum di-approve sehingga nilai tidak dapat diinput manual.'
                 );
+
                 continue;
             }
 
@@ -561,6 +564,7 @@ class StudentStudyAdministrationService
                     'failed',
                     'Mahasiswa sudah memiliki KHS final pada semester ini; nilai tidak dapat diubah via input manual.'
                 );
+
                 continue;
             }
 
@@ -572,12 +576,13 @@ class StudentStudyAdministrationService
                 $kelasId = $course['id_kelas_kuliah'] ?? null;
                 $nilaiAkhir = $course['nilai_akhir'] ?? null;
 
-                if (!$kelasId) {
+                if (! $kelasId) {
                     $errors[] = 'Ada mata kuliah tanpa kelas.';
+
                     continue;
                 }
 
-                if ($nilaiAkhir === null || $nilaiAkhir === '' || !is_numeric($nilaiAkhir)) {
+                if ($nilaiAkhir === null || $nilaiAkhir === '' || ! is_numeric($nilaiAkhir)) {
                     continue; // Kosong = memang tidak diisi.
                 }
 
@@ -585,18 +590,21 @@ class StudentStudyAdministrationService
 
                 if ($numericScore < 0 || $numericScore > 100) {
                     $errors[] = 'Ada nilai di luar rentang 0–100.';
+
                     continue;
                 }
 
                 $detail = $detailByKelas->get($kelasId);
 
-                if (!$detail) {
+                if (! $detail) {
                     $errors[] = 'Mahasiswa tidak terdaftar pada salah satu kelas.';
+
                     continue;
                 }
 
                 if ($detail->status === KRSDetail::STATUS_DROP) {
                     $errors[] = 'Ada mata kuliah berstatus drop.';
+
                     continue;
                 }
 
@@ -617,11 +625,12 @@ class StudentStudyAdministrationService
                     'failed',
                     $message
                 );
+
                 continue;
             }
 
             $message = $errors
-                ? "{$saved} nilai tersimpan. " . implode(' ', array_unique($errors))
+                ? "{$saved} nilai tersimpan. ".implode(' ', array_unique($errors))
                 : "{$saved} nilai berhasil disimpan.";
 
             $results[] = $this->manualResult(
@@ -682,19 +691,19 @@ class StudentStudyAdministrationService
                     ->orWhere('status', '!=', 'nonaktif');
             });
 
-        if (!empty($payload['id_prodi'])) {
+        if (! empty($payload['id_prodi'])) {
             $studentQuery->where('id_prodi', $payload['id_prodi']);
         }
 
-        if (!empty($payload['angkatan'])) {
+        if (! empty($payload['angkatan'])) {
             $studentQuery->where('angkatan', $payload['angkatan']);
         }
 
-        if (!empty($payload['q'])) {
+        if (! empty($payload['q'])) {
             $search = trim($payload['q']);
             $studentQuery->where(function ($builder) use ($search) {
-                $builder->where('nama_mahasiswa', 'like', '%' . $search . '%')
-                    ->orWhere('nim', 'like', '%' . $search . '%');
+                $builder->where('nama_mahasiswa', 'like', '%'.$search.'%')
+                    ->orWhere('nim', 'like', '%'.$search.'%');
             });
         }
 
@@ -721,14 +730,14 @@ class StudentStudyAdministrationService
             ->keyBy('id_mahasiswa');
 
         return $students
-            ->filter(fn(Mahasiswa $student) => $krsMap->has($student->id))
+            ->filter(fn (Mahasiswa $student) => $krsMap->has($student->id))
             ->values()
             ->map(function (Mahasiswa $student) use ($krsMap, $khsMap, $targetSemesterKe) {
                 $krs = $krsMap->get($student->id);
                 $khs = $khsMap->get($student->id);
                 $courses = $krs
                     ? $krs->details
-                        ->map(fn($detail) => [
+                        ->map(fn ($detail) => [
                             'id_kelas_kuliah' => $detail->id_kelas_kuliah,
                             'id_mata_kuliah' => $detail->kelasKuliah?->kurikulumMataKuliah?->id_mata_kuliah,
                             'kode_mk' => $detail->kode_mata_kuliah,

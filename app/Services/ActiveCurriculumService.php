@@ -11,8 +11,7 @@ class ActiveCurriculumService
 {
     public function __construct(
         private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
-    ) {
-    }
+    ) {}
 
     public function resolveActiveKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
     {
@@ -34,7 +33,7 @@ class ActiveCurriculumService
     {
         $resolvedKurikulumId = $this->resolveActiveKurikulumId($mahasiswa);
 
-        if (!$resolvedKurikulumId) {
+        if (! $resolvedKurikulumId) {
             return collect();
         }
 
@@ -65,7 +64,7 @@ class ActiveCurriculumService
                 'id_semester' => $activeKurikulum->id_semester,
                 'jumlah_sks_lulus' => $activeKurikulum->jumlah_sks_lulus,
                 'mulai_berlaku' => $activeKurikulum->semesterMulai?->tahunAkademik
-                    ? trim($activeKurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $activeKurikulum->semesterMulai->nama_semester)
+                    ? trim($activeKurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$activeKurikulum->semesterMulai->nama_semester)
                     : null,
             ] : null,
         ];

@@ -11,8 +11,11 @@ class Beasiswa extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'beasiswa';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

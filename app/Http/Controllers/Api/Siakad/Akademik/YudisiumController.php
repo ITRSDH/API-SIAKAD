@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\Siakad\Akademik;
 
 use App\Http\Controllers\Controller;
-use App\Models\Akademik\TugasAkhir;
 use App\Models\Akademik\Transkrip;
+use App\Models\Akademik\TugasAkhir;
 use App\Models\Akademik\Yudisium;
 use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\Mahasiswa;
-use App\Services\ActiveCurriculumService;
 use App\Services\AcademicPolicyService;
+use App\Services\ActiveCurriculumService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,8 +18,7 @@ class YudisiumController extends Controller
     public function __construct(
         private readonly AcademicPolicyService $academicPolicyService,
         private readonly ActiveCurriculumService $activeCurriculumService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -35,7 +34,7 @@ class YudisiumController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $query->get()->map(fn(Yudisium $yudisium) => $this->serializeYudisium($yudisium))->values(),
+            'data' => $query->get()->map(fn (Yudisium $yudisium) => $this->serializeYudisium($yudisium))->values(),
         ]);
     }
 
@@ -47,7 +46,7 @@ class YudisiumController extends Controller
             'kurikulum:id,nama_struktur_mk,jumlah_sks_lulus',
         ])->find($id);
 
-        if (!$yudisium) {
+        if (! $yudisium) {
             return response()->json([
                 'success' => false,
                 'message' => 'Yudisium tidak ditemukan',
@@ -122,7 +121,7 @@ class YudisiumController extends Controller
             : $this->activeCurriculumService->resolveActiveKurikulum($mahasiswa);
         $transkrip = Transkrip::with('details')->where('id_mahasiswa', $mahasiswaId)->first();
 
-        if (!$mahasiswa || !$kurikulum || !$transkrip) {
+        if (! $mahasiswa || ! $kurikulum || ! $transkrip) {
             abort(404, 'Mahasiswa, kurikulum, atau transkrip tidak ditemukan');
         }
 
@@ -138,7 +137,7 @@ class YudisiumController extends Controller
                 ->orderByDesc('created_at')
                 ->first();
 
-            if (!$tugasAkhir || $tugasAkhir->status !== TugasAkhir::STATUS_LULUS) {
+            if (! $tugasAkhir || $tugasAkhir->status !== TugasAkhir::STATUS_LULUS) {
                 abort(422, 'Mahasiswa belum lulus tugas akhir sehingga belum memenuhi syarat yudisium');
             }
         }
@@ -166,7 +165,7 @@ class YudisiumController extends Controller
                         'nama_struktur_mk' => $kurikulum->nama_struktur_mk,
                         'nama_kurikulum' => $kurikulum->nama_kurikulum,
                         'mulai_berlaku' => $kurikulum->semesterMulai?->tahunAkademik
-                            ? trim($kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $kurikulum->semesterMulai->nama_semester)
+                            ? trim($kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$kurikulum->semesterMulai->nama_semester)
                             : null,
                     ],
                 ],
@@ -186,7 +185,7 @@ class YudisiumController extends Controller
                     'nama_struktur_mk' => $yudisium->kurikulum->nama_struktur_mk,
                     'nama_kurikulum' => $yudisium->kurikulum->nama_kurikulum,
                     'mulai_berlaku' => $yudisium->kurikulum->semesterMulai?->tahunAkademik
-                        ? trim($yudisium->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $yudisium->kurikulum->semesterMulai->nama_semester)
+                        ? trim($yudisium->kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$yudisium->kurikulum->semesterMulai->nama_semester)
                         : null,
                 ] : null,
             ],

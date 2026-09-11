@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use App\Models\Website\Berita;
-use Illuminate\Http\Request;
 use App\Http\Requests\Website\StoreBeritaRequest;
 use App\Http\Requests\Website\UpdateBeritaRequest;
+use App\Models\Website\Berita;
 use App\Services\ImageService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
@@ -20,13 +20,13 @@ class BeritaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar berita',
-                'data' => $berita
+                'data' => $berita,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data berita',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -40,16 +40,17 @@ class BeritaController extends Controller
                 $data['gambar'] = $newStoragePath;
             }
             $berita = Berita::create($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Berita berhasil ditambahkan',
-                'data' => $berita
+                'data' => $berita,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan berita',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -58,16 +59,17 @@ class BeritaController extends Controller
     {
         try {
             $berita = Berita::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail berita',
-                'data' => $berita
+                'data' => $berita,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Berita tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -84,16 +86,17 @@ class BeritaController extends Controller
                 $data['gambar'] = $newStoragePath;
             }
             $berita->update($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Berita berhasil diperbarui',
-                'data' => $berita
+                'data' => $berita,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui berita',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -106,15 +109,16 @@ class BeritaController extends Controller
                 Storage::disk('public')->delete($berita->gambar);
             }
             $berita->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Berita berhasil dihapus'
+                'message' => 'Berita berhasil dihapus',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus berita',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\Beasiswa;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class BeasiswaControllerTest extends TestCase
 {
@@ -18,8 +18,8 @@ class BeasiswaControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success', 'message', 'data' => [[
-                    'id', 'nama', 'kategori', 'deskripsi', 'gambar', 'deadline', 'kuota', 'created_at'
-                ]]
+                    'id', 'nama', 'kategori', 'deskripsi', 'gambar', 'deadline', 'kuota', 'created_at',
+                ]],
             ]);
     }
 
@@ -45,7 +45,7 @@ class BeasiswaControllerTest extends TestCase
     public function test_show_returns_beasiswa_detail()
     {
         $beasiswa = Beasiswa::factory()->create();
-        $response = $this->getJson('/api/v1/beasiswa/' . $beasiswa->id);
+        $response = $this->getJson('/api/v1/beasiswa/'.$beasiswa->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
@@ -58,7 +58,7 @@ class BeasiswaControllerTest extends TestCase
             'nama' => 'Beasiswa Update',
             'gambar' => $file,
         ];
-        $response = $this->put('/api/v1/beasiswa/' . $beasiswa->id, $data);
+        $response = $this->put('/api/v1/beasiswa/'.$beasiswa->id, $data);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseHas('beasiswa', ['id' => $beasiswa->id, 'nama' => 'Beasiswa Update']);
@@ -69,7 +69,7 @@ class BeasiswaControllerTest extends TestCase
     public function test_destroy_deletes_beasiswa()
     {
         $beasiswa = Beasiswa::factory()->create();
-        $response = $this->deleteJson('/api/v1/beasiswa/' . $beasiswa->id);
+        $response = $this->deleteJson('/api/v1/beasiswa/'.$beasiswa->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseMissing('beasiswa', ['id' => $beasiswa->id]);

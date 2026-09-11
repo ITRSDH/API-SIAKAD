@@ -18,8 +18,7 @@ class TugasAkhirController extends Controller
 {
     public function __construct(
         private readonly ActiveCurriculumService $activeCurriculumService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -44,7 +43,7 @@ class TugasAkhirController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $query->get()->map(fn(TugasAkhir $item) => $this->serializeTugasAkhir($item))->values(),
+            'data' => $query->get()->map(fn (TugasAkhir $item) => $this->serializeTugasAkhir($item))->values(),
         ]);
     }
 
@@ -57,7 +56,7 @@ class TugasAkhirController extends Controller
             'ujian',
         ])->find($id);
 
-        if (!$tugasAkhir) {
+        if (! $tugasAkhir) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tugas akhir tidak ditemukan',
@@ -92,7 +91,7 @@ class TugasAkhirController extends Controller
     {
         $tugasAkhir = TugasAkhir::find($id);
 
-        if (!$tugasAkhir) {
+        if (! $tugasAkhir) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tugas akhir tidak ditemukan',
@@ -123,7 +122,7 @@ class TugasAkhirController extends Controller
     {
         $tugasAkhir = TugasAkhir::find($id);
 
-        if (!$tugasAkhir) {
+        if (! $tugasAkhir) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tugas akhir tidak ditemukan',
@@ -161,7 +160,7 @@ class TugasAkhirController extends Controller
     {
         $tugasAkhir = TugasAkhir::find($id);
 
-        if (!$tugasAkhir) {
+        if (! $tugasAkhir) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tugas akhir tidak ditemukan',
@@ -213,7 +212,7 @@ class TugasAkhirController extends Controller
     {
         $ujian = TugasAkhirUjian::find($id);
 
-        if (!$ujian) {
+        if (! $ujian) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data ujian tugas akhir tidak ditemukan',
@@ -242,10 +241,10 @@ class TugasAkhirController extends Controller
         $required = $isUpdate ? 'sometimes|required' : 'required';
 
         return $request->validate([
-            'id_mahasiswa' => $required . '|uuid|exists:mahasiswa,id',
+            'id_mahasiswa' => $required.'|uuid|exists:mahasiswa,id',
             'id_kurikulum' => 'nullable|uuid|exists:kurikulum,id',
-            'jenis_tugas_akhir' => $required . '|string|max:50',
-            'judul' => $required . '|string|max:255',
+            'jenis_tugas_akhir' => $required.'|string|max:50',
+            'judul' => $required.'|string|max:255',
             'topik' => 'nullable|string',
             'status' => [
                 $required,
@@ -279,12 +278,12 @@ class TugasAkhirController extends Controller
             ?? $existing?->id_kurikulum
             ?? $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
 
-        abort_if(!$mahasiswa, 422, 'Mahasiswa tidak ditemukan untuk data tugas akhir');
-        abort_if(!$resolvedKurikulumId, 422, 'Mahasiswa belum memiliki kurikulum operasional');
+        abort_if(! $mahasiswa, 422, 'Mahasiswa tidak ditemukan untuk data tugas akhir');
+        abort_if(! $resolvedKurikulumId, 422, 'Mahasiswa belum memiliki kurikulum operasional');
 
         $kurikulum = Kurikulum::find($resolvedKurikulumId);
 
-        abort_if(!$kurikulum, 422, 'Kurikulum tugas akhir tidak ditemukan');
+        abort_if(! $kurikulum, 422, 'Kurikulum tugas akhir tidak ditemukan');
         abort_if($kurikulum->id_prodi !== $mahasiswa->id_prodi, 422, 'Kurikulum tugas akhir tidak sesuai dengan program studi mahasiswa');
 
         $status = $validated['status'] ?? $existing?->status;
@@ -315,7 +314,7 @@ class TugasAkhirController extends Controller
                     'nama_struktur_mk' => $tugasAkhir->kurikulum->nama_struktur_mk,
                     'nama_kurikulum' => $tugasAkhir->kurikulum->nama_kurikulum,
                     'mulai_berlaku' => $tugasAkhir->kurikulum->semesterMulai?->tahunAkademik
-                        ? trim($tugasAkhir->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $tugasAkhir->kurikulum->semesterMulai->nama_semester)
+                        ? trim($tugasAkhir->kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$tugasAkhir->kurikulum->semesterMulai->nama_semester)
                         : null,
                 ] : null,
             ],

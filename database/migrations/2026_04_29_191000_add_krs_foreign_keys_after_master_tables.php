@@ -10,25 +10,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('krs', function (Blueprint $table) {
-            if (!$this->foreignKeyExists('krs', 'krs_id_mahasiswa_foreign')) {
+            if (! $this->foreignKeyExists('krs', 'krs_id_mahasiswa_foreign')) {
                 $table->foreign('id_mahasiswa')->references('id')->on('mahasiswa')->onDelete('cascade');
             }
 
-            if (!$this->foreignKeyExists('krs', 'krs_id_semester_foreign')) {
+            if (! $this->foreignKeyExists('krs', 'krs_id_semester_foreign')) {
                 $table->foreign('id_semester')->references('id')->on('semester')->onDelete('cascade');
             }
 
-            if (!$this->foreignKeyExists('krs', 'krs_approved_by_foreign')) {
+            if (! $this->foreignKeyExists('krs', 'krs_approved_by_foreign')) {
                 $table->foreign('approved_by')->references('id')->on('dosen')->onDelete('set null');
             }
         });
 
         Schema::table('krs_detail', function (Blueprint $table) {
-            if (!$this->foreignKeyExists('krs_detail', 'krs_detail_id_krs_foreign')) {
+            if (! $this->foreignKeyExists('krs_detail', 'krs_detail_id_krs_foreign')) {
                 $table->foreign('id_krs')->references('id')->on('krs')->onDelete('cascade');
             }
 
-            if (!$this->foreignKeyExists('krs_detail', 'krs_detail_id_kelas_kuliah_foreign')) {
+            if (! $this->foreignKeyExists('krs_detail', 'krs_detail_id_kelas_kuliah_foreign')) {
                 $table->foreign('id_kelas_kuliah')->references('id')->on('kelas_kuliah')->onDelete('cascade');
             }
         });

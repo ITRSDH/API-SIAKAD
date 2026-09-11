@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('krs_detail', 'id_import_batch')) {
+        if (! Schema::hasColumn('krs_detail', 'id_import_batch')) {
             Schema::table('krs_detail', function (Blueprint $table) {
                 $table->uuid('id_import_batch')->nullable()->after('id_mata_kuliah');
             });

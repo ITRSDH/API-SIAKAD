@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Models\RefreshToken as RefreshTokenModel;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -18,8 +17,9 @@ class JWTTokenMiddleware
         try {
             $token = $request->bearerToken();
 
-            if (!$token) {
+            if (! $token) {
                 Log::warning('Token not provided');
+
                 return response()->json(['error' => 'Token not provided'], 401);
             }
 
@@ -31,19 +31,22 @@ class JWTTokenMiddleware
                 $payload = JWTAuth::getPayload();
             } catch (JWTException $e) {
                 Log::error('Failed to parse token payload', ['message' => $e->getMessage()]);
+
                 return response()->json(['error' => 'Token is invalid'], 401);
             }
 
             // Authenticate user
             $user = JWTAuth::authenticate($token);
 
-            if (!$user) {
+            if (! $user) {
                 Log::warning('User not found for token');
+
                 return response()->json(['error' => 'User not found'], 401);
             }
 
-            if (!$user->status) {
+            if (! $user->status) {
                 Log::warning('User is inactive', ['user_id' => $user->id]);
+
                 return response()->json(['error' => 'Account is inactive'], 401);
             }
 
@@ -51,6 +54,7 @@ class JWTTokenMiddleware
                 JWTAuth::parseToken()->authenticate();
             } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
                 Log::warning('Token expired');
+
                 return response()->json(['error' => 'Token expired'], 401);
             }
 
@@ -84,6 +88,7 @@ class JWTTokenMiddleware
             });
         } catch (JWTException $e) {
             Log::error('JWT Exception', ['message' => $e->getMessage()]);
+
             return response()->json(['error' => 'Token is invalid'], 401);
         }
 

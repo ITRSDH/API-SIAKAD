@@ -2,19 +2,22 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cpl extends Model
 {
     use HasFactory, HasUuids;
 
     protected $table = 'cpl';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -23,7 +26,7 @@ class Cpl extends Model
         // 'cpl',
         'deskripsi_cpl_indonesia',
         'deskripsi_cpl_english',
-        'kategori_cpl'
+        'kategori_cpl',
     ];
 
     // PL ↔ CPL

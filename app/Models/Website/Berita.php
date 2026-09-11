@@ -11,11 +11,14 @@ class Berita extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'berita';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
-   protected $fillable = [
+    protected $fillable = [
         'judul',
         'isi',
         'kategori',

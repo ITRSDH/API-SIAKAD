@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\Website\StoreFaqRequest;
 use App\Http\Requests\Website\UpdateFaqRequest;
-
 use App\Models\Website\Faq;
+use Illuminate\Http\Request;
 
 class FaqController extends Controller
 {
@@ -15,16 +14,17 @@ class FaqController extends Controller
     {
         try {
             $faqs = Faq::select('id', 'pertanyaan', 'jawaban', 'created_at')->orderBy('created_at', 'desc')->get();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar FAQ',
-                'data' => $faqs
+                'data' => $faqs,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data FAQ',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -33,16 +33,17 @@ class FaqController extends Controller
     {
         try {
             $faq = Faq::create($request->validated());
+
             return response()->json([
                 'success' => true,
                 'message' => 'FAQ berhasil ditambahkan',
-                'data' => $faq
+                'data' => $faq,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan FAQ',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -51,16 +52,17 @@ class FaqController extends Controller
     {
         try {
             $faq = Faq::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail FAQ',
-                'data' => $faq
+                'data' => $faq,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'FAQ tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -70,16 +72,17 @@ class FaqController extends Controller
         try {
             $faq = Faq::findOrFail($id);
             $faq->update($request->validated());
+
             return response()->json([
                 'success' => true,
                 'message' => 'FAQ berhasil diperbarui',
-                'data' => $faq
+                'data' => $faq,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui FAQ',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -89,15 +92,16 @@ class FaqController extends Controller
         try {
             $faq = Faq::findOrFail($id);
             $faq->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'FAQ berhasil dihapus'
+                'message' => 'FAQ berhasil dihapus',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus FAQ',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

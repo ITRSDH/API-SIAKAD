@@ -11,8 +11,7 @@ class AcademicPolicyController extends Controller
 {
     public function __construct(
         private readonly AcademicPolicyService $academicPolicyService
-    ) {
-    }
+    ) {}
 
     public function index(): JsonResponse
     {

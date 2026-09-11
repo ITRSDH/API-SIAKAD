@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('landing_content', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-             // Hero
+            // Hero
             $table->string('hero_title')->nullable();
             $table->text('hero_subtitle')->nullable();
             $table->string('hero_background')->nullable();
-            
+
             // Statistik
             $table->integer('jumlah_program_studi')->default(0);
             $table->integer('jumlah_mahasiswa')->default(0);

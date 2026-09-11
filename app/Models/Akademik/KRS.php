@@ -4,19 +4,22 @@ namespace App\Models\Akademik;
 
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Semester;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class KRS extends Model
 {
     use HasFactory, HasUuids;
 
     protected $table = 'krs';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -45,9 +48,13 @@ class KRS extends Model
     ];
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
+
     const STATUS_REVISED = 'revised';
+
     const EDITABLE_STATUSES = [
         self::STATUS_REVISED,
     ];
@@ -135,7 +142,7 @@ class KRS extends Model
 
     public function isEditable(): bool
     {
-        return !$this->is_locked && in_array($this->status_approval, self::EDITABLE_STATUSES, true);
+        return ! $this->is_locked && in_array($this->status_approval, self::EDITABLE_STATUSES, true);
     }
 
     public function clearSksOverride(): void

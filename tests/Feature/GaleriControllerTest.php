@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\Galeri;
-use Illuminate\Support\Str;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class GaleriControllerTest extends TestCase
 {
@@ -23,8 +22,8 @@ class GaleriControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    '*' => ['id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at']
-                ]
+                    '*' => ['id', 'judul', 'kategori', 'gambar', 'deskripsi', 'tanggal', 'created_at'],
+                ],
             ]);
     }
 
@@ -62,7 +61,7 @@ class GaleriControllerTest extends TestCase
     {
         $galeri = Galeri::factory()->create();
 
-        $response = $this->getJson('/api/v1/galeri/' . $galeri->id);
+        $response = $this->getJson('/api/v1/galeri/'.$galeri->id);
 
         $response->assertStatus(200)
             ->assertJsonFragment([
@@ -91,7 +90,7 @@ class GaleriControllerTest extends TestCase
             'tanggal' => now()->toDateString(),
         ];
 
-        $response = $this->put('/api/v1/galeri/' . $galeri->id, $data);
+        $response = $this->put('/api/v1/galeri/'.$galeri->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -115,7 +114,7 @@ class GaleriControllerTest extends TestCase
     {
         $galeri = Galeri::factory()->create();
 
-        $response = $this->deleteJson('/api/v1/galeri/' . $galeri->id);
+        $response = $this->deleteJson('/api/v1/galeri/'.$galeri->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -124,7 +123,7 @@ class GaleriControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('galeri', [
-            'id' => $galeri->id
+            'id' => $galeri->id,
         ]);
     }
 }

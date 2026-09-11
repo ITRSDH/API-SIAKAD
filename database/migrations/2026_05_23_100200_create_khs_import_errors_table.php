@@ -27,7 +27,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('khs_import_errors')) {
+        if (! Schema::hasTable('khs_import_errors')) {
             return;
         }
 

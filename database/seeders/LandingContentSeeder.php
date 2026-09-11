@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Website\LandingContent;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class LandingContentSeeder extends Seeder
 {

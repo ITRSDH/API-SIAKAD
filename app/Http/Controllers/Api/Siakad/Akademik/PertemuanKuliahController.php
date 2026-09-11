@@ -14,7 +14,7 @@ class PertemuanKuliahController extends Controller
     {
         $kelas = KelasKuliah::with('pertemuanKuliah')->find($id_kelas_kuliah);
 
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -78,7 +78,7 @@ class PertemuanKuliahController extends Controller
         }
 
         $kelas = KelasKuliah::find($id_kelas_kuliah);
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -105,7 +105,7 @@ class PertemuanKuliahController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $pertemuan = PertemuanKuliah::find($id);
-        if (!$pertemuan) {
+        if (! $pertemuan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pertemuan kuliah tidak ditemukan',

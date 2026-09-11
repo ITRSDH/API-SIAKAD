@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Website\Beasiswa;
 use App\Http\Requests\Website\StoreBeasiswaRequest;
 use App\Http\Requests\Website\UpdateBeasiswaRequest;
+use App\Models\Website\Beasiswa;
 use App\Services\ImageService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Nette\Utils\Image;
 
 class BeasiswaController extends Controller
 {
@@ -17,19 +16,19 @@ class BeasiswaController extends Controller
     {
         try {
             $beasiswa = Beasiswa::select([
-                'id', 'nama', 'kategori', 'deskripsi', 'gambar', 'deadline', 'kuota', 'created_at', 'updated_at'
+                'id', 'nama', 'kategori', 'deskripsi', 'gambar', 'deadline', 'kuota', 'created_at', 'updated_at',
             ])->orderBy('created_at', 'desc')->get();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar beasiswa',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data beasiswa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -43,16 +42,17 @@ class BeasiswaController extends Controller
                 $data['gambar'] = $newStoragePath;
             }
             $beasiswa = Beasiswa::create($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Beasiswa berhasil ditambahkan',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan beasiswa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -61,16 +61,17 @@ class BeasiswaController extends Controller
     {
         try {
             $beasiswa = Beasiswa::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail beasiswa',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Beasiswa tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -87,16 +88,17 @@ class BeasiswaController extends Controller
                 $data['gambar'] = $newStoragePath;
             }
             $beasiswa->update($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Beasiswa berhasil diperbarui',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui beasiswa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -109,15 +111,16 @@ class BeasiswaController extends Controller
                 Storage::disk('public')->delete($beasiswa->gambar);
             }
             $beasiswa->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Beasiswa berhasil dihapus'
+                'message' => 'Beasiswa berhasil dihapus',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus beasiswa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

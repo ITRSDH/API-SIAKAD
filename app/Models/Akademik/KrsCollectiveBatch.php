@@ -19,14 +19,21 @@ class KrsCollectiveBatch extends Model
     public const CONTEXT_HISTORICAL_STUDY = 'historical_study';
 
     public const ACTION_BUILD_HISTORICAL_KRS = 'build_historical_krs';
+
     public const ACTION_REOPEN_HISTORICAL_KRS = 'reopen_historical_krs';
+
     public const ACTION_REFINALIZE_HISTORICAL_KRS = 'refinalize_historical_krs';
+
     public const ACTION_RESET_HISTORICAL_KRS = 'reset_historical_krs';
+
     public const ACTION_GENERATE_KHS = 'generate_khs';
 
     protected $table = 'krs_collective_batches';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

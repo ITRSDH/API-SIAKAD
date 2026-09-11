@@ -3,27 +3,33 @@
 namespace App\Models\Akademik;
 
 use App\Models\MasterData\KelasKuliah;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class KomponenPenilaian extends Model
 {
     use HasFactory, HasUuids;
 
     protected $table = 'komponen_penilaian';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
         'id_kelas_kuliah',
+        'id_indikator_kinerja_cpl',
         'nama',
+        'jenis_evaluasi_dikti',
         'bobot',
         'urutan',
         'is_active',
+        'id_komponen_evaluasi_pddikti',
     ];
 
     protected $casts = [

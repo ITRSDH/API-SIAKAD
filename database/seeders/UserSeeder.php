@@ -2,14 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\MasterData\Dosen;
+use App\Models\MasterData\Mahasiswa;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use App\Models\MasterData\Dosen;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
-use App\Models\MasterData\Mahasiswa;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Website\Prestasi;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class PrestasiSeeder extends Seeder
         Prestasi::factory(100)->create();
 
         echo "✅ Berhasil membuat 100 data prestasi!\n";
-        
+
         // Get total records
         $total = DB::table('prestasi')->count();
         echo "📊 Total records: $total\n\n";

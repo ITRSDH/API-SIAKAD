@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Website\Pengumuman;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\Website\Pengumuman;
 
 class PengumumanControllerTest extends TestCase
 {
@@ -16,7 +16,7 @@ class PengumumanControllerTest extends TestCase
         $response = $this->getJson('/api/v1/pengumuman');
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'success', 'message', 'data' => [['id', 'judul', 'isi', 'kategori', 'created_at']]
+                'success', 'message', 'data' => [['id', 'judul', 'isi', 'kategori', 'created_at']],
             ]);
     }
 
@@ -36,7 +36,7 @@ class PengumumanControllerTest extends TestCase
     public function test_show_returns_pengumuman_detail()
     {
         $pengumuman = Pengumuman::factory()->create();
-        $response = $this->getJson('/api/v1/pengumuman/' . $pengumuman->id);
+        $response = $this->getJson('/api/v1/pengumuman/'.$pengumuman->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
@@ -45,7 +45,7 @@ class PengumumanControllerTest extends TestCase
     {
         $pengumuman = Pengumuman::factory()->create();
         $data = ['judul' => 'Updated Judul'];
-        $response = $this->putJson('/api/v1/pengumuman/' . $pengumuman->id, $data);
+        $response = $this->putJson('/api/v1/pengumuman/'.$pengumuman->id, $data);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseHas('pengumuman', ['id' => $pengumuman->id, 'judul' => 'Updated Judul']);
@@ -54,7 +54,7 @@ class PengumumanControllerTest extends TestCase
     public function test_destroy_deletes_pengumuman()
     {
         $pengumuman = Pengumuman::factory()->create();
-        $response = $this->deleteJson('/api/v1/pengumuman/' . $pengumuman->id);
+        $response = $this->deleteJson('/api/v1/pengumuman/'.$pengumuman->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseMissing('pengumuman', ['id' => $pengumuman->id]);

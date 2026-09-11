@@ -13,27 +13,31 @@ class MahasiswaCurriculumContextService
     public function resolveMahasiswaKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
     {
         $resolvedMahasiswa = $this->resolveMahasiswa($mahasiswa);
-        if (!$resolvedMahasiswa) {
+        if (! $resolvedMahasiswa) {
             return null;
         }
 
+        $isRpl = $this->isRplMahasiswa($resolvedMahasiswa);
+
         // Mahasiswa tidak lagi di-assign ke kurikulum tertentu; struktur
-        // kurikulum dipilih berdasarkan prodi + angkatan mahasiswa.
+        // kurikulum dipilih berdasarkan prodi + angkatan mahasiswa + jalur RPL.
         return $this->resolveMatchingKurikulumId(
             $resolvedMahasiswa->id_prodi,
-            $resolvedMahasiswa->angkatan
+            $resolvedMahasiswa->angkatan,
+            null,
+            $isRpl
         );
     }
 
     public function resolveKrsKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
     {
         $resolvedMahasiswa = $this->resolveMahasiswa($mahasiswa);
-        if (!$resolvedMahasiswa) {
+        if (! $resolvedMahasiswa) {
             return null;
         }
 
         $matchingId = $this->resolveMahasiswaKurikulumId($resolvedMahasiswa);
-        if (!$matchingId) {
+        if (! $matchingId) {
             return null;
         }
 
@@ -42,7 +46,7 @@ class MahasiswaCurriculumContextService
             ->where('status', 'Aktif')
             ->first();
 
-        if (!$semesterAktif || !$semesterAktif->tahunAkademik) {
+        if (! $semesterAktif || ! $semesterAktif->tahunAkademik) {
             return $matchingId;
         }
 
@@ -51,18 +55,44 @@ class MahasiswaCurriculumContextService
         // hasil matching prodi/angkatan.
         $tahunAkademikAktif = $semesterAktif->tahunAkademik->tahun_akademik;
         $jenisSemesterAktif = $this->normalizeSemesterType($semesterAktif->nama_semester);
+        $isRpl = $this->isRplMahasiswa($resolvedMahasiswa);
 
-        $matchedByPeriod = Kurikulum::query()
+        $matchedByPeriodQuery = Kurikulum::query()
             ->where('id_prodi', $resolvedMahasiswa->id_prodi)
             ->whereHas('semesterMulai', function ($query) use ($tahunAkademikAktif, $jenisSemesterAktif) {
-                $query->where('nama_semester', 'like', '%' . $jenisSemesterAktif . '%');
+                $query->where('nama_semester', 'like', '%'.$jenisSemesterAktif.'%');
                 $query->whereHas('tahunAkademik', function ($tahunAkademikQuery) use ($tahunAkademikAktif) {
                     $tahunAkademikQuery->where('tahun_akademik', $tahunAkademikAktif);
                 });
-            })
-            ->orderBy('nama_struktur_mk')
-            ->orderBy('id')
-            ->first();
+            });
+
+        if ($isRpl) {
+            $matchedByPeriod = (clone $matchedByPeriodQuery)
+                ->where(function ($q) {
+                    $q->where('nama_struktur_mk', 'like', '%RPL%')
+                        ->orWhere('keterangan', 'like', '%RPL%');
+                })
+                ->orderBy('nama_struktur_mk')
+                ->orderBy('id')
+                ->first();
+        } else {
+            $matchedByPeriod = (clone $matchedByPeriodQuery)
+                ->where('nama_struktur_mk', 'not like', '%RPL%')
+                ->where(function ($q) {
+                    $q->whereNull('keterangan')
+                        ->orWhere('keterangan', 'not like', '%RPL%');
+                })
+                ->orderBy('nama_struktur_mk')
+                ->orderBy('id')
+                ->first();
+        }
+
+        if (! $matchedByPeriod) {
+            $matchedByPeriod = $matchedByPeriodQuery
+                ->orderBy('nama_struktur_mk')
+                ->orderBy('id')
+                ->first();
+        }
 
         return $matchedByPeriod?->id ?? $matchingId;
     }
@@ -71,9 +101,10 @@ class MahasiswaCurriculumContextService
         ?string $requestedKurikulumId,
         ?string $prodiId,
         $angkatan = null,
-        $tanggalMasuk = null
+        $tanggalMasuk = null,
+        bool $isRpl = false
     ): ?string {
-        if (!$prodiId) {
+        if (! $prodiId) {
             return null;
         }
 
@@ -83,7 +114,7 @@ class MahasiswaCurriculumContextService
                 ->where('id_prodi', $prodiId)
                 ->first();
 
-            if (!$kurikulum) {
+            if (! $kurikulum) {
                 throw ValidationException::withMessages([
                     'id_kurikulum' => ['Kurikulum yang dipilih tidak sesuai dengan program studi mahasiswa.'],
                 ]);
@@ -92,26 +123,44 @@ class MahasiswaCurriculumContextService
             return $kurikulum->id;
         }
 
-        return $this->resolveMatchingKurikulumId($prodiId, $angkatan, $tanggalMasuk);
+        return $this->resolveMatchingKurikulumId($prodiId, $angkatan, $tanggalMasuk, $isRpl);
     }
 
-    public function resolveMatchingKurikulumId(?string $prodiId, $angkatan = null, $tanggalMasuk = null): ?string
+    public function resolveMatchingKurikulumId(?string $prodiId, $angkatan = null, $tanggalMasuk = null, bool $isRpl = false): ?string
     {
-        if (!$prodiId) {
+        if (! $prodiId) {
             return null;
         }
 
         $cohortSortKey = $this->resolveCohortSortKey($angkatan);
-        $kurikulums = Kurikulum::with('semesterMulai.tahunAkademik')
-            ->where('id_prodi', $prodiId)
-            ->get();
+        $baseQuery = Kurikulum::with('semesterMulai.tahunAkademik')
+            ->where('id_prodi', $prodiId);
+
+        if ($isRpl) {
+            $rplKurikulums = (clone $baseQuery)
+                ->where(function ($q) {
+                    $q->where('nama_struktur_mk', 'like', '%RPL%')
+                        ->orWhere('keterangan', 'like', '%RPL%');
+                })
+                ->get();
+            $kurikulums = $rplKurikulums->isNotEmpty() ? $rplKurikulums : $baseQuery->get();
+        } else {
+            $regKurikulums = (clone $baseQuery)
+                ->where('nama_struktur_mk', 'not like', '%RPL%')
+                ->where(function ($q) {
+                    $q->whereNull('keterangan')
+                        ->orWhere('keterangan', 'not like', '%RPL%');
+                })
+                ->get();
+            $kurikulums = $regKurikulums->isNotEmpty() ? $regKurikulums : $baseQuery->get();
+        }
 
         if ($kurikulums->isEmpty()) {
             return null;
         }
 
         $sortedKurikulums = $kurikulums
-            ->sortByDesc(fn(Kurikulum $kurikulum) => $this->buildKurikulumSortKey($kurikulum) ?? 0)
+            ->sortByDesc(fn (Kurikulum $kurikulum) => $this->buildKurikulumSortKey($kurikulum) ?? 0)
             ->values();
 
         $preferredSemesterOrder = $this->resolvePreferredSemesterOrder($angkatan);
@@ -133,13 +182,25 @@ class MahasiswaCurriculumContextService
         return $this->resolvePreferredKurikulumCandidate($sortedKurikulums, $preferredSemesterOrder)?->id;
     }
 
+    public function isRplMahasiswa(Mahasiswa|string|null $mahasiswa): bool
+    {
+        $resolved = $this->resolveMahasiswa($mahasiswa);
+        if (! $resolved) {
+            return false;
+        }
+
+        return in_array($resolved->jenis_pendaftaran, ['RPL', 'Pindahan'], true)
+            || str_ends_with(strtoupper(trim((string) $resolved->nim)), 'B')
+            || strtoupper(trim((string) ($resolved->jalur_masuk ?? ''))) === 'RPL';
+    }
+
     private function resolveMahasiswa(Mahasiswa|string|null $mahasiswa): ?Mahasiswa
     {
         if ($mahasiswa instanceof Mahasiswa) {
             return $mahasiswa;
         }
 
-        if (!filled($mahasiswa)) {
+        if (! filled($mahasiswa)) {
             return null;
         }
 
@@ -165,7 +226,7 @@ class MahasiswaCurriculumContextService
     private function buildKurikulumSortKey(Kurikulum $kurikulum): ?int
     {
         $tahunAkademik = $kurikulum->semesterMulai?->tahunAkademik?->tahun_akademik;
-        if (!$tahunAkademik) {
+        if (! $tahunAkademik) {
             return null;
         }
 

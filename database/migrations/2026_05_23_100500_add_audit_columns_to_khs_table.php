@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('khs', 'updated_by')) {
+        if (! Schema::hasColumn('khs', 'updated_by')) {
             Schema::table('khs', function (Blueprint $table) {
                 $table->uuid('updated_by')->nullable()->after('is_final');
             });
@@ -18,7 +18,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('khs', 'finalized_by')) {
+        if (! Schema::hasColumn('khs', 'finalized_by')) {
             Schema::table('khs', function (Blueprint $table) {
                 $table->uuid('finalized_by')->nullable()->after('updated_by');
             });
@@ -28,7 +28,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('khs', 'finalized_at')) {
+        if (! Schema::hasColumn('khs', 'finalized_at')) {
             Schema::table('khs', function (Blueprint $table) {
                 $table->timestamp('finalized_at')->nullable()->after('finalized_by');
             });

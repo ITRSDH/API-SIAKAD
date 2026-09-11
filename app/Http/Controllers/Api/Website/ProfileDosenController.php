@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-use App\Services\ImageService;
-use App\Models\Website\ProfileDosen;
 use App\Http\Requests\Website\StoreProfileDosenRequest;
 use App\Http\Requests\Website\UpdateProfileDosenRequest;
+use App\Models\Website\ProfileDosen;
+use App\Services\ImageService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProfileDosenController extends Controller
 {
@@ -17,16 +17,17 @@ class ProfileDosenController extends Controller
     {
         try {
             $profiles = ProfileDosen::with('prodi')->orderBy('created_at', 'desc')->get();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar profile dosen',
-                'data' => $profiles
+                'data' => $profiles,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data profile dosen',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -44,16 +45,17 @@ class ProfileDosenController extends Controller
             }
 
             $profile = ProfileDosen::create($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile dosen berhasil ditambahkan',
-                'data' => $profile
+                'data' => $profile,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan profile dosen',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -62,16 +64,17 @@ class ProfileDosenController extends Controller
     {
         try {
             $profile = ProfileDosen::with('prodi')->findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail profile dosen',
-                'data' => $profile
+                'data' => $profile,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profile dosen tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -90,16 +93,17 @@ class ProfileDosenController extends Controller
             }
 
             $profile->update($data);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile dosen berhasil diperbarui',
-                'data' => $profile
+                'data' => $profile,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui profile dosen',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -114,15 +118,16 @@ class ProfileDosenController extends Controller
             }
 
             $profile->delete();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Profile dosen berhasil dihapus'
+                'message' => 'Profile dosen berhasil dihapus',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus profile dosen',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

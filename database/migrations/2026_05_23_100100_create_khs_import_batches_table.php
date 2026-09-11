@@ -30,7 +30,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('khs_import_batches')) {
+        if (! Schema::hasTable('khs_import_batches')) {
             return;
         }
 

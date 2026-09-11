@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\Website\LandingContent;
 use App\Models\User;
+use App\Models\Website\LandingContent;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class LandingContentControllerTest extends TestCase
 {
@@ -17,10 +17,10 @@ class LandingContentControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a user for testing
         $this->authenticatedUser = User::factory()->create();
-        
+
         // Bypass all middleware for testing
         $this->withoutMiddleware();
     }
@@ -40,12 +40,12 @@ class LandingContentControllerTest extends TestCase
                     'jumlah_program_studi', 'jumlah_mahasiswa', 'jumlah_dosen', 'jumlah_mitra',
                     'keunggulan', 'logo', 'nama_aplikasi',
                     'deskripsi_footer', 'facebook', 'twitter', 'instagram', 'linkedin', 'youtube',
-                    'alamat', 'telepon', 'email', 'created_at', 'updated_at'
-                ]
+                    'alamat', 'telepon', 'email', 'created_at', 'updated_at',
+                ],
             ])
             ->assertJsonFragment([
                 'id' => $content->id,
-                'hero_title' => $content->hero_title
+                'hero_title' => $content->hero_title,
             ]);
     }
 
@@ -99,7 +99,7 @@ class LandingContentControllerTest extends TestCase
         // Create existing content
         $existing = LandingContent::factory()->create([
             'hero_title' => 'Old Title',
-            'nama_aplikasi' => 'Old App'
+            'nama_aplikasi' => 'Old App',
         ]);
 
         $heroBackground = UploadedFile::fake()->image('new_hero.jpg');
@@ -131,7 +131,7 @@ class LandingContentControllerTest extends TestCase
 
         // Should update the existing record, not create new one
         $this->assertEquals(1, LandingContent::count());
-        
+
         $this->assertDatabaseHas('landing_content', [
             'id' => $existing->id,
             'hero_title' => $data['hero_title'],
@@ -169,7 +169,7 @@ class LandingContentControllerTest extends TestCase
         $response->assertStatus(404)
             ->assertJsonFragment([
                 'success' => false,
-                'message' => 'Landing content belum dibuat'
+                'message' => 'Landing content belum dibuat',
             ]);
     }
 
@@ -220,7 +220,7 @@ class LandingContentControllerTest extends TestCase
         $response->assertStatus(404)
             ->assertJsonFragment([
                 'success' => false,
-                'message' => 'Landing content belum dibuat. Gunakan endpoint store untuk membuat data baru.'
+                'message' => 'Landing content belum dibuat. Gunakan endpoint store untuk membuat data baru.',
             ]);
     }
 
@@ -238,7 +238,7 @@ class LandingContentControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('landing_content', [
-            'id' => $content->id
+            'id' => $content->id,
         ]);
     }
 
@@ -249,7 +249,7 @@ class LandingContentControllerTest extends TestCase
         $response->assertStatus(404)
             ->assertJsonFragment([
                 'success' => false,
-                'message' => 'Landing content tidak ditemukan'
+                'message' => 'Landing content tidak ditemukan',
             ]);
     }
 
@@ -261,7 +261,7 @@ class LandingContentControllerTest extends TestCase
             ->assertJsonFragment([
                 'success' => true,
                 'message' => 'Data landing content',
-                'data' => null
+                'data' => null,
             ]);
     }
 
@@ -269,7 +269,7 @@ class LandingContentControllerTest extends TestCase
     {
         $data = [
             'hero_title' => 'Test Title',
-            'hero_subtitle' => 'Test Subtitle', 
+            'hero_subtitle' => 'Test Subtitle',
             'jumlah_program_studi' => null,
             'jumlah_mahasiswa' => null,
             'jumlah_dosen' => null,

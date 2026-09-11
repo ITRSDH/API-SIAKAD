@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Website\Ormawa;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class OrmawaSeeder extends Seeder
         Ormawa::factory(100)->create();
 
         echo "✅ Berhasil membuat 100 data ormawa!\n";
-        
+
         // Get total records
         $total = DB::table('ormawa')->count();
         echo "📊 Total records: $total\n\n";

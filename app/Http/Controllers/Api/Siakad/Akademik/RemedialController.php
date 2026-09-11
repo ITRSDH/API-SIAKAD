@@ -16,8 +16,7 @@ class RemedialController extends Controller
     public function __construct(
         private readonly AttendanceEligibilityService $attendanceEligibilityService,
         private readonly AcademicPolicyService $academicPolicyService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -47,7 +46,7 @@ class RemedialController extends Controller
             'kelasKuliah:id,nama_kelas',
         ])->find($id);
 
-        if (!$remedial) {
+        if (! $remedial) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data remedial tidak ditemukan',
@@ -70,7 +69,7 @@ class RemedialController extends Controller
         ]);
 
         $detail = KRSDetail::with('kelasKuliah')->find($validated['id_krs_detail']);
-        if (!$detail) {
+        if (! $detail) {
             return response()->json([
                 'success' => false,
                 'message' => 'Detail KRS tidak ditemukan',
@@ -79,7 +78,7 @@ class RemedialController extends Controller
 
         $remedialPolicy = $this->academicPolicyService->get('remedial');
         $allowedStatuses = $remedialPolicy['allowed_krs_detail_statuses'] ?? [KRSDetail::STATUS_TIDAK_LULUS];
-        if (!in_array($detail->status, $allowedStatuses, true)) {
+        if (! in_array($detail->status, $allowedStatuses, true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Status hasil studi mahasiswa belum memenuhi syarat remedial',
@@ -91,7 +90,7 @@ class RemedialController extends Controller
         }
 
         $presensiSummary = $this->attendanceEligibilityService->summarizeForKrsDetail($detail);
-        if (!$presensiSummary['is_layak_penilaian']) {
+        if (! $presensiSummary['is_layak_penilaian']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa belum memenuhi minimum presensi untuk mengikuti remedial',
@@ -137,7 +136,7 @@ class RemedialController extends Controller
     public function publish(string $id): JsonResponse
     {
         $remedial = Remedial::with('krsDetail')->find($id);
-        if (!$remedial) {
+        if (! $remedial) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data remedial tidak ditemukan',
@@ -152,7 +151,7 @@ class RemedialController extends Controller
         }
 
         $presensiSummary = $this->attendanceEligibilityService->summarizeForKrsDetail($remedial->krsDetail);
-        if (!$presensiSummary['is_layak_penilaian']) {
+        if (! $presensiSummary['is_layak_penilaian']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa belum memenuhi minimum presensi untuk publish remedial',
@@ -183,7 +182,7 @@ class RemedialController extends Controller
     public function cancel(string $id): JsonResponse
     {
         $remedial = Remedial::find($id);
-        if (!$remedial) {
+        if (! $remedial) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data remedial tidak ditemukan',

@@ -21,10 +21,10 @@ class CheckRolePermission
         // Gunakan guard api (misalnya JWT)
         $user = auth('api')->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Token tidak valid atau sudah kadaluarsa.'
+                'message' => 'Unauthorized. Token tidak valid atau sudah kadaluarsa.',
             ], 401);
         }
 
@@ -37,12 +37,12 @@ class CheckRolePermission
         $routeName = Route::currentRouteName();
 
         // Jika route belum punya nama, lewati
-        if (!$routeName) {
+        if (! $routeName) {
             return $next($request);
         }
 
         // Jika permission belum disinkron di database, lewati (biar fleksibel saat dev)
-        if (!Permission::where('name', $routeName)->exists()) {
+        if (! Permission::where('name', $routeName)->exists()) {
             return $next($request);
         }
 
@@ -51,11 +51,11 @@ class CheckRolePermission
         }
 
         // Cek apakah user memiliki izin
-        if (!$user->can($routeName)) {
+        if (! $user->can($routeName)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden. Anda tidak memiliki izin untuk mengakses endpoint ini.',
-                'route' => $routeName
+                'route' => $routeName,
             ], 403);
         }
 
@@ -81,7 +81,7 @@ class CheckRolePermission
         ];
 
         foreach ($roleRoutePrefixes as $role => $prefixes) {
-            if (!$user->hasRole($role)) {
+            if (! $user->hasRole($role)) {
                 continue;
             }
 

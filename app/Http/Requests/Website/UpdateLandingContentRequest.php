@@ -52,8 +52,8 @@ class UpdateLandingContentRequest extends FormRequest
         if ($this->has('jumlah_mitra')) {
             $merge['jumlah_mitra'] = $this->jumlah_mitra ?? 0;
         }
-        
-        if (!empty($merge)) {
+
+        if (! empty($merge)) {
             $this->merge($merge);
         }
     }

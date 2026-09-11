@@ -11,11 +11,14 @@ class Pengumuman extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'pengumuman';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
-   protected $fillable = [
+    protected $fillable = [
         'judul',
         'isi',
         'kategori',

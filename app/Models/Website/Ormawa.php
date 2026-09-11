@@ -11,8 +11,11 @@ class Ormawa extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'ormawa';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

@@ -103,7 +103,7 @@ class PmbPendaftaranControllerTest extends TestCase
             'tata_cara' => 'Tata cara',
         ]);
 
-        $response = $this->getJson('/api/v1/pmb-pendaftaran/' . $record->id);
+        $response = $this->getJson('/api/v1/pmb-pendaftaran/'.$record->id);
 
         $response->assertStatus(200)
             ->assertJson([

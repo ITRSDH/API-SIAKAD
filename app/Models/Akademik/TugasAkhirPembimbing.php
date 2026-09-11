@@ -3,9 +3,9 @@
 namespace App\Models\Akademik;
 
 use App\Models\MasterData\Dosen;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TugasAkhirPembimbing extends Model
@@ -13,8 +13,11 @@ class TugasAkhirPembimbing extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'tugas_akhir_pembimbing';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

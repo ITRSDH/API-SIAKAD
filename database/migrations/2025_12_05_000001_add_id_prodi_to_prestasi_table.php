@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('prestasi', function (Blueprint $table) {
             // Tambah kolom id_prodi sebagai foreign key
             $table->uuid('id_prodi')->nullable()->after('id');
-            
+
             // Tambah foreign key constraint
             $table->foreign('id_prodi')
                 ->references('id')

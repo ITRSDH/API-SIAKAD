@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Siakad\Krs;
 use App\Http\Controllers\Controller;
 use App\Models\Akademik\KRS;
 use App\Models\Akademik\KRSDetail;
+use App\Models\Akademik\NilaiTransfer;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\PeriodeKrs;
@@ -70,6 +71,7 @@ class KRSMahasiswaController extends Controller
         }
 
         $semesterSaatIni = $this->hitungSemesterKrs($mahasiswa, $semester);
+        $paketSemester = $this->getTargetKurikulumSemester($mahasiswa, $semesterSaatIni);
         $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
         $periodError = $this->validateKRSPeriod($semester);
 
@@ -83,12 +85,16 @@ class KRSMahasiswaController extends Controller
             'data' => [
                 'semester_aktif' => $semester,
                 'semester_saat_ini' => $semesterSaatIni,
+                'paket_semester' => $paketSemester,
                 'mahasiswa' => $mahasiswa,
                 'krs' => $krs ? $this->transformKRS($krs) : null,
                 'has_krs' => (bool) $krs,
                 'is_krs_eligible' => $eligibility['eligible'],
                 'eligibility_message' => $eligibility['message'],
                 'can_auto_init' => $eligibility['eligible'] && $periodError === null,
+                'is_rpl' => $this->isRplMahasiswa($mahasiswa),
+                'sks_diakui' => (int) ($mahasiswa->sks_diakui ?? 0),
+                'nilai_transfer_count' => NilaiTransfer::where('id_mahasiswa', $mahasiswa->id)->count(),
             ],
         ]);
     }
@@ -341,6 +347,7 @@ class KRSMahasiswaController extends Controller
         }
 
         $mahasiswaSemester = $this->hitungSemesterKrs($mahasiswa, $semester);
+        $targetKurikulumSemester = $this->getTargetKurikulumSemester($mahasiswa, $mahasiswaSemester);
         $eligibility = $this->buildSemesterEligibility($mahasiswa, $semester);
 
         if (! $eligibility['eligible']) {
@@ -353,6 +360,7 @@ class KRSMahasiswaController extends Controller
                     'current_sks' => 0,
                     'max_sks_allowed' => $this->getMaxSksAllowed($mahasiswa),
                     'semester_tempuh' => $mahasiswaSemester,
+                    'paket_semester' => $targetKurikulumSemester,
                     'is_krs_eligible' => false,
                     'message' => $eligibility['message'],
                 ],
@@ -366,10 +374,15 @@ class KRSMahasiswaController extends Controller
                 ->toArray();
         }
 
+        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
+
         $availableKelas = KelasKuliah::where('id_prodi', $mahasiswa->id_prodi)
             ->where('id_semester', $semester->id)
-            ->whereHas('kurikulumMataKuliah', function ($query) use ($mahasiswaSemester) {
-                $query->where('semester_ke', '<=', $mahasiswaSemester);
+            ->whereHas('kurikulumMataKuliah', function ($query) use ($targetKurikulumSemester, $activeKurikulumId) {
+                if ($activeKurikulumId) {
+                    $query->where('id_kurikulum', $activeKurikulumId);
+                }
+                $query->where('semester_ke', '<=', $targetKurikulumSemester);
             })
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
@@ -381,12 +394,18 @@ class KRSMahasiswaController extends Controller
         $currentSks = $krs ? $krs->calculateTotalSks() : 0;
         $maxSks = $this->getMaxSksAllowed($mahasiswa);
 
+        // Ambil daftar mata kuliah yang sudah diakui melalui konversi nilai RPL / Transfer
+        $transferredMataKuliah = NilaiTransfer::where('id_mahasiswa', $mahasiswa->id)
+            ->get()
+            ->keyBy('id_mata_kuliah');
+
         $result = [];
 
         foreach ($availableKelas as $kelas) {
             $mataKuliah = $kelas->kurikulumMataKuliah->mataKuliah;
             $isSelected = in_array($kelas->id, $selectedKelasIds, true);
-            $semesterAllowed = $mahasiswaSemester >= $kelas->kurikulumMataKuliah->semester_ke;
+            $isTransferred = $transferredMataKuliah->has($mataKuliah->id);
+            $semesterAllowed = $targetKurikulumSemester >= $kelas->kurikulumMataKuliah->semester_ke;
             $wouldExceedSks = ($currentSks + $mataKuliah->sks) > $maxSks;
             $hasConflict = $krs ? $this->hasJadwalKonflik($krs, $kelas) : false;
             $kelasPenuh = $kelas->isPenuh();
@@ -395,6 +414,9 @@ class KRSMahasiswaController extends Controller
             $availabilityReason = null;
             if ($isSelected) {
                 $availabilityReason = 'Mata kuliah sudah ada di KRS';
+            } elseif ($isTransferred) {
+                $transferItem = $transferredMataKuliah->get($mataKuliah->id);
+                $availabilityReason = 'Mata kuliah sudah diakui konversi RPL/Transfer (Nilai: '.($transferItem->nilai_huruf_diakui ?? 'A').')';
             } elseif (! $semesterAllowed) {
                 $availabilityReason = 'Mata kuliah belum sesuai semester tempuh mahasiswa';
             } elseif (! $prasyaratCheck['passed']) {
@@ -415,12 +437,14 @@ class KRSMahasiswaController extends Controller
                 'sks' => $mataKuliah->sks,
                 'semester_ke' => $kelas->kurikulumMataKuliah->semester_ke,
                 'is_wajib' => $kelas->kurikulumMataKuliah->is_wajib,
+                'is_transferred' => $isTransferred,
+                'nilai_transfer' => $isTransferred ? $transferredMataKuliah->get($mataKuliah->id)->nilai_huruf_diakui : null,
                 'kapasitas_peserta' => $kelas->kapasitas_peserta,
                 'peserta_terdaftar' => $kelas->peserta_terdaftar_count,
                 'jadwal' => $kelas->jadwal,
                 'dosen_pengajar' => $kelas->dosen_pengajar,
                 'is_selected' => $isSelected,
-                'is_available' => $availabilityReason === null,
+                'is_available' => ! $isTransferred && $availabilityReason === null,
                 'availability_reason' => $availabilityReason,
                 'prasyarat' => $prasyaratCheck['requirements'],
             ];
@@ -435,6 +459,7 @@ class KRSMahasiswaController extends Controller
                 'current_sks' => $currentSks,
                 'max_sks_allowed' => $maxSks,
                 'semester_tempuh' => $mahasiswaSemester,
+                'paket_semester' => $targetKurikulumSemester,
                 'is_krs_eligible' => true,
             ],
         ]);
@@ -549,7 +574,10 @@ class KRSMahasiswaController extends Controller
             $kelasTersedia = KelasKuliah::query()
                 ->where('id_semester', $semester->id)
                 ->where('id_prodi', $mahasiswa->id_prodi)
-                ->whereHas('kurikulumMataKuliah', function ($query) use ($mataKuliahId) {
+                ->whereHas('kurikulumMataKuliah', function ($query) use ($mataKuliahId, $activeKurikulumId) {
+                    if ($activeKurikulumId) {
+                        $query->where('id_kurikulum', $activeKurikulumId);
+                    }
                     $query->where('id_mata_kuliah', $mataKuliahId);
                 })
                 ->with([
@@ -719,6 +747,13 @@ class KRSMahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Mata kuliah ini sudah terdaftar di KRS pada kelas lain',
+            ], 400);
+        }
+
+        if ($targetMataKuliahId && NilaiTransfer::where('id_mahasiswa', $mahasiswa->id)->where('id_mata_kuliah', $targetMataKuliahId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mata kuliah ini sudah diakui melalui konversi nilai RPL / Transfer dan tidak perlu dikontrak ulang',
             ], 400);
         }
 
@@ -1446,6 +1481,7 @@ class KRSMahasiswaController extends Controller
     private function generatePackageKrs(KRS $krs, Mahasiswa $mahasiswa, Semester $semester): array
     {
         $semesterKe = $this->hitungSemesterKrs($mahasiswa, $semester);
+        $targetKurikulumSemester = $this->getTargetKurikulumSemester($mahasiswa, $semesterKe);
         $maxSks = $this->getMaxSksAllowed($mahasiswa);
         $generatedSks = 0;
         $generatedCount = 0;
@@ -1459,6 +1495,7 @@ class KRSMahasiswaController extends Controller
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
+                    'target_kurikulum_semester' => $targetKurikulumSemester,
                     'kurikulum_context' => $curriculumContext,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
@@ -1467,7 +1504,7 @@ class KRSMahasiswaController extends Controller
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $targetKurikulumSemester, $activeKurikulumId),
                 ]],
             ];
         }
@@ -1476,6 +1513,7 @@ class KRSMahasiswaController extends Controller
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
+                    'target_kurikulum_semester' => $targetKurikulumSemester,
                     'kurikulum_context' => $curriculumContext,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
@@ -1484,17 +1522,18 @@ class KRSMahasiswaController extends Controller
                     'unresolved_count' => 1,
                 ],
                 'unresolved_items' => [[
-                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $targetKurikulumSemester, $activeKurikulumId),
                 ]],
             ];
         }
 
-        $packageItems = $this->getPackageItemsForSemester($mahasiswa, $semester, $semesterKe);
+        $packageItems = $this->getPackageItemsForSemester($mahasiswa, $semester, $targetKurikulumSemester);
 
         if ($packageItems->isEmpty()) {
             return [
                 'summary' => [
                     'semester_ke' => $semesterKe,
+                    'target_kurikulum_semester' => $targetKurikulumSemester,
                     'kurikulum_context' => $curriculumContext,
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
@@ -1506,10 +1545,14 @@ class KRSMahasiswaController extends Controller
                     'id_struktur_operasional' => $curriculumContext['id_struktur_operasional'] ?? null,
                     'id_kurikulum_operasional' => $curriculumContext['id_kurikulum_operasional'] ?? null,
                     'id_kurikulum' => $curriculumContext['id_kurikulum_operasional'] ?? $activeKurikulumId,
-                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $semesterKe, $activeKurikulumId),
+                    'reason' => $this->buildMissingPackageReason($mahasiswa, $semester, $targetKurikulumSemester, $activeKurikulumId),
                 ]],
             ];
         }
+
+        $transferredMkIds = NilaiTransfer::where('id_mahasiswa', $mahasiswa->id)
+            ->pluck('id_mata_kuliah')
+            ->toArray();
 
         foreach ($packageItems as $packageItem) {
             $mataKuliah = $packageItem->mataKuliah;
@@ -1520,6 +1563,11 @@ class KRSMahasiswaController extends Controller
                     'reason' => 'Data mata kuliah pada kurikulum tidak ditemukan',
                 ];
 
+                continue;
+            }
+
+            // Jika mata kuliah sudah diakui melalui konversi nilai RPL / Transfer, lewati agar tidak dobel
+            if (in_array($mataKuliah->id, $transferredMkIds, true)) {
                 continue;
             }
 
@@ -1719,6 +1767,24 @@ class KRSMahasiswaController extends Controller
         $semesterKe = ($selisihTahun * 2) + $digitPeriode;
 
         return max(0, $semesterKe);
+    }
+
+    private function getTargetKurikulumSemester(Mahasiswa $mahasiswa, int $semesterKe): int
+    {
+        if ($this->isRplMahasiswa($mahasiswa) && ($mahasiswa->sks_diakui ?? 0) > 0) {
+            $semesterEkuivalen = (int) floor($mahasiswa->sks_diakui / 20);
+
+            return $semesterKe + $semesterEkuivalen;
+        }
+
+        return $semesterKe;
+    }
+
+    private function isRplMahasiswa(Mahasiswa $mahasiswa): bool
+    {
+        return in_array($mahasiswa->jenis_pendaftaran, ['RPL', 'Pindahan'], true)
+            || str_ends_with(strtoupper(trim((string) $mahasiswa->nim)), 'B')
+            || strtoupper(trim((string) ($mahasiswa->jalur_masuk ?? ''))) === 'RPL';
     }
 
     private function buildSemesterEligibility(Mahasiswa $mahasiswa, Semester $semester): array

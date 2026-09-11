@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('galeri', function (Blueprint $table) {
             // Index untuk sorting (created_at paling sering di-sort)
             $table->index('created_at');
-            
+
             // Index untuk filtering kategori
             $table->index('kategori');
         });

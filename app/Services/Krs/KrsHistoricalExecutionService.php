@@ -3,9 +3,9 @@
 namespace App\Services\Krs;
 
 use App\Models\Akademik\KRS;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KrsCollectiveBatch;
 use App\Models\Akademik\KrsCollectiveBatchItem;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
 use App\Services\Khs\KhsCalculationService;
@@ -17,8 +17,7 @@ class KrsHistoricalExecutionService
     public function __construct(
         private readonly KrsHistoricalPreviewService $previewService,
         private readonly KhsCalculationService $calculationService
-    ) {
-    }
+    ) {}
 
     public function executeBuild(array $payload, array $selectedMahasiswaIds): Collection
     {
@@ -30,7 +29,7 @@ class KrsHistoricalExecutionService
             $preview = $previewResults->get($studentId);
             $student = $students->get($studentId);
 
-            if (!$preview || $preview['status'] !== KrsCollectiveBatchItem::STATUS_READY || !$student) {
+            if (! $preview || $preview['status'] !== KrsCollectiveBatchItem::STATUS_READY || ! $student) {
                 return $preview ?? [
                     'id_mahasiswa' => $studentId,
                     'status' => KrsCollectiveBatchItem::STATUS_FAILED,
@@ -67,7 +66,7 @@ class KrsHistoricalExecutionService
                             ->with('kurikulumMataKuliah.mataKuliah')
                             ->find($course['id_kelas_kuliah']);
 
-                        if (!$kelasKuliah) {
+                        if (! $kelasKuliah) {
                             throw new \RuntimeException('Kelas historis tidak ditemukan saat eksekusi');
                         }
 
@@ -227,7 +226,7 @@ class KrsHistoricalExecutionService
             $student = $students->get($studentId);
             $krs = $krsMap->get($studentId);
 
-            if (!$preview || $preview['status'] !== KrsCollectiveBatchItem::STATUS_READY || !$student || !$krs) {
+            if (! $preview || $preview['status'] !== KrsCollectiveBatchItem::STATUS_READY || ! $student || ! $krs) {
                 return $preview ?? [
                     'id_mahasiswa' => $studentId,
                     'status' => KrsCollectiveBatchItem::STATUS_FAILED,
@@ -237,7 +236,7 @@ class KrsHistoricalExecutionService
             }
 
             try {
-                DB::transaction(fn() => $operation($krs));
+                DB::transaction(fn () => $operation($krs));
 
                 return [
                     'id_mahasiswa' => $student->id,

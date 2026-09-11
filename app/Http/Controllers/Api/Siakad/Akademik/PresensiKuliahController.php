@@ -25,7 +25,7 @@ class PresensiKuliahController extends Controller
             'presensi.krsDetail.krs.mahasiswa',
         ])->find($id_pertemuan_kuliah);
 
-        if (!$pertemuan) {
+        if (! $pertemuan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pertemuan kuliah tidak ditemukan',
@@ -56,7 +56,7 @@ class PresensiKuliahController extends Controller
     public function rekapKelas(string $id_kelas_kuliah): JsonResponse
     {
         $kelas = KelasKuliah::find($id_kelas_kuliah);
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -72,7 +72,7 @@ class PresensiKuliahController extends Controller
     public function generatePeserta(string $id_pertemuan_kuliah): JsonResponse
     {
         $pertemuan = PertemuanKuliah::find($id_pertemuan_kuliah);
-        if (!$pertemuan) {
+        if (! $pertemuan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pertemuan kuliah tidak ditemukan',
@@ -104,7 +104,7 @@ class PresensiKuliahController extends Controller
     public function sync(Request $request, string $id_pertemuan_kuliah): JsonResponse
     {
         $pertemuan = PertemuanKuliah::find($id_pertemuan_kuliah);
-        if (!$pertemuan) {
+        if (! $pertemuan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pertemuan kuliah tidak ditemukan',
@@ -124,7 +124,7 @@ class PresensiKuliahController extends Controller
                     ->where('id_kelas_kuliah', $pertemuan->id_kelas_kuliah)
                     ->first();
 
-                if (!$detail) {
+                if (! $detail) {
                     continue;
                 }
 

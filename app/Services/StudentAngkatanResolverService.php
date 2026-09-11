@@ -22,7 +22,7 @@ class StudentAngkatanResolverService
         }
 
         $kodeAngkatan = substr($normalizedNim, 2, 2);
-        if (!ctype_digit($kodeAngkatan)) {
+        if (! ctype_digit($kodeAngkatan)) {
             return null;
         }
 
@@ -45,7 +45,7 @@ class StudentAngkatanResolverService
 
     private function normalizeManualAngkatan(?string $angkatanInput): ?int
     {
-        if (!filled($angkatanInput) || !is_numeric($angkatanInput)) {
+        if (! filled($angkatanInput) || ! is_numeric($angkatanInput)) {
             return null;
         }
 
@@ -56,12 +56,12 @@ class StudentAngkatanResolverService
 
     private function normalizeNim(?string $nim): ?string
     {
-        if (!filled($nim)) {
+        if (! filled($nim)) {
             return null;
         }
 
         $normalized = preg_replace('/\s+/', '', trim((string) $nim));
-        if (!is_string($normalized) || $normalized === '') {
+        if (! is_string($normalized) || $normalized === '') {
             return null;
         }
 

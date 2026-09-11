@@ -4,7 +4,6 @@ namespace Database\Factories\Website;
 
 use App\Models\Website\Beasiswa;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class BeasiswaFactory extends Factory
 {
@@ -30,7 +29,7 @@ class BeasiswaFactory extends Factory
         $kategoriList = ['Akademik', 'Non-Akademik', 'Prestasi', 'Ekonomi', 'Riset'];
 
         return [
-            'nama' => $this->faker->randomElement($namaBeasiswa) . ' ' . $this->faker->numberBetween(2024, 2025),
+            'nama' => $this->faker->randomElement($namaBeasiswa).' '.$this->faker->numberBetween(2024, 2025),
             'kategori' => $this->faker->randomElement($kategoriList),
             'deskripsi' => $this->faker->paragraph(3),
             'gambar' => null, // Will be uploaded manually

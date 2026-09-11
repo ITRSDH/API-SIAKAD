@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\ManagementPengguna;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Exception;
+use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -22,13 +22,13 @@ class RoleController extends Controller
                 'data' => [
                     'roles' => $roles,
                     'permissions' => $permissions,
-                ]
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve roles.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -48,13 +48,13 @@ class RoleController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Role created successfully.',
-                'data' => $role
+                'data' => $role,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create role.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -64,22 +64,22 @@ class RoleController extends Controller
         try {
             $role = Role::with('permissions')->find($id);
 
-            if (!$role) {
+            if (! $role) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Role not found.'
+                    'message' => 'Role not found.',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve role.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -88,17 +88,17 @@ class RoleController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255|unique:roles,name,' . $id,
+                'name' => 'required|string|max:255|unique:roles,name,'.$id,
                 'permissions' => 'array',
                 'permissions.*' => 'string|exists:permissions,name',
             ]);
 
             $role = Role::findById($id);
 
-            if (!$role) {
+            if (! $role) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Role not found.'
+                    'message' => 'Role not found.',
                 ], 404);
             }
 
@@ -108,13 +108,13 @@ class RoleController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Role updated successfully.',
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update role.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -124,10 +124,10 @@ class RoleController extends Controller
         try {
             $role = Role::findById($id);
 
-            if (!$role) {
+            if (! $role) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Role not found.'
+                    'message' => 'Role not found.',
                 ], 404);
             }
 
@@ -135,13 +135,13 @@ class RoleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Role deleted successfully.'
+                'message' => 'Role deleted successfully.',
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete role.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

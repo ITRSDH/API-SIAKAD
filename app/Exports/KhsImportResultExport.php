@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -11,8 +10,7 @@ class KhsImportResultExport implements FromCollection, WithHeadings, WithMapping
 {
     public function __construct(
         private readonly array $preview
-    ) {
-    }
+    ) {}
 
     public function collection()
     {

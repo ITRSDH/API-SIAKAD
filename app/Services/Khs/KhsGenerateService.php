@@ -4,9 +4,9 @@ namespace App\Services\Khs;
 
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KHSDetail;
+use App\Models\Akademik\KhsImportBatch;
 use App\Models\Akademik\KRS;
 use App\Models\Akademik\KRSDetail;
-use App\Models\Akademik\KhsImportBatch;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,8 +19,7 @@ class KhsGenerateService
     public function __construct(
         private readonly KhsCalculationService $calculationService,
         private readonly KhsRevisionService $revisionService
-    ) {
-    }
+    ) {}
 
     public function processBatch(array $validatedPayload, array $context = []): array
     {
@@ -65,7 +64,7 @@ class KhsGenerateService
                     $subjectMap = collect($row['subjects'] ?? [])
                         ->filter(function (array $subject) {
                             return (bool) ($subject['matched'] ?? false)
-                                && !($subject['skipped'] ?? false)
+                                && ! ($subject['skipped'] ?? false)
                                 && ($subject['nilai_akhir'] ?? null) !== null;
                         })
                         ->keyBy('id_krs_detail');
@@ -79,7 +78,7 @@ class KhsGenerateService
                         ->values();
 
                     foreach ($targetDetails as $detail) {
-                        if (!$detail instanceof KRSDetail) {
+                        if (! $detail instanceof KRSDetail) {
                             continue;
                         }
 
@@ -154,7 +153,7 @@ class KhsGenerateService
             ->where('id_semester', $semesterId)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             throw new RuntimeException('KRS mahasiswa pada semester yang dipilih tidak ditemukan saat proses sinkronisasi.');
         }
 
@@ -291,7 +290,7 @@ class KhsGenerateService
     private function collectCountedKhsDetails(Collection $details): Collection
     {
         return $details
-            ->filter(fn(KRSDetail $detail) => $detail->isCountedInKhs() && $detail->isFinalScored())
+            ->filter(fn (KRSDetail $detail) => $detail->isCountedInKhs() && $detail->isFinalScored())
             ->values();
     }
 

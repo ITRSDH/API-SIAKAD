@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Exception;
 use App\Models\MasterData\Cpl;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CPLController extends Controller
 {
@@ -20,7 +20,7 @@ class CPLController extends Controller
             $Cpl = Cpl::with([
                 'indikatorKinerja' => function ($q) {
                     $q->orderBy('kode_ik_cpl');
-                }
+                },
             ])
                 ->where('id_prodi', $id_prodi)
                 ->orderBy('kode_cpl')
@@ -42,9 +42,9 @@ class CPLController extends Controller
                                 'deskripsi_ik_cpl_indonesia' => $ik->deskripsi_ik_cpl_indonesia,
                                 'deskripsi_ik_cpl_english' => $ik->deskripsi_ik_cpl_english,
                                 'kategori_ik_cpl' => $ik->kategori_ik_cpl,
-                                'id_cpl' => $ik->id_cpl
+                                'id_cpl' => $ik->id_cpl,
                             ];
-                        })
+                        }),
 
                     ];
                 });
@@ -52,14 +52,14 @@ class CPLController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Capaian Pembelajaran Lulusan berhasil diambil',
-                'data' => $Cpl
+                'data' => $Cpl,
             ], 200);
         } catch (Exception $e) {
 
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data Capaian Pembelajaran Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -75,7 +75,7 @@ class CPLController extends Controller
                 // 'cpl' => 'required|string|max:255',
                 'deskripsi_cpl_indonesia' => 'required|string',
                 'deskripsi_cpl_english' => 'nullable|string',
-                'kategori_cpl' => 'nullable|in:KK,KU,P,S'
+                'kategori_cpl' => 'nullable|in:KK,KU,P,S',
             ]);
 
             $data = $request->all();
@@ -86,13 +86,13 @@ class CPLController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Capaian Pembelajaran Lulusan berhasil dibuat',
-                'data' => $Cpl
+                'data' => $Cpl,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat Capaian Pembelajaran Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -108,13 +108,13 @@ class CPLController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Capaian Pembelajaran Lulusan berhasil diambil',
-                'data' => $Cpl
+                'data' => $Cpl,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Capaian Pembelajaran Lulusan tidak ditemukan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -126,11 +126,11 @@ class CPLController extends Controller
     {
         try {
             $request->validate([
-                'kode_cpl' => 'required|string|max:100|unique:cpl,kode_cpl,' . $id,
+                'kode_cpl' => 'required|string|max:100|unique:cpl,kode_cpl,'.$id,
                 // 'cpl' => 'required|string|max:255',
                 'deskripsi_cpl_indonesia' => 'required|string',
                 'deskripsi_cpl_english' => 'nullable|string',
-                'kategori_cpl' => 'nullable|in:KK,KU,P,S'
+                'kategori_cpl' => 'nullable|in:KK,KU,P,S',
             ]);
 
             $Cpl = Cpl::where('id_prodi', $id_prodi)
@@ -141,13 +141,13 @@ class CPLController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Capaian Pembelajaran Lulusan berhasil diperbarui',
-                'data' => $Cpl
+                'data' => $Cpl,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui Capaian Pembelajaran Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -164,13 +164,13 @@ class CPLController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Capaian Pembelajaran Lulusan berhasil dihapus'
+                'message' => 'Capaian Pembelajaran Lulusan berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus Capaian Pembelajaran Lulusan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

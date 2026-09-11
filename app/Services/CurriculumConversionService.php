@@ -13,18 +13,17 @@ class CurriculumConversionService
 {
     public function __construct(
         private readonly ActiveCurriculumService $activeCurriculumService
-    ) {
-    }
+    ) {}
 
     public function getRecognizedSourceCourseIdsForTarget(string $mahasiswaId, string $targetCourseId, ?string $targetKurikulumId = null): array
     {
         $mahasiswa = Mahasiswa::find($mahasiswaId);
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return [$targetCourseId];
         }
 
         $resolvedTargetKurikulumId = $targetKurikulumId ?: $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
-        if (!$resolvedTargetKurikulumId) {
+        if (! $resolvedTargetKurikulumId) {
             return [$targetCourseId];
         }
 
@@ -51,12 +50,12 @@ class CurriculumConversionService
     public function resolveTranscriptCourse(string $mahasiswaId, string $sourceCourseId, ?string $targetKurikulumId = null): ?MataKuliah
     {
         $mahasiswa = Mahasiswa::find($mahasiswaId);
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return MataKuliah::find($sourceCourseId);
         }
 
         $resolvedTargetKurikulumId = $targetKurikulumId ?: $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
-        if (!$resolvedTargetKurikulumId) {
+        if (! $resolvedTargetKurikulumId) {
             return MataKuliah::find($sourceCourseId);
         }
 
@@ -78,7 +77,7 @@ class CurriculumConversionService
         }
 
         $sourceCourse = MataKuliah::find($sourceCourseId);
-        if (!$sourceCourse) {
+        if (! $sourceCourse) {
             return null;
         }
 
@@ -111,7 +110,7 @@ class CurriculumConversionService
             ->limit(200)
             ->get()
             ->pluck('kelasKuliah.kurikulumMataKuliah.id_kurikulum')
-            ->filter(fn($id) => filled($id))
+            ->filter(fn ($id) => filled($id))
             ->unique()
             ->values();
 

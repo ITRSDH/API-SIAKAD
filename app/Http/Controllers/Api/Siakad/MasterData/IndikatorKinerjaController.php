@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Exception;
 use App\Models\MasterData\Cpl;
 use App\Models\MasterData\IndikatorKinerja;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class IndikatorKinerjaController extends Controller
 {
@@ -22,13 +22,13 @@ class IndikatorKinerjaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Indikator Kinerja berhasil diambil',
-                'data' => $indikatorKinerja
+                'data' => $indikatorKinerja,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data Indikator Kinerja.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -43,7 +43,7 @@ class IndikatorKinerjaController extends Controller
                 'kode_ik_cpl' => 'required|string|max:50|unique:indikator_kinerja_cpl,kode_ik_cpl',
                 'deskripsi_ik_cpl_indonesia' => 'required|string',
                 'deskripsi_ik_cpl_english' => 'nullable|string',
-                'kategori_ik_cpl' => 'nullable|in:KK,KU,P,S'
+                'kategori_ik_cpl' => 'nullable|in:KK,KU,P,S',
             ]);
 
             $data = $request->all();
@@ -54,13 +54,13 @@ class IndikatorKinerjaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Indikator Kinerja berhasil dibuat',
-                'data' => $indikatorKinerja
+                'data' => $indikatorKinerja,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat Indikator Kinerja.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -76,13 +76,13 @@ class IndikatorKinerjaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data Indikator Kinerja berhasil diambil',
-                'data' => $indikatorKinerja
+                'data' => $indikatorKinerja,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Indikator Kinerja tidak ditemukan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -94,10 +94,10 @@ class IndikatorKinerjaController extends Controller
     {
         try {
             $request->validate([
-                'kode_ik_cpl' => 'required|string|max:50|unique:indikator_kinerja_cpl,kode_ik_cpl,' . $id,
+                'kode_ik_cpl' => 'required|string|max:50|unique:indikator_kinerja_cpl,kode_ik_cpl,'.$id,
                 'deskripsi_ik_cpl_indonesia' => 'required|string',
                 'deskripsi_ik_cpl_english' => 'nullable|string',
-                'kategori_ik_cpl' => 'nullable|in:KK,KU,P,S'
+                'kategori_ik_cpl' => 'nullable|in:KK,KU,P,S',
             ]);
 
             $indikatorKinerja = IndikatorKinerja::findOrFail($id);
@@ -106,13 +106,13 @@ class IndikatorKinerjaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Indikator Kinerja berhasil diperbarui',
-                'data' => $indikatorKinerja
+                'data' => $indikatorKinerja,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui Indikator Kinerja.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -128,13 +128,13 @@ class IndikatorKinerjaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Indikator Kinerja berhasil dihapus'
+                'message' => 'Indikator Kinerja berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus Indikator Kinerja.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -150,13 +150,13 @@ class IndikatorKinerjaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data CPL dan Indikator Kinerja berhasil diambil',
-                'data' => $cpl
+                'data' => $cpl,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'CPL tidak ditemukan.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }

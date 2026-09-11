@@ -2,17 +2,20 @@
 
 namespace App\Models\MasterData;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Prodi extends Model
 {
     use HasFactory, HasUuids;
+
     protected $table = 'prodi';
+
     protected $primaryKey = 'id';
+
     protected $fillable = [
         'kode_prodi',
         'nama_prodi',
@@ -24,6 +27,7 @@ class Prodi extends Model
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     // Relasi ke Dosen (sebagai Kaprodi)
@@ -66,5 +70,5 @@ class Prodi extends Model
     public function profileDosen(): HasMany
     {
         return $this->hasMany(\App\Models\Website\ProfileDosen::class, 'id_prodi');
-    }   
+    }
 }

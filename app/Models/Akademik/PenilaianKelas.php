@@ -14,12 +14,17 @@ class PenilaianKelas extends Model
     use HasFactory, HasUuids;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PUBLISHED = 'published';
+
     public const STATUS_REOPENED = 'reopened';
 
     protected $table = 'penilaian_kelas';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

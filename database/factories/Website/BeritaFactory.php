@@ -4,7 +4,6 @@ namespace Database\Factories\Website;
 
 use App\Models\Website\Berita;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class BeritaFactory extends Factory
 {

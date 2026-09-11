@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use App\Models\MasterData\Prodi;
-use App\Models\MasterData\JenjangPendidikan; // Pastikan model ini juga ada
+// Pastikan model ini juga ada
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -50,7 +48,7 @@ class ProdiSeeder extends Seeder
                 'nama_prodi' => 'Sarjana Keperawatan',
                 'kode_prodi' => 'S1-KEP',
                 'akreditasi' => 'Unggul',
-                'tahun_berdiri' => 2010, // Contoh tahun                
+                'tahun_berdiri' => 2010, // Contoh tahun
                 'gelar_lulusan' => 'Sarjana Keperawatan',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -61,7 +59,7 @@ class ProdiSeeder extends Seeder
                 'nama_prodi' => 'Profesi Ners',
                 'kode_prodi' => 'NERS',
                 'akreditasi' => 'Unggul',
-                'tahun_berdiri' => 2015, // Contoh tahun                
+                'tahun_berdiri' => 2015, // Contoh tahun
                 'gelar_lulusan' => 'Ners',
                 'created_at' => now(),
                 'updated_at' => now(),

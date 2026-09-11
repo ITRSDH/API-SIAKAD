@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\RefreshToken as RefreshTokenModel;
 use App\Models\User;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -29,7 +29,7 @@ class AuthController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -46,10 +46,10 @@ class AuthController extends Controller
                 })
                 ->first();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Akun tidak ditemukan.'
+                    'error' => 'Akun tidak ditemukan.',
                 ], 404);
             }
 
@@ -57,7 +57,7 @@ class AuthController extends Controller
             if ($user->status !== 'aktif') {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Akun belum aktif. Silakan hubungi admin.'
+                    'error' => 'Akun belum aktif. Silakan hubungi admin.',
                 ], 403);
             }
 
@@ -71,10 +71,10 @@ class AuthController extends Controller
             }
             $credentials['password'] = $password;
 
-            if (!$token = Auth::guard('api')->attempt($credentials)) {
+            if (! $token = Auth::guard('api')->attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Email / NIM / NIDN atau password salah.'
+                    'error' => 'Email / NIM / NIDN atau password salah.',
                 ], 401);
             }
 
@@ -93,13 +93,13 @@ class AuthController extends Controller
                     'token_type' => 'bearer',
                     'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
                     'user' => $this->transformUser($user),
-                ]
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Login gagal.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -109,7 +109,7 @@ class AuthController extends Controller
         try {
             $user = Auth::guard('api')->user();
 
-            if (!$user || $user->status !== 'aktif') {
+            if (! $user || $user->status !== 'aktif') {
                 return response()->json(['error' => 'User account is inactive or does not exist.'], 401);
             }
 
@@ -120,7 +120,7 @@ class AuthController extends Controller
                 ->where('expires_at', '>', now())
                 ->first();
 
-            if (!$tokenRecord) {
+            if (! $tokenRecord) {
                 return response()->json(['error' => 'No valid or unused refresh token found. Please log in again.'], 401);
             }
 
@@ -142,7 +142,7 @@ class AuthController extends Controller
                     'token_type' => 'bearer',
                     'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
                     'user' => $this->transformUser($user),
-                ]
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json(['message' => 'Token refresh failed.', 'error' => $e->getMessage()], 500);
@@ -173,10 +173,10 @@ class AuthController extends Controller
         try {
             $user = Auth::guard('api')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not authenticated'
+                    'message' => 'User not authenticated',
                 ], 401);
             }
 
@@ -210,7 +210,7 @@ class AuthController extends Controller
                     'permission' => $permissions,
                 ],
                 'profile_type' => $profileType,
-                'profile' => $profile
+                'profile' => $profile,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -226,10 +226,10 @@ class AuthController extends Controller
         try {
             $user = Auth::guard('api')->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not authenticated'
+                    'message' => 'User not authenticated',
                 ], 401);
             }
 
@@ -247,21 +247,21 @@ class AuthController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             // Verifikasi password saat ini
-            if (!Hash::check($request->current_password, $user->password)) {
+            if (! Hash::check($request->current_password, $user->password)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Password saat ini salah.'
+                    'message' => 'Password saat ini salah.',
                 ], 400);
             }
 
             // Update password baru
             $user->update([
-                'password' => Hash::make($request->new_password)
+                'password' => Hash::make($request->new_password),
             ]);
 
             // Logout dari semua device (opsional, uncomment jika diperlukan)
@@ -269,13 +269,13 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Password berhasil diubah.'
+                'message' => 'Password berhasil diubah.',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengubah password.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

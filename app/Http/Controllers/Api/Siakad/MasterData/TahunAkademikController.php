@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\MasterData\Semester;
 use App\Models\MasterData\TahunAkademik;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TahunAkademikController extends Controller
 {
@@ -26,13 +26,13 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'data' => $data,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data tahun akademik',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -49,13 +49,13 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'data' => $data,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tahun akademik tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -72,7 +72,7 @@ class TahunAkademikController extends Controller
             'semester' => 'required|array|min:1',
             'semester.*.nama_semester' => 'required|in:Ganjil,Genap',
             'semester.*.tanggal_mulai' => 'required|date',
-            'semester.*.tanggal_selesai' => 'required|date|after:semester.*.tanggal_mulai'
+            'semester.*.tanggal_selesai' => 'required|date|after:semester.*.tanggal_mulai',
         ]);
 
         DB::beginTransaction();
@@ -81,7 +81,7 @@ class TahunAkademikController extends Controller
             $tahun = TahunAkademik::create([
                 'id' => Str::uuid(),
                 'tahun_akademik' => $request->tahun_akademik,
-                'status_aktif' => false
+                'status_aktif' => false,
             ]);
 
             foreach ($request->semester as $item) {
@@ -92,7 +92,7 @@ class TahunAkademikController extends Controller
                     'kode_semester' => strtoupper($item['nama_semester']),
                     'tanggal_mulai' => $item['tanggal_mulai'],
                     'tanggal_selesai' => $item['tanggal_selesai'],
-                    'status' => 'Akan Datang'
+                    'status' => 'Akan Datang',
                 ]);
             }
 
@@ -100,7 +100,7 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tahun akademik berhasil ditambahkan'
+                'message' => 'Tahun akademik berhasil ditambahkan',
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -108,7 +108,7 @@ class TahunAkademikController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan tahun akademik',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -125,7 +125,7 @@ class TahunAkademikController extends Controller
             'semester' => 'required|array|min:1',
             'semester.*.id' => 'required|exists:semester,id',
             'semester.*.tanggal_mulai' => 'required|date',
-            'semester.*.tanggal_selesai' => 'required|date'
+            'semester.*.tanggal_selesai' => 'required|date',
         ]);
 
         DB::beginTransaction();
@@ -134,13 +134,13 @@ class TahunAkademikController extends Controller
             $tahun = TahunAkademik::findOrFail($id);
 
             $tahun->update([
-                'tahun_akademik' => $request->tahun_akademik
+                'tahun_akademik' => $request->tahun_akademik,
             ]);
 
             foreach ($request->semester as $item) {
                 Semester::where('id', $item['id'])->update([
                     'tanggal_mulai' => $item['tanggal_mulai'],
-                    'tanggal_selesai' => $item['tanggal_selesai']
+                    'tanggal_selesai' => $item['tanggal_selesai'],
                 ]);
             }
 
@@ -148,7 +148,7 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tahun akademik berhasil diperbarui'
+                'message' => 'Tahun akademik berhasil diperbarui',
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -156,7 +156,7 @@ class TahunAkademikController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui tahun akademik',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -178,7 +178,7 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tahun akademik berhasil dihapus'
+                'message' => 'Tahun akademik berhasil dihapus',
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -186,7 +186,7 @@ class TahunAkademikController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus tahun akademik',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -215,7 +215,7 @@ class TahunAkademikController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tahun akademik berhasil diaktifkan. Silakan pilih semester aktif.'
+                'message' => 'Tahun akademik berhasil diaktifkan. Silakan pilih semester aktif.',
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -223,7 +223,7 @@ class TahunAkademikController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengaktifkan tahun akademik',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -241,10 +241,10 @@ class TahunAkademikController extends Controller
             $semester = Semester::with('tahunAkademik')->findOrFail($id);
 
             // ❌ VALIDASI WAJIB
-            if (!$semester->tahunAkademik->status_aktif) {
+            if (! $semester->tahunAkademik->status_aktif) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tidak dapat mengaktifkan semester karena Tahun Akademik belum aktif'
+                    'message' => 'Tidak dapat mengaktifkan semester karena Tahun Akademik belum aktif',
                 ], 422);
             }
 
@@ -254,14 +254,14 @@ class TahunAkademikController extends Controller
 
             // Aktifkan semester terpilih
             $semester->update([
-                'status' => 'Aktif'
+                'status' => 'Aktif',
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Semester berhasil diaktifkan'
+                'message' => 'Semester berhasil diaktifkan',
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -269,7 +269,7 @@ class TahunAkademikController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengaktifkan semester',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

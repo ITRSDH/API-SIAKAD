@@ -4,15 +4,16 @@ namespace App\Exports;
 
 use App\Models\MasterData\MataKuliah;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 
-class MataKuliahExport implements FromCollection, WithHeadings, WithMapping, WithEvents
+class MataKuliahExport implements FromCollection, WithEvents, WithHeadings, WithMapping
 {
     protected $id_prodi;
+
     protected $isDummy;
 
     public function __construct($id_prodi, $isDummy = false)
@@ -54,7 +55,7 @@ class MataKuliahExport implements FromCollection, WithHeadings, WithMapping, Wit
                     'sks_simulasi' => 0,
                     'jenis_mk' => 'wajib_prodi',
                     'kelompok_mk' => 'MKB',
-                ]
+                ],
             ]);
         }
 
@@ -102,49 +103,49 @@ class MataKuliahExport implements FromCollection, WithHeadings, WithMapping, Wit
     }
 
     public function registerEvents(): array
-{
-    return [
-        AfterSheet::class => function (AfterSheet $event) {
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
 
-            $sheet = $event->sheet->getDelegate();
+                $sheet = $event->sheet->getDelegate();
 
-            $jenisMkOptions = [
-                'wajib_prodi',
-                'wajib_nasional',
-                'pilihan',
-                'peminatan',
-                'tugas_akhir/skripsi/tesis/disertasi'
-            ];
+                $jenisMkOptions = [
+                    'wajib_prodi',
+                    'wajib_nasional',
+                    'pilihan',
+                    'peminatan',
+                    'tugas_akhir/skripsi/tesis/disertasi',
+                ];
 
-            $kelompokMkOptions = [
-                'MPK',
-                'MKK',
-                'MKB',
-                'MPB',
-                'MBB',
-                'MKDK'
-            ];
+                $kelompokMkOptions = [
+                    'MPK',
+                    'MKK',
+                    'MKB',
+                    'MPB',
+                    'MBB',
+                    'MKDK',
+                ];
 
-            // Apply sampai 1000 baris
-            for ($row = 2; $row <= 1000; $row++) {
+                // Apply sampai 1000 baris
+                for ($row = 2; $row <= 1000; $row++) {
 
-                // Kolom G = jenis_mk
-                $validationJenis = $sheet->getCell("G{$row}")->getDataValidation();
-                $validationJenis->setType(DataValidation::TYPE_LIST);
-                $validationJenis->setErrorStyle(DataValidation::STYLE_STOP);
-                $validationJenis->setAllowBlank(true);
-                $validationJenis->setShowDropDown(true);
-                $validationJenis->setFormula1('"' . implode(',', $jenisMkOptions) . '"');
+                    // Kolom G = jenis_mk
+                    $validationJenis = $sheet->getCell("G{$row}")->getDataValidation();
+                    $validationJenis->setType(DataValidation::TYPE_LIST);
+                    $validationJenis->setErrorStyle(DataValidation::STYLE_STOP);
+                    $validationJenis->setAllowBlank(true);
+                    $validationJenis->setShowDropDown(true);
+                    $validationJenis->setFormula1('"'.implode(',', $jenisMkOptions).'"');
 
-                // Kolom H = kelompok_mk
-                $validationKelompok = $sheet->getCell("H{$row}")->getDataValidation();
-                $validationKelompok->setType(DataValidation::TYPE_LIST);
-                $validationKelompok->setErrorStyle(DataValidation::STYLE_STOP);
-                $validationKelompok->setAllowBlank(true);
-                $validationKelompok->setShowDropDown(true);
-                $validationKelompok->setFormula1('"' . implode(',', $kelompokMkOptions) . '"');
-            }
-        },
-    ];
-}
+                    // Kolom H = kelompok_mk
+                    $validationKelompok = $sheet->getCell("H{$row}")->getDataValidation();
+                    $validationKelompok->setType(DataValidation::TYPE_LIST);
+                    $validationKelompok->setErrorStyle(DataValidation::STYLE_STOP);
+                    $validationKelompok->setAllowBlank(true);
+                    $validationKelompok->setShowDropDown(true);
+                    $validationKelompok->setFormula1('"'.implode(',', $kelompokMkOptions).'"');
+                }
+            },
+        ];
+    }
 }

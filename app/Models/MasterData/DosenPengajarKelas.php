@@ -12,9 +12,13 @@ class DosenPengajarKelas extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'dosen_pengajar_kelas';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $fillable = [
         'id_kelas_kuliah',
         'id_registrasi_dosen',
@@ -22,7 +26,7 @@ class DosenPengajarKelas extends Model
         'rencana_tatap_muka',
         'realisasi_tatap_muka',
         'urutan',
-        'id_jenis_evaluasi'
+        'id_jenis_evaluasi',
     ];
 
     public function dosen(): BelongsTo

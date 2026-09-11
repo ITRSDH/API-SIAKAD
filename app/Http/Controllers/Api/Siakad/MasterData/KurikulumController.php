@@ -20,7 +20,7 @@ class KurikulumController extends Controller
         try {
             $kurikulum = Kurikulum::with($this->defaultRelations())
                 ->get()
-                ->map(fn(Kurikulum $item) => $this->serializeKurikulum($item));
+                ->map(fn (Kurikulum $item) => $this->serializeKurikulum($item));
 
             return response()->json([
                 'success' => true,
@@ -31,7 +31,7 @@ class KurikulumController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data struktur kurikulum.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -50,14 +50,14 @@ class KurikulumController extends Controller
                 'success' => true,
                 'message' => 'Data mata kuliah berhasil diambil',
                 'data' => [
-                    'matakuliah' => $mataKuliah
-                ]
+                    'matakuliah' => $mataKuliah,
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data mata kuliah.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -76,7 +76,7 @@ class KurikulumController extends Controller
                 ->get()
                 ->map(function (Kurikulum $item) {
                     $semesterMulai = $item->semesterMulai?->tahunAkademik
-                        ? trim($item->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->semesterMulai->nama_semester)
+                        ? trim($item->semesterMulai->tahunAkademik->tahun_akademik.' '.$item->semesterMulai->nama_semester)
                         : null;
 
                     return [
@@ -98,14 +98,14 @@ class KurikulumController extends Controller
                 'success' => true,
                 'message' => 'Data struktur kurikulum berhasil diambil',
                 'data' => [
-                    'kurikulum' => $kurikulumList
-                ]
+                    'kurikulum' => $kurikulumList,
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data kurikulum.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -137,7 +137,6 @@ class KurikulumController extends Controller
                     'semesterMulai.tahunAkademik:id,tahun_akademik',
                 ])
                 ->findOrFail($id);
-
 
             /*
         |--------------------------------------------------------------------------
@@ -184,32 +183,24 @@ class KurikulumController extends Controller
 
                         'sks' => (int) $item->sks,
 
-                        'sks_tatap_muka' =>
-                        $item->sks_tatap_muka,
+                        'sks_tatap_muka' => $item->sks_tatap_muka,
 
-                        'sks_praktikum' =>
-                        $item->sks_praktikum,
+                        'sks_praktikum' => $item->sks_praktikum,
 
-                        'sks_praktek_lapangan' =>
-                        $item->sks_praktek_lapangan,
+                        'sks_praktek_lapangan' => $item->sks_praktek_lapangan,
 
-                        'sks_simulasi' =>
-                        $item->sks_simulasi,
+                        'sks_simulasi' => $item->sks_simulasi,
 
                         'pivot' => [
-                            'semester_ke' =>
-                            $item->semester_ke,
+                            'semester_ke' => $item->semester_ke,
 
-                            'status_mk' =>
-                            $item->status_mk,
+                            'status_mk' => $item->status_mk,
 
-                            'is_wajib' =>
-                            (int) $item->is_wajib,
+                            'is_wajib' => (int) $item->is_wajib,
                         ],
                     ];
                 })
                 ->toArray();
-
 
             /*
         |--------------------------------------------------------------------------
@@ -229,7 +220,6 @@ class KurikulumController extends Controller
                     return (int) ($mk['sks'] ?? 0);
                 });
 
-
             $totalSksPilihan = collect(
                 $mataKuliahDiKurikulum
             )
@@ -241,7 +231,6 @@ class KurikulumController extends Controller
                 ->sum(function ($mk) {
                     return (int) ($mk['sks'] ?? 0);
                 });
-
 
             /*
         |--------------------------------------------------------------------------
@@ -256,7 +245,6 @@ class KurikulumController extends Controller
             $targetSksPilihan = (int) (
                 $kurikulum->jumlah_sks_pilihan ?? 0
             );
-
 
             /*
         |--------------------------------------------------------------------------
@@ -275,7 +263,6 @@ class KurikulumController extends Controller
                 $statusSksWajib = 'lebih';
             }
 
-
             /*
         |--------------------------------------------------------------------------
         | Status SKS Pilihan
@@ -293,7 +280,6 @@ class KurikulumController extends Controller
                 $statusSksPilihan = 'lebih';
             }
 
-
             /*
         |--------------------------------------------------------------------------
         | Status Kurikulum
@@ -306,7 +292,6 @@ class KurikulumController extends Controller
                 $statusSksPilihan === 'terpenuhi'
                 ? 'lengkap'
                 : 'belum_lengkap';
-
 
             /*
         |--------------------------------------------------------------------------
@@ -335,7 +320,6 @@ class KurikulumController extends Controller
                     'status' => $statusSksWajib,
                 ],
 
-
                 'pilihan' => [
 
                     'target' => $targetSksPilihan,
@@ -355,19 +339,15 @@ class KurikulumController extends Controller
                     'status' => $statusSksPilihan,
                 ],
 
-
                 'total' => [
 
-                    'target' =>
-                    $targetSksWajib
+                    'target' => $targetSksWajib
                         + $targetSksPilihan,
 
-                    'terisi' =>
-                    $totalSksWajib
+                    'terisi' => $totalSksWajib
                         + $totalSksPilihan,
 
-                    'kekurangan' =>
-                    max(
+                    'kekurangan' => max(
                         0,
                         (
                             $targetSksWajib
@@ -381,10 +361,8 @@ class KurikulumController extends Controller
                     ),
                 ],
 
-
                 'status' => $statusKurikulum,
             ];
-
 
             /*
         |--------------------------------------------------------------------------
@@ -397,7 +375,6 @@ class KurikulumController extends Controller
                 $mataKuliahDiKurikulum
             );
 
-
             /*
         |--------------------------------------------------------------------------
         | Tambahkan progress SKS
@@ -405,7 +382,6 @@ class KurikulumController extends Controller
         */
 
             $data['progress_sks'] = $progressSks;
-
 
             /*
         |--------------------------------------------------------------------------
@@ -434,7 +410,7 @@ class KurikulumController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            if (!$request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
+            if (! $request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
                 $request->merge([
                     'nama_struktur_mk' => $request->input('nama_kurikulum'),
                 ]);
@@ -449,7 +425,7 @@ class KurikulumController extends Controller
                     Rule::unique('kurikulum')
                         ->where(function ($query) use ($request) {
                             return $query->where('id_prodi', $request->id_prodi);
-                        })
+                        }),
                 ],
                 'id_semester' => 'nullable|exists:semester,id',
                 'jumlah_sks_wajib' => 'nullable|integer|min:0',
@@ -464,7 +440,7 @@ class KurikulumController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Struktur kurikulum berhasil ditambahkan',
-                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations()))
+                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations())),
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -477,7 +453,7 @@ class KurikulumController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         try {
-            if (!$request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
+            if (! $request->filled('nama_struktur_mk') && $request->filled('nama_kurikulum')) {
                 $request->merge([
                     'nama_struktur_mk' => $request->input('nama_kurikulum'),
                 ]);
@@ -495,7 +471,7 @@ class KurikulumController extends Controller
                         ->where(function ($query) use ($request) {
                             return $query->where('id_prodi', $request->id_prodi);
                         })
-                        ->ignore($kurikulum->id)
+                        ->ignore($kurikulum->id),
                 ],
                 'id_semester' => 'nullable|exists:semester,id',
                 'jumlah_sks_wajib' => 'nullable|integer|min:0',
@@ -510,7 +486,7 @@ class KurikulumController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Struktur kurikulum berhasil diperbarui',
-                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations()))
+                'data' => $this->serializeKurikulum($kurikulum->fresh($this->defaultRelations())),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -542,12 +518,12 @@ class KurikulumController extends Controller
                 $blockingRelations[] = "konversi mata kuliah sebagai kurikulum tujuan ({$konversiTujuanCount})";
             }
 
-            if (!empty($blockingRelations)) {
+            if (! empty($blockingRelations)) {
                 DB::rollBack();
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Struktur kurikulum tidak dapat dihapus karena masih terhubung dengan ' . implode(', ', $blockingRelations) . '.'
+                    'message' => 'Struktur kurikulum tidak dapat dihapus karena masih terhubung dengan '.implode(', ', $blockingRelations).'.',
                 ], 422);
             }
 
@@ -561,6 +537,7 @@ class KurikulumController extends Controller
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -607,7 +584,6 @@ class KurikulumController extends Controller
             $targetWajib = (int) ($kurikulum->jumlah_sks_wajib ?? 0);
             $targetPilihan = (int) ($kurikulum->jumlah_sks_pilihan ?? 0);
 
-
             /*
         |--------------------------------------------------------------------------
         | Ambil ID mata kuliah
@@ -620,7 +596,6 @@ class KurikulumController extends Controller
                 ->values()
                 ->toArray();
 
-
             /*
         |--------------------------------------------------------------------------
         | Ambil data mata kuliah
@@ -631,7 +606,6 @@ class KurikulumController extends Controller
                 ->whereIn('id', $idMataKuliah)
                 ->get()
                 ->keyBy('id');
-
 
             /*
         |--------------------------------------------------------------------------
@@ -644,7 +618,6 @@ class KurikulumController extends Controller
                 ->whereIn('id_mata_kuliah', $idMataKuliah)
                 ->pluck('id_mata_kuliah')
                 ->toArray();
-
 
             /*
         |--------------------------------------------------------------------------
@@ -685,10 +658,8 @@ class KurikulumController extends Controller
             ')
                 ->first();
 
-
             $totalWajib = (int) ($rekap->wajib ?? 0);
             $totalPilihan = (int) ($rekap->pilihan ?? 0);
-
 
             /*
         |--------------------------------------------------------------------------
@@ -700,7 +671,6 @@ class KurikulumController extends Controller
             $ditolak = [];
             $duplikat = [];
 
-
             /*
         |--------------------------------------------------------------------------
         | Proses mata kuliah satu per satu
@@ -710,7 +680,6 @@ class KurikulumController extends Controller
             foreach ($validated['mata_kuliah'] as $item) {
 
                 $idMk = $item['id_mata_kuliah'];
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -728,7 +697,6 @@ class KurikulumController extends Controller
                     continue;
                 }
 
-
                 /*
             |--------------------------------------------------------------------------
             | Ambil mata kuliah
@@ -737,10 +705,9 @@ class KurikulumController extends Controller
 
                 $mataKuliah = $mataKuliahList->get($idMk);
 
-                if (!$mataKuliah) {
+                if (! $mataKuliah) {
                     continue;
                 }
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -755,7 +722,6 @@ class KurikulumController extends Controller
                 $statusMk = $isWajib
                     ? 'wajib'
                     : 'pilihan';
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -779,17 +745,14 @@ class KurikulumController extends Controller
                             'sks_sekarang' => $totalWajib,
                             'sks_setelah_ditambahkan' => $totalSetelahDitambahkan,
 
-                            'kelebihan' =>
-                            $totalSetelahDitambahkan - $targetWajib,
+                            'kelebihan' => $totalSetelahDitambahkan - $targetWajib,
 
-                            'message' =>
-                            'Mata kuliah tidak dapat ditambahkan karena jumlah SKS wajib akan melebihi target kurikulum.',
+                            'message' => 'Mata kuliah tidak dapat ditambahkan karena jumlah SKS wajib akan melebihi target kurikulum.',
                         ];
 
                         continue;
                     }
                 }
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -797,7 +760,7 @@ class KurikulumController extends Controller
             |--------------------------------------------------------------------------
             */
 
-                if (!$isWajib) {
+                if (! $isWajib) {
 
                     $totalSetelahDitambahkan = $totalPilihan + $sks;
 
@@ -813,17 +776,14 @@ class KurikulumController extends Controller
                             'sks_sekarang' => $totalPilihan,
                             'sks_setelah_ditambahkan' => $totalSetelahDitambahkan,
 
-                            'kelebihan' =>
-                            $totalSetelahDitambahkan - $targetPilihan,
+                            'kelebihan' => $totalSetelahDitambahkan - $targetPilihan,
 
-                            'message' =>
-                            'Mata kuliah tidak dapat ditambahkan karena jumlah SKS pilihan akan melebihi target kurikulum.',
+                            'message' => 'Mata kuliah tidak dapat ditambahkan karena jumlah SKS pilihan akan melebihi target kurikulum.',
                         ];
 
                         continue;
                     }
                 }
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -849,7 +809,6 @@ class KurikulumController extends Controller
                     'updated_at' => now(),
                 ]);
 
-
                 /*
             |--------------------------------------------------------------------------
             | Update total
@@ -862,7 +821,6 @@ class KurikulumController extends Controller
                     $totalPilihan += $sks;
                 }
 
-
                 /*
             |--------------------------------------------------------------------------
             | Masukkan ke existing
@@ -870,7 +828,6 @@ class KurikulumController extends Controller
             */
 
                 $existingMataKuliah[] = $idMk;
-
 
                 /*
             |--------------------------------------------------------------------------
@@ -886,7 +843,6 @@ class KurikulumController extends Controller
                 ];
             }
 
-
             /*
         |--------------------------------------------------------------------------
         | Commit
@@ -894,7 +850,6 @@ class KurikulumController extends Controller
         */
 
             DB::commit();
-
 
             /*
         |--------------------------------------------------------------------------
@@ -909,14 +864,12 @@ class KurikulumController extends Controller
                     ? 'terpenuhi'
                     : 'lebih');
 
-
             $statusPilihan =
                 $totalPilihan < $targetPilihan
                 ? 'kurang'
                 : ($totalPilihan == $targetPilihan
                     ? 'terpenuhi'
                     : 'lebih');
-
 
             /*
         |--------------------------------------------------------------------------
@@ -962,8 +915,7 @@ class KurikulumController extends Controller
                         'wajib' => $statusWajib,
                         'pilihan' => $statusPilihan,
 
-                        'kurikulum' =>
-                        $statusWajib === 'terpenuhi'
+                        'kurikulum' => $statusWajib === 'terpenuhi'
                             && $statusPilihan === 'terpenuhi'
                             ? 'lengkap'
                             : 'belum_lengkap',
@@ -1052,7 +1004,7 @@ class KurikulumController extends Controller
                 ];
             }
 
-            if (!empty($insertData)) {
+            if (! empty($insertData)) {
                 DB::table('kurikulum_mata_kuliah')->insert($insertData);
             }
 
@@ -1073,7 +1025,7 @@ class KurikulumController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jumlah SKS melebihi batas kurikulum'
+                    'message' => 'Jumlah SKS melebihi batas kurikulum',
                 ], 422);
             }
 
@@ -1082,21 +1034,22 @@ class KurikulumController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Mata kuliah berhasil ditambahkan',
-                'total_insert' => count($insertData)
+                'total_insert' => count($insertData),
             ]);
         } catch (ValidationException $e) {
             DB::rollBack();
 
             return response()->json([
                 'success' => false,
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -1115,12 +1068,12 @@ class KurikulumController extends Controller
             $isWajib = $request->input('is_wajib');
             $isWajibBool = null;
 
-            if (!is_null($isWajib)) {
+            if (! is_null($isWajib)) {
                 $isWajibBool = filter_var($isWajib, FILTER_VALIDATE_BOOLEAN);
             }
 
             $statusMk = null;
-            if (!is_null($isWajibBool)) {
+            if (! is_null($isWajibBool)) {
                 $statusMk = $isWajibBool ? 'wajib' : 'pilihan';
             }
 
@@ -1131,7 +1084,7 @@ class KurikulumController extends Controller
                 'updated_at' => now(),
             ];
 
-            $dataToUpdate = array_filter($dataToUpdate, fn($value) => !is_null($value));
+            $dataToUpdate = array_filter($dataToUpdate, fn ($value) => ! is_null($value));
 
             DB::table('kurikulum_mata_kuliah')
                 ->where('id_kurikulum', $id_kurikulum)
@@ -1146,12 +1099,14 @@ class KurikulumController extends Controller
             ], 200);
         } catch (ValidationException $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Terjadi kesalahan saat memperbarui mata kuliah.',
                 'error' => $e->getMessage(),
@@ -1177,6 +1132,7 @@ class KurikulumController extends Controller
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Terjadi kesalahan saat menghapus mata kuliah.',
                 'error' => $e->getMessage(),
@@ -1207,12 +1163,12 @@ class KurikulumController extends Controller
                 $isWajib = $mk->is_wajib;
                 $isWajibBool = null;
 
-                if (!is_null($isWajib)) {
+                if (! is_null($isWajib)) {
                     $isWajibBool = filter_var($isWajib, FILTER_VALIDATE_BOOLEAN);
                 }
 
                 $statusMk = null;
-                if (!is_null($isWajibBool)) {
+                if (! is_null($isWajibBool)) {
                     $statusMk = $isWajibBool ? 'wajib' : 'pilihan';
                 }
 
@@ -1232,7 +1188,7 @@ class KurikulumController extends Controller
                     ->where('id_mata_kuliah', $mk->id_mata_kuliah)
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     DB::table('kurikulum_mata_kuliah')->insert($dataToInsert);
                 }
             }
@@ -1245,6 +1201,7 @@ class KurikulumController extends Controller
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => 'Terjadi kesalahan saat mengkloning mata kuliah.',
                 'error' => $e->getMessage(),
@@ -1270,7 +1227,7 @@ class KurikulumController extends Controller
             ? $item->mataKuliah->where('pivot.is_wajib', 0)->sum('sks')
             : null;
         $semesterMulai = $item->semesterMulai
-            ? $item->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->semesterMulai->nama_semester
+            ? $item->semesterMulai->tahunAkademik->tahun_akademik.' '.$item->semesterMulai->nama_semester
             : null;
 
         return [

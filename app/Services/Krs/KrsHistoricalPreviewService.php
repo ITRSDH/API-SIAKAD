@@ -3,9 +3,9 @@
 namespace App\Services\Krs;
 
 use App\Models\Akademik\KRS;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KrsCollectiveBatch;
 use App\Models\Akademik\KrsCollectiveBatchItem;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
 use Illuminate\Support\Collection;
@@ -15,8 +15,7 @@ class KrsHistoricalPreviewService
     public function __construct(
         private readonly KrsHistoricalEligibilityService $eligibilityService,
         private readonly KrsHistoricalKhsGenerationService $khsGenerationService
-    ) {
-    }
+    ) {}
 
     public function previewBuild(array $payload): Collection
     {
@@ -41,7 +40,7 @@ class KrsHistoricalPreviewService
                 );
             }
 
-            if (!$student['is_ready']) {
+            if (! $student['is_ready']) {
                 return $this->previewResult(
                     $student,
                     KrsCollectiveBatchItem::STATUS_FAILED,
@@ -51,7 +50,7 @@ class KrsHistoricalPreviewService
             }
 
             $studentPayload = $studentPayloads->get($student['id']);
-            if (!$studentPayload) {
+            if (! $studentPayload) {
                 return $this->previewResult(
                     $student,
                     KrsCollectiveBatchItem::STATUS_FAILED,
@@ -100,11 +99,11 @@ class KrsHistoricalPreviewService
             $payload,
             KrsCollectiveBatch::ACTION_REOPEN_HISTORICAL_KRS,
             function (?KRS $krs) {
-                if (!$krs) {
+                if (! $krs) {
                     return [KrsCollectiveBatchItem::STATUS_FAILED, 'KRS historis tidak ditemukan'];
                 }
 
-                if ($krs->status_approval !== KRS::STATUS_APPROVED || !$krs->is_locked) {
+                if ($krs->status_approval !== KRS::STATUS_APPROVED || ! $krs->is_locked) {
                     return [KrsCollectiveBatchItem::STATUS_FAILED, 'Hanya KRS historis final yang dapat dibuka ulang'];
                 }
 
@@ -119,7 +118,7 @@ class KrsHistoricalPreviewService
             $payload,
             KrsCollectiveBatch::ACTION_REFINALIZE_HISTORICAL_KRS,
             function (?KRS $krs) {
-                if (!$krs) {
+                if (! $krs) {
                     return [KrsCollectiveBatchItem::STATUS_FAILED, 'KRS historis tidak ditemukan'];
                 }
 
@@ -142,7 +141,7 @@ class KrsHistoricalPreviewService
             $payload,
             KrsCollectiveBatch::ACTION_RESET_HISTORICAL_KRS,
             function (?KRS $krs) {
-                if (!$krs) {
+                if (! $krs) {
                     return [KrsCollectiveBatchItem::STATUS_FAILED, 'KRS historis tidak ditemukan'];
                 }
 
@@ -220,7 +219,7 @@ class KrsHistoricalPreviewService
                 ],
                 'krs' => $krsMap->get($studentId),
             ];
-        })->filter(fn(array $item) => !empty($item['student']['id']));
+        })->filter(fn (array $item) => ! empty($item['student']['id']));
     }
 
     private function resolvePackageCoursePayload(string $semesterId, array $student, array $studentPayload): array
@@ -251,7 +250,7 @@ class KrsHistoricalPreviewService
         foreach ($courses as $course) {
             $class = $classes->get($course['id_kelas_kuliah']);
 
-            if (!$class) {
+            if (! $class) {
                 return [
                     'status' => KrsCollectiveBatchItem::STATUS_FAILED,
                     'message' => 'Ada kelas historis yang tidak ditemukan di sistem',
@@ -267,7 +266,7 @@ class KrsHistoricalPreviewService
                 ];
             }
 
-            if (!empty($student['id_prodi']) && (string) $class->id_prodi !== (string) $student['id_prodi']) {
+            if (! empty($student['id_prodi']) && (string) $class->id_prodi !== (string) $student['id_prodi']) {
                 return [
                     'status' => KrsCollectiveBatchItem::STATUS_FAILED,
                     'message' => 'Ada kelas historis yang tidak sesuai dengan prodi mahasiswa',
@@ -315,7 +314,7 @@ class KrsHistoricalPreviewService
 
         return [
             'status' => KrsCollectiveBatchItem::STATUS_READY,
-            'message' => collect($normalizedCourses)->contains(fn(array $course) => $course['nilai_akhir'] === null)
+            'message' => collect($normalizedCourses)->contains(fn (array $course) => $course['nilai_akhir'] === null)
                 ? 'Payload kelas historis valid untuk pendaftaran KRS'
                 : 'Payload kelas dan nilai historis valid',
             'meta' => [

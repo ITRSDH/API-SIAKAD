@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\Siakad\Akademik;
 
+use App\Exports\KhsImportErrorExport;
 use App\Exports\KhsImportResultExport;
 use App\Exports\KhsTemplateExport;
-use App\Exports\KhsImportErrorExport;
 use App\Http\Controllers\Controller;
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KhsImportBatch;
@@ -30,8 +30,7 @@ class KhsImportController extends Controller
         private readonly KhsGenerateService $generateService,
         private readonly KhsManualUpdateService $manualUpdateService,
         private readonly KhsRollbackService $rollbackService
-    ) {
-    }
+    ) {}
 
     public function exportTemplate(Request $request)
     {
@@ -42,7 +41,7 @@ class KhsImportController extends Controller
             'semester_ke' => 'required|integer|min:1',
         ]);
 
-        $filename = 'template_nilai_khs_' . now()->format('Y_m_d_His') . '.xlsx';
+        $filename = 'template_nilai_khs_'.now()->format('Y_m_d_His').'.xlsx';
 
         return Excel::download(new KhsTemplateExport($validated), $filename);
     }
@@ -96,7 +95,7 @@ class KhsImportController extends Controller
             ->with('semester.tahunAkademik')
             ->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -188,7 +187,7 @@ class KhsImportController extends Controller
             ])
             ->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -209,7 +208,7 @@ class KhsImportController extends Controller
             ->with('semester.tahunAkademik')
             ->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -276,7 +275,7 @@ class KhsImportController extends Controller
             ->with('details')
             ->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -312,14 +311,14 @@ class KhsImportController extends Controller
             ->with('errors')
             ->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
             ], 404);
         }
 
-        $filename = 'khs_import_errors_' . $batch->id . '.xlsx';
+        $filename = 'khs_import_errors_'.$batch->id.'.xlsx';
 
         return Excel::download(new KhsImportErrorExport($batch), $filename);
     }
@@ -328,7 +327,7 @@ class KhsImportController extends Controller
     {
         $batch = KhsImportBatch::query()->find($batchId);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch import KHS tidak ditemukan.',
@@ -348,7 +347,7 @@ class KhsImportController extends Controller
             'id_semester' => $batch->id_semester,
         ]);
 
-        $filename = 'khs_import_results_' . $batch->id . '.xlsx';
+        $filename = 'khs_import_results_'.$batch->id.'.xlsx';
 
         return Excel::download(new KhsImportResultExport($preview), $filename);
     }
@@ -396,9 +395,9 @@ class KhsImportController extends Controller
         }
 
         $legacyPaths = [
-            storage_path('app/' . ltrim($storedPath, '/\\')),
-            storage_path('app/private/' . ltrim($storedPath, '/\\')),
-            storage_path('app/public/' . ltrim($storedPath, '/\\')),
+            storage_path('app/'.ltrim($storedPath, '/\\')),
+            storage_path('app/private/'.ltrim($storedPath, '/\\')),
+            storage_path('app/public/'.ltrim($storedPath, '/\\')),
         ];
 
         foreach ($legacyPaths as $legacyPath) {

@@ -21,6 +21,7 @@ class PmbPendaftaranSeeder extends Seeder
 
         if ($existing) {
             $existing->update($data);
+
             return;
         }
 

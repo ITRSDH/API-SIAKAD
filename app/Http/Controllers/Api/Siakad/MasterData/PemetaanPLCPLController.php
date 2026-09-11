@@ -41,13 +41,13 @@ class PemetaanPLCPLController extends Controller
                 'data' => [
                     'pl' => $pls,
                     'cpl' => $cpls,
-                    'mapping' => $mapping
-                ]
+                    'mapping' => $mapping,
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -61,7 +61,7 @@ class PemetaanPLCPLController extends Controller
             'mapping' => 'required|array',
             'mapping.*' => 'required|array',
             'mapping.*.*' => 'nullable|numeric|min:0|max:100',
-            'mode' => 'required|in:manual,otomatis'
+            'mode' => 'required|in:manual,otomatis',
         ]);
 
         DB::beginTransaction();
@@ -80,6 +80,7 @@ class PemetaanPLCPLController extends Controller
                     // 🔥 CASE 1: kalau semua 0 → hapus semua relasi
                     if ($total == 0.00) {
                         $pl->cpl()->sync([]);
+
                         continue;
                     }
 
@@ -97,7 +98,7 @@ class PemetaanPLCPLController extends Controller
 
                 if ($request->mode === 'otomatis') {
 
-                    $selected = array_filter($cplData, fn($v) => $v > 0);
+                    $selected = array_filter($cplData, fn ($v) => $v > 0);
                     $count = count($selected);
 
                     if ($count > 0) {
@@ -125,7 +126,7 @@ class PemetaanPLCPLController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mapping PL → CPL berhasil disimpan / diupdate'
+                'message' => 'Mapping PL → CPL berhasil disimpan / diupdate',
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -133,7 +134,7 @@ class PemetaanPLCPLController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan data',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

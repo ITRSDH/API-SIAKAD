@@ -24,13 +24,13 @@ class DosenWaliController extends Controller
                 'message' => 'Daftar Mahasiswa berhasil diambil.',
                 'data' => [
                     'jumlah_mahasiswa' => $jumalahmhs,
-                    'mahasiswa' => $mahasiswa
-                ]
+                    'mahasiswa' => $mahasiswa,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }

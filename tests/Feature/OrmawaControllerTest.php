@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\Ormawa;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class OrmawaControllerTest extends TestCase
 {
@@ -23,21 +23,21 @@ class OrmawaControllerTest extends TestCase
                 'message',
                 'data' => [
                     '*' => [
-                        'id', 'nama', 'deskripsi', 'gambar', 'created_at', 'updated_at'
-                    ]
-                ]
+                        'id', 'nama', 'deskripsi', 'gambar', 'created_at', 'updated_at',
+                    ],
+                ],
             ]);
     }
 
     public function test_store_creates_ormawa_with_file()
     {
         $file = UploadedFile::fake()->image('ormawa.jpg');
-            $data = [
-                'nama' => 'BEM',
-                'kategori' => 'akademik',
-                'deskripsi' => 'Deskripsi BEM',
-                'gambar' => $file,
-            ];
+        $data = [
+            'nama' => 'BEM',
+            'kategori' => 'akademik',
+            'deskripsi' => 'Deskripsi BEM',
+            'gambar' => $file,
+        ];
 
         $response = $this->post('/api/v1/ormawa', $data);
 
@@ -47,20 +47,20 @@ class OrmawaControllerTest extends TestCase
                 'message' => 'Ormawa berhasil ditambahkan',
             ]);
 
-            $this->assertDatabaseHas('ormawa', [
-                'nama' => $data['nama'],
-                'kategori' => $data['kategori'],
-            ]);
+        $this->assertDatabaseHas('ormawa', [
+            'nama' => $data['nama'],
+            'kategori' => $data['kategori'],
+        ]);
 
-    $ormawa = Ormawa::where('nama', $data['nama'])->first();
-    $this->assertNotNull($ormawa->gambar);
+        $ormawa = Ormawa::where('nama', $data['nama'])->first();
+        $this->assertNotNull($ormawa->gambar);
     }
 
     public function test_show_returns_ormawa_detail()
     {
         $ormawa = Ormawa::factory()->create();
 
-        $response = $this->getJson('/api/v1/ormawa/' . $ormawa->id);
+        $response = $this->getJson('/api/v1/ormawa/'.$ormawa->id);
 
         $response->assertStatus(200)
             ->assertJsonFragment([
@@ -75,13 +75,13 @@ class OrmawaControllerTest extends TestCase
     {
         $ormawa = Ormawa::factory()->create();
         $file = UploadedFile::fake()->image('ormawa2.jpg');
-            $data = [
-                'nama' => 'UKM',
-                'kategori' => 'seni',
-                'gambar' => $file,
-            ];
+        $data = [
+            'nama' => 'UKM',
+            'kategori' => 'seni',
+            'gambar' => $file,
+        ];
 
-        $response = $this->put('/api/v1/ormawa/' . $ormawa->id, $data);
+        $response = $this->put('/api/v1/ormawa/'.$ormawa->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -89,11 +89,11 @@ class OrmawaControllerTest extends TestCase
                 'message' => 'Ormawa berhasil diperbarui',
             ]);
 
-            $this->assertDatabaseHas('ormawa', [
-                'id' => $ormawa->id,
-                'nama' => $data['nama'],
-                'kategori' => $data['kategori'],
-            ]);
+        $this->assertDatabaseHas('ormawa', [
+            'id' => $ormawa->id,
+            'nama' => $data['nama'],
+            'kategori' => $data['kategori'],
+        ]);
 
         $ormawa->refresh();
         $this->assertNotNull($ormawa->gambar);
@@ -103,7 +103,7 @@ class OrmawaControllerTest extends TestCase
     {
         $ormawa = Ormawa::factory()->create();
 
-        $response = $this->deleteJson('/api/v1/ormawa/' . $ormawa->id);
+        $response = $this->deleteJson('/api/v1/ormawa/'.$ormawa->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -112,7 +112,7 @@ class OrmawaControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('ormawa', [
-            'id' => $ormawa->id
+            'id' => $ormawa->id,
         ]);
     }
 }

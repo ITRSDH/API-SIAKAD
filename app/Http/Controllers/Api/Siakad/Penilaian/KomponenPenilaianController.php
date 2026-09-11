@@ -18,7 +18,7 @@ class KomponenPenilaianController extends Controller
     {
         $kelas = KelasKuliah::with(['komponenPenilaian', 'penilaianKelas'])->find($id_kelas_kuliah);
 
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -47,7 +47,7 @@ class KomponenPenilaianController extends Controller
         ]);
 
         $kelas = KelasKuliah::with('dosen_pengajar')->find($id_kelas_kuliah);
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -93,7 +93,7 @@ class KomponenPenilaianController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $komponen = KomponenPenilaian::find($id);
-        if (!$komponen) {
+        if (! $komponen) {
             return response()->json([
                 'success' => false,
                 'message' => 'Komponen penilaian tidak ditemukan',
@@ -101,7 +101,7 @@ class KomponenPenilaianController extends Controller
         }
 
         $kelas = $komponen->kelasKuliah()->with('dosen_pengajar')->first();
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -150,7 +150,7 @@ class KomponenPenilaianController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $komponen = KomponenPenilaian::find($id);
-        if (!$komponen) {
+        if (! $komponen) {
             return response()->json([
                 'success' => false,
                 'message' => 'Komponen penilaian tidak ditemukan',
@@ -158,7 +158,7 @@ class KomponenPenilaianController extends Controller
         }
 
         $kelas = $komponen->kelasKuliah()->with('dosen_pengajar')->first();
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -241,7 +241,7 @@ class KomponenPenilaianController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Silakan login ulang.',
@@ -256,7 +256,7 @@ class KomponenPenilaianController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya dosen pengampu atau admin yang dapat mengelola komponen penilaian',
@@ -264,7 +264,7 @@ class KomponenPenilaianController extends Controller
         }
 
         $isPengampu = $kelas->dosen_pengajar
-            ->contains(fn($pengampu) => $pengampu->id_registrasi_dosen === $dosen->id);
+            ->contains(fn ($pengampu) => $pengampu->id_registrasi_dosen === $dosen->id);
 
         if ($isPengampu) {
             return null;

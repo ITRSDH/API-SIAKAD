@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\Website\StoreLandingContentRequest;
 use App\Http\Requests\Website\UpdateLandingContentRequest;
-use Illuminate\Support\Facades\Storage;
-
 use App\Models\Website\LandingContent;
 use App\Services\ImageService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LandingContentController extends Controller
 {
@@ -18,6 +17,7 @@ class LandingContentController extends Controller
         try {
             // Ambil data pertama (single content)
             $content = LandingContent::select(['id', 'hero_title', 'hero_subtitle', 'hero_background', 'jumlah_program_studi', 'jumlah_mahasiswa', 'jumlah_dosen', 'jumlah_mitra', 'keunggulan', 'logo', 'nama_aplikasi', 'deskripsi_footer', 'facebook', 'twitter', 'instagram', 'linkedin', 'youtube', 'alamat', 'telepon', 'email', 'created_at', 'updated_at'])->first();
+
             return response()->json(
                 [
                     'success' => true,
@@ -66,6 +66,7 @@ class LandingContentController extends Controller
                 }
 
                 $existing->update($data);
+
                 return response()->json(
                     [
                         'success' => true,
@@ -88,6 +89,7 @@ class LandingContentController extends Controller
             }
 
             $content = LandingContent::create($data);
+
             return response()->json(
                 [
                     'success' => true,
@@ -113,7 +115,7 @@ class LandingContentController extends Controller
         try {
             // Ambil data pertama (ignore ID)
             $content = LandingContent::first();
-            if (!$content) {
+            if (! $content) {
                 return response()->json(
                     [
                         'success' => false,
@@ -122,6 +124,7 @@ class LandingContentController extends Controller
                     404,
                 );
             }
+
             return response()->json(
                 [
                     'success' => true,
@@ -147,7 +150,7 @@ class LandingContentController extends Controller
         try {
             // Karena single content, ambil pertama
             $content = LandingContent::first();
-            if (!$content) {
+            if (! $content) {
                 return response()->json(
                     [
                         'success' => false,
@@ -178,6 +181,7 @@ class LandingContentController extends Controller
             }
 
             $content->update($data);
+
             return response()->json(
                 [
                     'success' => true,
@@ -203,7 +207,7 @@ class LandingContentController extends Controller
         try {
             // Ambil single content
             $content = LandingContent::first();
-            if (!$content) {
+            if (! $content) {
                 return response()->json(
                     [
                         'success' => false,
@@ -222,6 +226,7 @@ class LandingContentController extends Controller
             }
 
             $content->delete();
+
             return response()->json(
                 [
                     'success' => true,

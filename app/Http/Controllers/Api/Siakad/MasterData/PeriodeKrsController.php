@@ -25,7 +25,7 @@ class PeriodeKrsController extends Controller
     {
         $data = PeriodeKrs::with('semester.tahunAkademik')->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode KRS tidak ditemukan',
@@ -71,7 +71,7 @@ class PeriodeKrsController extends Controller
     {
         $data = PeriodeKrs::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode KRS tidak ditemukan',
@@ -79,7 +79,7 @@ class PeriodeKrsController extends Controller
         }
 
         $validated = $request->validate([
-            'id_semester' => 'sometimes|required|uuid|exists:semester,id|unique:periode_krs,id_semester,' . $id,
+            'id_semester' => 'sometimes|required|uuid|exists:semester,id|unique:periode_krs,id_semester,'.$id,
             'tanggal_mulai' => 'sometimes|required|date',
             'tanggal_selesai' => 'sometimes|required|date|after_or_equal:tanggal_mulai',
             'status' => 'nullable|in:draft,aktif,ditutup',
@@ -105,7 +105,7 @@ class PeriodeKrsController extends Controller
     {
         $data = PeriodeKrs::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode KRS tidak ditemukan',

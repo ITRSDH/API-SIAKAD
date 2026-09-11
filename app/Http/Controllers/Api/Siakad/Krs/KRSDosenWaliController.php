@@ -18,10 +18,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -37,7 +37,7 @@ class KRSDosenWaliController extends Controller
             $query->where('id_semester', $activeSemester->id);
         }
 
-        $krsList = $query->get()->map(fn(KRS $krs) => $this->transformKRSForDosen($krs));
+        $krsList = $query->get()->map(fn (KRS $krs) => $this->transformKRSForDosen($krs));
 
         return response()->json([
             'success' => true,
@@ -49,10 +49,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -63,10 +63,10 @@ class KRSDosenWaliController extends Controller
             })
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan'
+                'message' => 'KRS tidak ditemukan',
             ], 404);
         }
 
@@ -80,10 +80,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -102,10 +102,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -113,10 +113,10 @@ class KRSDosenWaliController extends Controller
             ->where('id_dosen', $dosen->id)
             ->first();
 
-        if (!$mahasiswa) {
+        if (! $mahasiswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mahasiswa tidak ditemukan atau bukan mahasiswa bimbingan Anda'
+                'message' => 'Mahasiswa tidak ditemukan atau bukan mahasiswa bimbingan Anda',
             ], 404);
         }
 
@@ -124,7 +124,7 @@ class KRSDosenWaliController extends Controller
             ->where('id_mahasiswa', $mahasiswaId)
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn(KRS $krs) => $this->transformKRSForDosen($krs));
+            ->map(fn (KRS $krs) => $this->transformKRSForDosen($krs));
 
         return response()->json([
             'success' => true,
@@ -149,44 +149,44 @@ class KRSDosenWaliController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
         $krs = $this->getKRSForDosen($request->id_krs, $dosen->id);
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda'
+                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda',
             ], 404);
         }
 
         if ($krs->is_locked) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS sudah disetujui sebelumnya'
+                'message' => 'KRS sudah disetujui sebelumnya',
             ], 400);
         }
 
         if ($krs->status_approval !== KRS::STATUS_PENDING) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya KRS yang sudah diajukan mahasiswa yang dapat disetujui'
+                'message' => 'Hanya KRS yang sudah diajukan mahasiswa yang dapat disetujui',
             ], 400);
         }
 
         $validationSummary = $this->buildValidationSummary($krs);
-        if (!$validationSummary['is_valid']) {
+        if (! $validationSummary['is_valid']) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS belum valid untuk disetujui',
@@ -217,7 +217,7 @@ class KRSDosenWaliController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyetujui KRS: ' . $e->getMessage()
+                'message' => 'Gagal menyetujui KRS: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -240,39 +240,39 @@ class KRSDosenWaliController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
         $krs = $this->getKRSForDosen($request->id_krs, $dosen->id);
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda'
+                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda',
             ], 404);
         }
 
         if ($krs->is_locked) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS sudah dikunci, tidak dapat direvisi'
+                'message' => 'KRS sudah dikunci, tidak dapat direvisi',
             ], 400);
         }
 
         if ($krs->status_approval !== KRS::STATUS_PENDING) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya KRS dengan status pending yang dapat dikembalikan untuk revisi'
+                'message' => 'Hanya KRS dengan status pending yang dapat dikembalikan untuk revisi',
             ], 400);
         }
 
@@ -299,7 +299,7 @@ class KRSDosenWaliController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengembalikan KRS untuk revisi: ' . $e->getMessage()
+                'message' => 'Gagal mengembalikan KRS untuk revisi: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -322,39 +322,39 @@ class KRSDosenWaliController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
         $krs = $this->getKRSForDosen($request->id_krs, $dosen->id);
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda'
+                'message' => 'KRS tidak ditemukan atau bukan mahasiswa bimbingan Anda',
             ], 404);
         }
 
         if ($krs->is_locked) {
             return response()->json([
                 'success' => false,
-                'message' => 'KRS sudah dikunci, tidak dapat ditolak'
+                'message' => 'KRS sudah dikunci, tidak dapat ditolak',
             ], 400);
         }
 
         if ($krs->status_approval !== KRS::STATUS_PENDING) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya KRS dengan status pending yang dapat ditolak'
+                'message' => 'Hanya KRS dengan status pending yang dapat ditolak',
             ], 400);
         }
 
@@ -381,7 +381,7 @@ class KRSDosenWaliController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menolak KRS: ' . $e->getMessage()
+                'message' => 'Gagal menolak KRS: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -390,10 +390,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -406,19 +406,19 @@ class KRSDosenWaliController extends Controller
 
         $stats = [
             'total_mahasiswa_wali' => Mahasiswa::where('id_dosen', $dosen->id)->count(),
-            'pending_approval' => KRS::whereHas('mahasiswa', fn($query) => $query->where('id_dosen', $dosen->id))
+            'pending_approval' => KRS::whereHas('mahasiswa', fn ($query) => $query->where('id_dosen', $dosen->id))
                 ->where($semesterFilter)
                 ->pending()
                 ->count(),
-            'approved_this_semester' => KRS::whereHas('mahasiswa', fn($query) => $query->where('id_dosen', $dosen->id))
+            'approved_this_semester' => KRS::whereHas('mahasiswa', fn ($query) => $query->where('id_dosen', $dosen->id))
                 ->where($semesterFilter)
                 ->approved()
                 ->count(),
-            'revised_this_semester' => KRS::whereHas('mahasiswa', fn($query) => $query->where('id_dosen', $dosen->id))
+            'revised_this_semester' => KRS::whereHas('mahasiswa', fn ($query) => $query->where('id_dosen', $dosen->id))
                 ->where($semesterFilter)
                 ->revised()
                 ->count(),
-            'rejected_this_semester' => KRS::whereHas('mahasiswa', fn($query) => $query->where('id_dosen', $dosen->id))
+            'rejected_this_semester' => KRS::whereHas('mahasiswa', fn ($query) => $query->where('id_dosen', $dosen->id))
                 ->where($semesterFilter)
                 ->rejected()
                 ->count(),
@@ -434,10 +434,10 @@ class KRSDosenWaliController extends Controller
     {
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -454,7 +454,7 @@ class KRSDosenWaliController extends Controller
             $query->where('id_semester', $activeSemester->id);
         }
 
-        $pendingKRS = $query->get()->map(fn(KRS $krs) => $this->transformKRSForDosen($krs));
+        $pendingKRS = $query->get()->map(fn (KRS $krs) => $this->transformKRSForDosen($krs));
 
         return response()->json([
             'success' => true,
@@ -483,16 +483,16 @@ class KRSDosenWaliController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $dosen = $this->getAuthenticatedDosen($request);
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data dosen tidak ditemukan'
+                'message' => 'Data dosen tidak ditemukan',
             ], 404);
         }
 
@@ -506,17 +506,18 @@ class KRSDosenWaliController extends Controller
                     $validationSummary = $krs ? $this->buildValidationSummary($krs) : null;
 
                     if (
-                        !$krs ||
+                        ! $krs ||
                         $krs->status_approval !== KRS::STATUS_PENDING ||
                         $krs->is_locked ||
-                        !$validationSummary['is_valid']
+                        ! $validationSummary['is_valid']
                     ) {
                         $failed[] = [
                             'id_krs' => $krsId,
-                            'reason' => $validationSummary && !$validationSummary['is_valid']
+                            'reason' => $validationSummary && ! $validationSummary['is_valid']
                                 ? 'KRS belum valid untuk disetujui'
                                 : 'KRS tidak ditemukan atau status tidak valid',
                         ];
+
                         continue;
                     }
 
@@ -544,7 +545,7 @@ class KRSDosenWaliController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal melakukan bulk approve: ' . $e->getMessage()
+                'message' => 'Gagal melakukan bulk approve: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -553,7 +554,7 @@ class KRSDosenWaliController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -600,8 +601,8 @@ class KRSDosenWaliController extends Controller
             'catatan' => $krs->catatan,
             'total_sks' => $krs->total_sks,
             'is_locked' => $krs->is_locked,
-            'can_approve' => !$krs->is_locked && $krs->status_approval === KRS::STATUS_PENDING && $validationSummary['is_valid'],
-            'can_revision' => !$krs->is_locked && $krs->status_approval === KRS::STATUS_PENDING,
+            'can_approve' => ! $krs->is_locked && $krs->status_approval === KRS::STATUS_PENDING && $validationSummary['is_valid'],
+            'can_revision' => ! $krs->is_locked && $krs->status_approval === KRS::STATUS_PENDING,
             'mahasiswa' => $krs->mahasiswa,
             'semester' => $krs->semester,
             'details' => $krs->details,

@@ -11,10 +11,10 @@ use App\Services\Krs\KrsHistoricalEligibilityService;
 use App\Services\Krs\KrsHistoricalExecutionService;
 use App\Services\Krs\KrsHistoricalKhsGenerationService;
 use App\Services\Krs\KrsHistoricalPreviewService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class KRSHistoricalController extends Controller
@@ -25,8 +25,7 @@ class KRSHistoricalController extends Controller
         private readonly KrsHistoricalExecutionService $executionService,
         private readonly KrsHistoricalBatchLogService $batchLogService,
         private readonly KrsHistoricalKhsGenerationService $khsGenerationService
-    ) {
-    }
+    ) {}
 
     public function filters(Request $request): JsonResponse
     {
@@ -277,7 +276,7 @@ class KRSHistoricalController extends Controller
         $this->authorizeHistoricalAccess($request, 'akademik.krs-historical.batches.show');
 
         $batch = $this->batchLogService->findBatch($id);
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch historis tidak ditemukan',
@@ -323,7 +322,7 @@ class KRSHistoricalController extends Controller
         if ($buildMode === 'krs_with_scores') {
             foreach ($validated['students_payload'] ?? [] as $studentIndex => $studentPayload) {
                 foreach ($studentPayload['courses'] ?? [] as $courseIndex => $coursePayload) {
-                    if (!array_key_exists('nilai_akhir', $coursePayload) || $coursePayload['nilai_akhir'] === null || $coursePayload['nilai_akhir'] === '') {
+                    if (! array_key_exists('nilai_akhir', $coursePayload) || $coursePayload['nilai_akhir'] === null || $coursePayload['nilai_akhir'] === '') {
                         throw new HttpResponseException(response()->json([
                             'success' => false,
                             'message' => 'Payload build historis tidak valid',
@@ -360,7 +359,7 @@ class KRSHistoricalController extends Controller
         }
 
         $studentPayloadById = $studentPayload->keyBy('id_mahasiswa');
-        $missingStudents = $selectedIds->filter(fn(string $id) => !$studentPayloadById->has($id))->values();
+        $missingStudents = $selectedIds->filter(fn (string $id) => ! $studentPayloadById->has($id))->values();
         if ($missingStudents->isNotEmpty()) {
             throw new HttpResponseException(response()->json([
                 'success' => false,

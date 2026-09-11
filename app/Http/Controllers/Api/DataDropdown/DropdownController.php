@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api\DataDropdown;
 
-use Illuminate\Http\Request;
-use App\Services\DropdownService;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use InvalidArgumentException;
+use App\Services\DropdownService;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class DropdownController extends Controller
 {
@@ -17,7 +17,7 @@ class DropdownController extends Controller
 
             // ✅ Validasi parameter wajib
             $request->validate([
-                'type' => 'required|string'
+                'type' => 'required|string',
             ]);
 
             $data = $dropdownService->get($request->type);
@@ -25,7 +25,7 @@ class DropdownController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data dropdown berhasil diambil',
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (InvalidArgumentException $e) {
 
@@ -38,7 +38,7 @@ class DropdownController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data dropdown.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

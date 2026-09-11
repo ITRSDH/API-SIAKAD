@@ -13,12 +13,17 @@ class KonversiMataKuliah extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'konversi_mata_kuliah';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     public const STATUS_DIAKUI = 'diakui';
+
     public const STATUS_WAJIB_ULANG = 'wajib_ulang';
+
     public const STATUS_PILIHAN_BEBAS = 'pilihan_bebas';
 
     protected $fillable = [

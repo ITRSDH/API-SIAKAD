@@ -10,17 +10,20 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, WithEvents, WithColumnFormatting
+class MahasiswaExport implements FromCollection, WithColumnFormatting, WithEvents, WithHeadings, WithMapping
 {
     protected $id_prodi;
+
     protected $isDummy;
 
-    public function __construct($id_prodi = null, $isDummy = false)
+    protected $jenis_pendaftaran;
+
+    public function __construct($id_prodi = null, $isDummy = false, $jenis_pendaftaran = null)
     {
         $this->id_prodi = $id_prodi;
         $this->isDummy = $isDummy;
+        $this->jenis_pendaftaran = $jenis_pendaftaran;
     }
 
     public function collection()
@@ -28,61 +31,122 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
         if ($this->isDummy) {
             return collect([
                 (object) [
-                    'nim' => '202100001',
-                    'nik' => "'1234567890123456",
+                    'nim' => '202401001',
                     'nama_mahasiswa' => 'Ahmad Rizki',
+                    'nik' => "'3201234567890001",
+                    'nisn' => '0051234567',
                     'jenis_kelamin' => 'L',
                     'tempat_lahir' => 'Jakarta',
-                    'tanggal_lahir' => '2000-01-15',
-                    'tanggal_masuk' => '2021-08-01',
-                    'alamat' => 'Jl. Merdeka No. 123, Jakarta',
+                    'tanggal_lahir' => '2005-01-15',
+                    'nama_ibu_kandung' => 'Siti Aminah',
+                    'pekerjaan_ibu' => 'Ibu Rumah Tangga',
+                    'nama_ayah' => 'Bambang Sutrisno',
+                    'pekerjaan_ayah' => 'PNS/TNI/Polri',
                     'agama' => 'Islam',
+                    'handphone' => '081234567890',
+                    'email_pribadi' => 'ahmad.rizki@example.com',
+                    'alamat_jalan' => 'Jl. Merdeka No. 123',
+                    'kelurahan' => 'Gambir',
+                    'id_wilayah' => 'Kec. Gambir',
+                    'tanggal_masuk' => '2024-09-01',
+                    'angkatan' => 2024,
                     'status' => 'Aktif',
+                    'jenis_pendaftaran' => 'Reguler',
+                    'perguruan_tinggi_asal' => null,
+                    'prodi_asal' => null,
+                    'sks_diakui' => 0,
                 ],
                 (object) [
-                    'nim' => '202100002',
-                    'nik' => "'1234567890123457",
-                    'nama_mahasiswa' => 'Siti Nurhaliza',
+                    'nim' => '202401002',
+                    'nama_mahasiswa' => 'Siti Nurhaliza, A.Md.Kep',
+                    'nik' => "'3201234567890002",
+                    'nisn' => null,
                     'jenis_kelamin' => 'P',
                     'tempat_lahir' => 'Bandung',
-                    'tanggal_lahir' => '2000-03-20',
-                    'tanggal_masuk' => '2021-08-01',
-                    'alamat' => 'Jl. Sudirman No. 456, Bandung',
+                    'tanggal_lahir' => '1998-03-20',
+                    'nama_ibu_kandung' => 'Fatimah Zahra',
+                    'pekerjaan_ibu' => 'Karyawan Swasta',
+                    'nama_ayah' => 'Cecep Supriatna',
+                    'pekerjaan_ayah' => 'Wiraswasta',
                     'agama' => 'Islam',
+                    'handphone' => '081298765432',
+                    'email_pribadi' => 'siti.nurhaliza@example.com',
+                    'alamat_jalan' => 'Jl. Sudirman No. 456',
+                    'kelurahan' => 'Cibabat',
+                    'id_wilayah' => 'Kec. Cimahi Utara',
+                    'tanggal_masuk' => '2024-09-01',
+                    'angkatan' => 2024,
                     'status' => 'Aktif',
+                    'jenis_pendaftaran' => 'RPL',
+                    'perguruan_tinggi_asal' => 'Akper Dustira Cimahi',
+                    'prodi_asal' => 'D3 Keperawatan',
+                    'sks_diakui' => 84,
                 ],
                 (object) [
-                    'nim' => '202100003',
-                    'nik' => "'1234567890123458",
+                    'nim' => '202401003',
                     'nama_mahasiswa' => 'Budi Santoso',
+                    'nik' => "'3201234567890003",
+                    'nisn' => '0041234568',
                     'jenis_kelamin' => 'L',
                     'tempat_lahir' => 'Surabaya',
-                    'tanggal_lahir' => '2000-05-10',
-                    'tanggal_masuk' => '2021-08-01',
-                    'alamat' => 'Jl. Gajah Mada No. 789, Surabaya',
+                    'tanggal_lahir' => '2004-05-10',
+                    'nama_ibu_kandung' => 'Sri Wahyuni',
+                    'pekerjaan_ibu' => 'PNS/TNI/Polri',
+                    'nama_ayah' => 'Joko Widodo',
+                    'pekerjaan_ayah' => 'Pensiunan',
                     'agama' => 'Kristen',
-                    'status' => 'Cuti',
-                ]
+                    'handphone' => '081345678901',
+                    'email_pribadi' => 'budi.santoso@example.com',
+                    'alamat_jalan' => 'Jl. Gajah Mada No. 789',
+                    'kelurahan' => 'Sawahan',
+                    'id_wilayah' => 'Kec. Sawahan',
+                    'tanggal_masuk' => '2024-09-01',
+                    'angkatan' => 2024,
+                    'status' => 'Aktif',
+                    'jenis_pendaftaran' => 'Pindahan',
+                    'perguruan_tinggi_asal' => 'STIKES Mitra Keluarga',
+                    'prodi_asal' => 'S1 Keperawatan',
+                    'sks_diakui' => 42,
+                ],
             ]);
         }
 
         $query = Mahasiswa::with(['prodi'])
             ->select([
                 'nim',
-                'nik',
                 'nama_mahasiswa',
+                'nik',
+                'nisn',
                 'jenis_kelamin',
                 'tempat_lahir',
                 'tanggal_lahir',
-                'tanggal_masuk',
-                'alamat',
+                'nama_ibu_kandung',
+                'pekerjaan_ibu',
+                'nama_ayah',
+                'pekerjaan_ayah',
                 'agama',
+                'handphone',
+                'email_pribadi',
+                'alamat',
+                'alamat_jalan',
+                'kelurahan',
+                'id_wilayah',
+                'tanggal_masuk',
+                'angkatan',
                 'status',
+                'jenis_pendaftaran',
+                'perguruan_tinggi_asal',
+                'prodi_asal',
+                'sks_diakui',
                 'id_prodi',
             ]);
 
         if ($this->id_prodi) {
             $query->where('id_prodi', $this->id_prodi);
+        }
+
+        if ($this->jenis_pendaftaran) {
+            $query->where('jenis_pendaftaran', $this->jenis_pendaftaran);
         }
 
         return $query->orderBy('nim')->get();
@@ -92,14 +156,29 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
     {
         return [
             'NIM',
+            'NAMA LENGKAP',
             'NIK',
-            'NAMA',
-            'TANGGAL MASUK',
-            'STATUS MAHASISWA',
+            'NISN',
             'JENIS KELAMIN',
-            'TEMPAT, TANGGAL LAHIR',
+            'TEMPAT LAHIR',
+            'TANGGAL LAHIR',
+            'NAMA IBU KANDUNG',
+            'PEKERJAAN IBU',
+            'NAMA AYAH',
+            'PEKERJAAN AYAH',
             'AGAMA',
-            'ALAMAT',
+            'NO HANDPHONE / WA',
+            'EMAIL',
+            'ALAMAT JALAN',
+            'KELURAHAN / DESA',
+            'KECAMATAN / WILAYAH',
+            'TANGGAL MASUK',
+            'ANGKATAN',
+            'STATUS MAHASISWA',
+            'JENIS PENDAFTARAN',
+            'KAMPUS ASAL (RPL)',
+            'PRODI ASAL (RPL)',
+            'SKS DIAKUI (RPL)',
         ];
     }
 
@@ -107,31 +186,43 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
     {
         return [
             $mahasiswa->nim,
-            $mahasiswa->nik,
             $mahasiswa->nama_mahasiswa,
-
-            // TANGGAL MASUK (Kolom D)
-            $mahasiswa->tanggal_masuk
-                ? Date::dateTimeToExcel(Carbon::parse($mahasiswa->tanggal_masuk))
-                : null,
-            $mahasiswa->status,
+            $mahasiswa->nik ? "'".ltrim($mahasiswa->nik, "'") : null,
+            $mahasiswa->nisn,
             $mahasiswa->jenis_kelamin,
-
-            // TEMPAT, TANGGAL LAHIR (kolom G)
+            $mahasiswa->tempat_lahir,
             $mahasiswa->tanggal_lahir
-                ? $mahasiswa->tempat_lahir . ', ' .
-                Carbon::parse($mahasiswa->tanggal_lahir)->translatedFormat('d F Y')
-                : $mahasiswa->tempat_lahir,
-
+                ? (is_string($mahasiswa->tanggal_lahir) ? $mahasiswa->tanggal_lahir : Carbon::parse($mahasiswa->tanggal_lahir)->format('Y-m-d'))
+                : null,
+            $mahasiswa->nama_ibu_kandung,
+            $mahasiswa->pekerjaan_ibu,
+            $mahasiswa->nama_ayah,
+            $mahasiswa->pekerjaan_ayah,
             $mahasiswa->agama,
-            $mahasiswa->alamat,
+            $mahasiswa->handphone,
+            $mahasiswa->email_pribadi,
+            $mahasiswa->alamat_jalan ?? $mahasiswa->alamat,
+            $mahasiswa->kelurahan,
+            $mahasiswa->id_wilayah,
+            $mahasiswa->tanggal_masuk
+                ? (is_string($mahasiswa->tanggal_masuk) ? $mahasiswa->tanggal_masuk : Carbon::parse($mahasiswa->tanggal_masuk)->format('Y-m-d'))
+                : null,
+            $mahasiswa->angkatan,
+            $mahasiswa->status ?? 'Aktif',
+            $mahasiswa->jenis_pendaftaran ?? 'Reguler',
+            $mahasiswa->perguruan_tinggi_asal,
+            $mahasiswa->prodi_asal,
+            $mahasiswa->sks_diakui ?? 0,
         ];
     }
 
     public function columnFormats(): array
     {
         return [
-            'D' => 'D-MMM-YY',
+            'A' => '@', // NIM as text
+            'C' => '@', // NIK as text
+            'D' => '@', // NISN as text
+            'J' => '@', // HP as text
         ];
     }
 
@@ -141,34 +232,29 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                // Get the highest row and column
                 $highestRow = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
-                $columnCount = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
 
-                // Apply styles to all cells
-                $sheet->getStyle('A1:' . $highestColumn . $highestRow)->applyFromArray([
-                    'alignment' => [
-                        'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                        'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                    ],
+                // Apply borders & alignment to all data cells
+                $sheet->getStyle('A1:'.$highestColumn.$highestRow)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                            'color' => ['rgb' => '000000'],
+                            'color' => ['rgb' => 'D0D5DD'],
                         ],
                     ],
                 ]);
 
-                // Apply bold to header row (row 1)
-                $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray([
+                // Header styling
+                $sheet->getStyle('A1:'.$highestColumn.'1')->applyFromArray([
                     'font' => [
                         'bold' => true,
-                        'size' => 12,
+                        'size' => 11,
+                        'color' => ['rgb' => '1E293B'],
                     ],
                     'fill' => [
                         'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'E6F3FF'],
+                        'startColor' => ['rgb' => 'E0F2FE'], // light blue
                     ],
                     'alignment' => [
                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
@@ -176,11 +262,12 @@ class MahasiswaExport implements FromCollection, WithHeadings, WithMapping, With
                     ],
                 ]);
 
-                // Set column widths
+                $sheet->getRowDimension(1)->setRowHeight(28);
+
+                // Auto-fit column widths
                 foreach (range('A', $highestColumn) as $columnID) {
                     $sheet->getColumnDimension($columnID)->setAutoSize(true);
                 }
-
             },
         ];
     }

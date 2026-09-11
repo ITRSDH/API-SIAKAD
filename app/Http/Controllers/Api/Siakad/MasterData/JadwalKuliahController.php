@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\DosenPengajarKelas;
 use App\Models\MasterData\JadwalKuliah;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\RuangKuliah;
@@ -25,11 +24,11 @@ class JadwalKuliahController extends Controller
                 'id_ruang',
                 'hari',
                 'jam_mulai',
-                'jam_selesai'
+                'jam_selesai',
             ])
                 ->with([
                     'kelas:id,nama_kelas,id_prodi',
-                    'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+                    'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
                 ])
                 ->where('id_kelas_kuliah', $id_kelas_kuliah)
                 ->get();
@@ -50,13 +49,13 @@ class JadwalKuliahController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data jadwal kuliah berhasil diambil',
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mengambil data jadwal kuliah',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -70,11 +69,11 @@ class JadwalKuliahController extends Controller
                 'id_ruang',
                 'hari',
                 'jam_mulai',
-                'jam_selesai'
+                'jam_selesai',
             ])
                 ->with([
                     'kelas:id,nama_kelas,id_prodi',
-                    'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+                    'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
                 ])
                 ->findOrFail($id);
 
@@ -92,13 +91,13 @@ class JadwalKuliahController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Detail jadwal kuliah berhasil diambil',
-                'data' => $data
+                'data' => $data,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Data jadwal kuliah tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -109,14 +108,14 @@ class JadwalKuliahController extends Controller
             'id_ruang' => 'nullable|uuid|exists:ruang_kuliah,id',
             'hari' => 'nullable|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'jam_mulai' => 'nullable|date_format:H:i:s',
-            'jam_selesai' => 'nullable|date_format:H:i:s|after:jam_mulai'
+            'jam_selesai' => 'nullable|date_format:H:i:s|after:jam_mulai',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -179,7 +178,7 @@ class JadwalKuliahController extends Controller
 
             $jadwalKuliah->load([
                 'kelas:id,nama_kelas,id_prodi',
-                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
             ]);
 
             DB::commit();
@@ -187,14 +186,15 @@ class JadwalKuliahController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Jadwal kuliah berhasil ditambahkan',
-                'data' => $jadwalKuliah
+                'data' => $jadwalKuliah,
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menambahkan jadwal kuliah',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -205,14 +205,14 @@ class JadwalKuliahController extends Controller
             'id_ruang' => 'nullable|uuid|exists:ruang_kuliah,id',
             'hari' => 'nullable|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'jam_mulai' => 'nullable|date_format:H:i:s',
-            'jam_selesai' => 'nullable|date_format:H:i:s|after:jam_mulai'
+            'jam_selesai' => 'nullable|date_format:H:i:s|after:jam_mulai',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -283,7 +283,7 @@ class JadwalKuliahController extends Controller
 
             $jadwalKuliah->load([
                 'kelas:id,nama_kelas,id_prodi',
-                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+                'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
             ]);
 
             DB::commit();
@@ -291,14 +291,15 @@ class JadwalKuliahController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Jadwal kuliah berhasil diperbarui',
-                'data' => $jadwalKuliah
+                'data' => $jadwalKuliah,
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat memperbarui jadwal kuliah',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -315,14 +316,15 @@ class JadwalKuliahController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Jadwal kuliah berhasil dihapus'
+                'message' => 'Jadwal kuliah berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menghapus jadwal kuliah',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -334,13 +336,13 @@ class JadwalKuliahController extends Controller
         ?string $jamSelesai,
         ?string $excludeJadwalId = null
     ): ?JadwalKuliah {
-        if (!$idRuang || !$hari || !$jamMulai || !$jamSelesai) {
+        if (! $idRuang || ! $hari || ! $jamMulai || ! $jamSelesai) {
             return null;
         }
 
         return JadwalKuliah::with([
             'kelas:id,nama_kelas,id_prodi',
-            'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+            'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
         ])
             ->where('id_ruang', $idRuang)
             ->where('hari', $hari)
@@ -375,12 +377,12 @@ class JadwalKuliahController extends Controller
         ?string $jamSelesai,
         ?string $excludeJadwalId = null
     ): ?array {
-        if (!$hari || !$jamMulai || !$jamSelesai) {
+        if (! $hari || ! $jamMulai || ! $jamSelesai) {
             return null;
         }
 
         $kelas = KelasKuliah::with(['dosen_pengajar.dosen'])->find($idKelasKuliah);
-        if (!$kelas || $kelas->dosen_pengajar->isEmpty()) {
+        if (! $kelas || $kelas->dosen_pengajar->isEmpty()) {
             return null;
         }
 
@@ -397,7 +399,7 @@ class JadwalKuliahController extends Controller
         $conflict = JadwalKuliah::with([
             'kelas:id,nama_kelas,id_prodi',
             'kelas.dosen_pengajar.dosen:id,nama_dosen,nidn',
-            'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active'
+            'ruang:id,kode_ruang,nama_ruang,gedung,lantai,kapasitas,is_active',
         ])
             ->where('id_kelas_kuliah', '!=', $idKelasKuliah)
             ->where('hari', $hari)
@@ -413,13 +415,13 @@ class JadwalKuliahController extends Controller
             })
             ->first();
 
-        if (!$conflict) {
+        if (! $conflict) {
             return null;
         }
 
         $matchingLecturers = $conflict->kelas->dosen_pengajar
-            ->filter(fn($item) => $lecturerIds->contains($item->id_registrasi_dosen))
-            ->map(fn($item) => [
+            ->filter(fn ($item) => $lecturerIds->contains($item->id_registrasi_dosen))
+            ->map(fn ($item) => [
                 'id' => $item->dosen?->id,
                 'nidn' => $item->dosen?->nidn,
                 'nama_dosen' => $item->dosen?->nama_dosen,
@@ -454,7 +456,7 @@ class JadwalKuliahController extends Controller
 
     private function validateRoomCapacity(string $idKelasKuliah, ?string $idRuang): ?array
     {
-        if (!$idRuang) {
+        if (! $idRuang) {
             return null;
         }
 
@@ -463,7 +465,7 @@ class JadwalKuliahController extends Controller
         $ruang = RuangKuliah::select('id', 'kode_ruang', 'nama_ruang', 'kapasitas')
             ->find($idRuang);
 
-        if (!$kelas || !$ruang || $kelas->kapasitas_peserta === null) {
+        if (! $kelas || ! $ruang || $kelas->kapasitas_peserta === null) {
             return null;
         }
 

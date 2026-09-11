@@ -96,7 +96,7 @@ class SertifikatAkreditasiControllerTest extends TestCase
             'foto_sertifikat' => 'sertifikat_akreditasi/a.webp',
         ]);
 
-        $response = $this->getJson('/api/v1/sertifikat-akreditasi/' . $sertifikat->id);
+        $response = $this->getJson('/api/v1/sertifikat-akreditasi/'.$sertifikat->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -121,7 +121,7 @@ class SertifikatAkreditasiControllerTest extends TestCase
             'foto_sertifikat' => $file,
         ];
 
-        $response = $this->put('/api/v1/sertifikat-akreditasi/' . $sertifikat->id, $payload);
+        $response = $this->put('/api/v1/sertifikat-akreditasi/'.$sertifikat->id, $payload);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -144,7 +144,7 @@ class SertifikatAkreditasiControllerTest extends TestCase
             'foto_sertifikat' => 'sertifikat_akreditasi/a.webp',
         ]);
 
-        $response = $this->deleteJson('/api/v1/sertifikat-akreditasi/' . $sertifikat->id);
+        $response = $this->deleteJson('/api/v1/sertifikat-akreditasi/'.$sertifikat->id);
 
         $response->assertStatus(200)
             ->assertJson([

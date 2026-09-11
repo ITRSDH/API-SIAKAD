@@ -10,17 +10,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('krs_detail', function (Blueprint $table) {
-            if (!Schema::hasColumn('krs_detail', 'id_mata_kuliah')) {
+            if (! Schema::hasColumn('krs_detail', 'id_mata_kuliah')) {
                 $table->uuid('id_mata_kuliah')->nullable()->after('id_kelas_kuliah');
             }
 
-            if (!Schema::hasColumn('krs_detail', 'mutu')) {
+            if (! Schema::hasColumn('krs_detail', 'mutu')) {
                 $table->decimal('mutu', 6, 2)->nullable()->after('bobot_nilai');
             }
         });
 
         Schema::table('krs_detail', function (Blueprint $table) {
-            if (!Schema::hasColumn('krs_detail', 'id_mata_kuliah')) {
+            if (! Schema::hasColumn('krs_detail', 'id_mata_kuliah')) {
                 return;
             }
 
@@ -38,15 +38,15 @@ return new class extends Migration
             $table->decimal('bobot_nilai', 6, 2)->nullable()->change();
         });
 
-        DB::statement("
+        DB::statement('
             UPDATE krs_detail kd
             JOIN kelas_kuliah kk ON kk.id = kd.id_kelas_kuliah
             JOIN kurikulum_mata_kuliah kmk ON kmk.id = kk.id_kurikulum_mata_kuliah
             SET kd.id_mata_kuliah = kmk.id_mata_kuliah
             WHERE kd.id_mata_kuliah IS NULL
-        ");
+        ');
 
-        DB::statement("
+        DB::statement('
             UPDATE krs_detail kd
             JOIN kelas_kuliah kk ON kk.id = kd.id_kelas_kuliah
             JOIN kurikulum_mata_kuliah kmk ON kmk.id = kk.id_kurikulum_mata_kuliah
@@ -60,16 +60,16 @@ return new class extends Migration
                     ELSE kd.bobot_nilai
                 END
             WHERE kd.id_kelas_kuliah IS NOT NULL
-        ");
+        ');
     }
 
     public function down(): void
     {
-        DB::statement("
+        DB::statement('
             UPDATE krs_detail
             SET bobot_nilai = mutu
             WHERE mutu IS NOT NULL
-        ");
+        ');
 
         Schema::table('krs_detail', function (Blueprint $table) {
             $table->decimal('bobot_nilai', 3, 2)->nullable()->change();

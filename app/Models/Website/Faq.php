@@ -11,8 +11,11 @@ class Faq extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'faq';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

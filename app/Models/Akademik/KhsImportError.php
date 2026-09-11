@@ -12,8 +12,11 @@ class KhsImportError extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'khs_import_errors';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

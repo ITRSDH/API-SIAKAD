@@ -6,16 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Prodi;
-use Illuminate\Http\Request;
-use App\Models\Website\Prestasi;
-use App\Models\Website\Pengumuman;
-use App\Models\Website\LandingContent;
 use App\Models\Website\Beasiswa;
 use App\Models\Website\Berita;
-use App\Models\Website\Galeri;
 use App\Models\Website\Faq;
+use App\Models\Website\Galeri;
+use App\Models\Website\LandingContent;
 use App\Models\Website\Ormawa;
+use App\Models\Website\Pengumuman;
 use App\Models\Website\PmbPendaftaran;
+use App\Models\Website\Prestasi;
 use App\Models\Website\ProfileDosen;
 use App\Models\Website\ProfileKampus;
 use App\Models\Website\SertifikatAkreditasi;
@@ -28,17 +27,17 @@ class GetApiController extends Controller
             $prestasi = Prestasi::with('prodi')
                 ->orderBy('tahun', 'desc')
                 ->paginate(9);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data prestasi berhasil diambil',
-                'data' => $prestasi
+                'data' => $prestasi,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data prestasi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -47,16 +46,17 @@ class GetApiController extends Controller
     {
         try {
             $prestasi = Prestasi::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail prestasi',
-                'data' => $prestasi
+                'data' => $prestasi,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Prestasi tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -65,17 +65,17 @@ class GetApiController extends Controller
     {
         try {
             $pengumuman = Pengumuman::paginate(10);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data pengumuman berhasil diambil',
-                'data' => $pengumuman
+                'data' => $pengumuman,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data pengumuman',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -84,16 +84,17 @@ class GetApiController extends Controller
     {
         try {
             $pengumuman = Pengumuman::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail pengumuman',
-                'data' => $pengumuman
+                'data' => $pengumuman,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pengumuman tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -102,17 +103,17 @@ class GetApiController extends Controller
     {
         try {
             $beasiswa = Beasiswa::paginate(10);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data beasiswa berhasil diambil',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data beasiswa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -121,16 +122,17 @@ class GetApiController extends Controller
     {
         try {
             $beasiswa = Beasiswa::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail beasiswa',
-                'data' => $beasiswa
+                'data' => $beasiswa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Beasiswa tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -139,17 +141,17 @@ class GetApiController extends Controller
     {
         try {
             $berita = Berita::paginate(10);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data berita berhasil diambil',
-                'data' => $berita
+                'data' => $berita,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data berita',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -158,16 +160,17 @@ class GetApiController extends Controller
     {
         try {
             $berita = Berita::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail berita',
-                'data' => $berita
+                'data' => $berita,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Berita tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -176,17 +179,17 @@ class GetApiController extends Controller
     {
         try {
             $galeri = Galeri::paginate(10);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data galeri berhasil diambil',
-                'data' => $galeri
+                'data' => $galeri,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data galeri',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -195,16 +198,17 @@ class GetApiController extends Controller
     {
         try {
             $galeri = Galeri::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail galeri',
-                'data' => $galeri
+                'data' => $galeri,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Galeri tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -213,17 +217,17 @@ class GetApiController extends Controller
     {
         try {
             $faqs = Faq::all();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data FAQ berhasil diambil',
-                'data' => $faqs
+                'data' => $faqs,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data FAQ',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -232,17 +236,17 @@ class GetApiController extends Controller
     {
         try {
             $ormawa = Ormawa::paginate(9);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data ormawa berhasil diambil',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data ormawa',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -251,16 +255,17 @@ class GetApiController extends Controller
     {
         try {
             $ormawa = Ormawa::findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail ormawa',
-                'data' => $ormawa
+                'data' => $ormawa,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ormawa tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -269,17 +274,17 @@ class GetApiController extends Controller
     {
         try {
             $prodi = Prodi::all();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data prodi berhasil diambil',
-                'data' => $prodi
+                'data' => $prodi,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data prodi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -288,16 +293,17 @@ class GetApiController extends Controller
     {
         try {
             $prodi = Prodi::with('prestasi')->findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Detail prodi',
-                'data' => $prodi
+                'data' => $prodi,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Prodi tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -307,20 +313,20 @@ class GetApiController extends Controller
         try {
             $prodi = Prodi::findOrFail($id);
             $prestasi = $prodi->prestasi()->get();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data prestasi berdasarkan prodi',
                 'data' => [
                     'prodi' => $prodi,
-                    'prestasi' => $prestasi
-                ]
+                    'prestasi' => $prestasi,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Prodi tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -329,17 +335,17 @@ class GetApiController extends Controller
     {
         try {
             $content = LandingContent::first();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data landing content berhasil diambil',
-                'data' => $content
+                'data' => $content,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data landing content',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -348,17 +354,17 @@ class GetApiController extends Controller
     {
         try {
             $profile = ProfileKampus::first();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data profile kampus berhasil diambil',
-                'data' => $profile
+                'data' => $profile,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data profile kampus',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -368,17 +374,17 @@ class GetApiController extends Controller
         try {
             $profile = ProfileDosen::select('id', 'nama', 'nidn', 'status', 'foto')
                 ->get();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data profile dosen berhasil diambil',
-                'data' => $profile
+                'data' => $profile,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data profile kampus',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -389,40 +395,40 @@ class GetApiController extends Controller
             $profile = ProfileDosen::select('id', 'nama', 'nidn', 'status', 'foto')
                 ->limit(3)
                 ->get();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data profile dosen berhasil diambil',
-                'data' => $profile
+                'data' => $profile,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data profile kampus',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     public function profileDosenDetail($id)
     {
-         try {
+        try {
             $dosen = ProfileDosen::findOrFail($id);
             $prodi = $dosen->prodi()->get();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data dosen berdasarkan prodi',
                 'data' => [
                     'prodi' => $prodi,
-                    'dosen' => $dosen
-                ]
+                    'dosen' => $dosen,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Dosen tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -430,71 +436,70 @@ class GetApiController extends Controller
     public function sertifikatAkreditasi()
     {
         try {
-    
+
             $sertifikat = SertifikatAkreditasi::with('fotos')
                 ->select('id', 'nama', 'deskripsi')
                 ->get();
-    
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data sertifikat akreditasi berhasil diambil',
-                'data' => $sertifikat
+                'data' => $sertifikat,
             ], 200);
-    
+
         } catch (\Exception $e) {
-    
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data sertifikat akreditasi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
-    
+
         }
     }
 
     public function sertifikatAkreditasiDetail($id)
     {
         try {
-    
+
             $sertifikat = SertifikatAkreditasi::with('fotos')
                 ->findOrFail($id);
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data sertifikat akreditasi',
-                'data' => $sertifikat
+                'data' => $sertifikat,
             ], 200);
-    
+
         } catch (\Exception $e) {
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Sertifikat tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
-    
+
         }
     }
 
     public function pmbPendaftaran()
     {
-         try {
+        try {
             $pmb = PmbPendaftaran::first();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data pmb pendaftaran berhasil diambil',
-                'data' => $pmb
+                'data' => $pmb,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data pmb pendaftaran',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     public function countAll()
     {
@@ -502,23 +507,22 @@ class GetApiController extends Controller
             $totalProdi = Prodi::count();
             $totalMahasiswa = Mahasiswa::count();
             $totalDosen = Dosen::count();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data total Prodi, Mahasiswa, dan Dosen berhasil diambil',
                 'data' => [
                     'totalProdi' => $totalProdi,
                     'totalMahasiswa' => $totalMahasiswa,
-                    'totalDosen' => $totalDosen
-                ]
+                    'totalDosen' => $totalDosen,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data total Prodi, Mahasiswa, dan Dosen',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
-    
 }

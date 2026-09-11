@@ -18,7 +18,7 @@ class ProfileKampusFactory extends Factory
             'deskripsi' => $this->faker->paragraph(),
             'visi' => $this->faker->sentence(4),
             'misi' => $this->faker->sentence(6),
-            'struktur_image' => 'profile_kampus/' . $this->faker->uuid . '.jpg',
+            'struktur_image' => 'profile_kampus/'.$this->faker->uuid.'.jpg',
             'fasilitas' => $this->faker->paragraph(),
             'created_at' => now(),
             'updated_at' => now(),

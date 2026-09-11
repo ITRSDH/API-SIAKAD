@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Siakad\Penilaian;
 
 use App\Http\Controllers\Controller;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KomponenPenilaian;
+use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\NilaiKomponen;
 use App\Models\Akademik\PenilaianKelas;
 use App\Models\MasterData\Dosen;
@@ -30,7 +30,7 @@ class NilaiKomponenController extends Controller
             'krsDetail.nilaiKomponen.komponenPenilaian',
         ])->find($id_kelas_kuliah);
 
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -92,7 +92,7 @@ class NilaiKomponenController extends Controller
     public function sync(Request $request, string $id_komponen_penilaian): JsonResponse
     {
         $komponen = KomponenPenilaian::find($id_komponen_penilaian);
-        if (!$komponen) {
+        if (! $komponen) {
             return response()->json([
                 'success' => false,
                 'message' => 'Komponen penilaian tidak ditemukan',
@@ -100,7 +100,7 @@ class NilaiKomponenController extends Controller
         }
 
         $kelas = KelasKuliah::with('dosen_pengajar')->find($komponen->id_kelas_kuliah);
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -128,7 +128,7 @@ class NilaiKomponenController extends Controller
                     ->where('id_kelas_kuliah', $komponen->id_kelas_kuliah)
                     ->first();
 
-                if (!$detail) {
+                if (! $detail) {
                     continue;
                 }
 
@@ -159,7 +159,7 @@ class NilaiKomponenController extends Controller
             'krsDetail.nilaiKomponen.komponenPenilaian',
         ])->find($id_kelas_kuliah);
 
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -171,7 +171,7 @@ class NilaiKomponenController extends Controller
         }
 
         $workflow = $this->getOrCreatePenilaianKelas($kelas);
-        if (!$workflow->canManageDraftData()) {
+        if (! $workflow->canManageDraftData()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Nilai akhir tidak dapat dipublikasikan karena penilaian kelas sudah terkunci',
@@ -240,7 +240,7 @@ class NilaiKomponenController extends Controller
     {
         $detail = KRSDetail::with('kelasKuliah.dosen_pengajar')->find($id_krs_detail);
 
-        if (!$detail) {
+        if (! $detail) {
             return response()->json([
                 'success' => false,
                 'message' => 'Detail KRS tidak ditemukan',
@@ -256,7 +256,7 @@ class NilaiKomponenController extends Controller
         }
 
         $presensiSummary = $this->attendanceEligibilityService->summarizeForKrsDetail($detail);
-        if (!$presensiSummary['is_layak_penilaian']) {
+        if (! $presensiSummary['is_layak_penilaian']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa belum memenuhi minimum presensi untuk input nilai akhir manual',
@@ -278,7 +278,7 @@ class NilaiKomponenController extends Controller
                 $grading['bobot_nilai']
             );
 
-            if (!empty($validated['catatan'])) {
+            if (! empty($validated['catatan'])) {
                 $detail->update([
                     'catatan' => $validated['catatan'],
                 ]);
@@ -301,7 +301,7 @@ class NilaiKomponenController extends Controller
     public function reopen(Request $request, string $id_kelas_kuliah): JsonResponse
     {
         $kelas = KelasKuliah::with('dosen_pengajar')->find($id_kelas_kuliah);
-        if (!$kelas) {
+        if (! $kelas) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kelas kuliah tidak ditemukan',
@@ -317,7 +317,7 @@ class NilaiKomponenController extends Controller
         ]);
 
         $workflow = $this->getOrCreatePenilaianKelas($kelas);
-        if (!$workflow->canBeReopened()) {
+        if (! $workflow->canBeReopened()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Penilaian kelas hanya dapat dibuka kembali setelah pernah dipublikasikan',
@@ -392,7 +392,7 @@ class NilaiKomponenController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Silakan login ulang.',
@@ -407,7 +407,7 @@ class NilaiKomponenController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$dosen) {
+        if (! $dosen) {
             return response()->json([
                 'success' => false,
                 'message' => "Hanya dosen pengampu atau admin yang dapat {$actionLabel}",
@@ -415,7 +415,7 @@ class NilaiKomponenController extends Controller
         }
 
         $isPengampu = $kelas->dosen_pengajar
-            ->contains(fn($pengampu) => $pengampu->id_registrasi_dosen === $dosen->id);
+            ->contains(fn ($pengampu) => $pengampu->id_registrasi_dosen === $dosen->id);
 
         if ($isPengampu) {
             return null;

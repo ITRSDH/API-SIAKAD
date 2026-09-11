@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class ImageService
 {
@@ -14,21 +14,20 @@ class ImageService
     public function __construct()
     {
         // Gunakan GD driver (Windows friendly). Kalau ada imagick, bisa diganti.
-        $this->manager = new ImageManager(new Driver());
+        $this->manager = new ImageManager(new Driver);
     }
 
     /**
      * Convert uploaded image to WebP, save to public disk, and optionally delete an old file.
      *
-     * @param \Illuminate\Http\UploadedFile $file
-     * @param int $quality 0-100
-     * @param string $folder path inside disk public (no leading slash), example: 'landing/logo'
-     * @param string|null $oldPath existing file path or URL to delete (optional)
-     *                              Accepts:
+     * @param  int  $quality  0-100
+     * @param  string  $folder  path inside disk public (no leading slash), example: 'landing/logo'
+     * @param  string|null  $oldPath  existing file path or URL to delete (optional)
+     *                                Accepts:
      *                                - storage path: 'landing/logo/abc.webp'
      *                                - '/storage/landing/logo/abc.webp'
      *                                - full url: 'https://domain.com/storage/landing/logo/abc.webp'
-     * @param bool $deleteOriginalIfStored whether to also attempt to delete original file if applicable
+     * @param  bool  $deleteOriginalIfStored  whether to also attempt to delete original file if applicable
      * @return string saved storage path (e.g. 'landing/logo/xxxxx.webp')
      *
      * @throws \Exception
@@ -39,15 +38,15 @@ class ImageService
         $folder = trim($folder, '/');
 
         // nama file unik
-        $filename = uniqid('', true) . '.webp';
-        $storagePath = $folder . '/' . $filename;
+        $filename = uniqid('', true).'.webp';
+        $storagePath = $folder.'/'.$filename;
 
         // buat direktori jika belum ada
         Storage::disk('public')->makeDirectory($folder);
 
         // baca file via Intervention
         $image = $this->manager->read($file->getRealPath());
-        if (!$image) {
+        if (! $image) {
             throw new \Exception('Gagal membaca gambar dari upload.');
         }
 
@@ -66,7 +65,7 @@ class ImageService
         if ($deleteOriginalIfStored) {
             // coba hapus file original yang path-nya sama nama file upload (jika sebelumnya disimpan)
             // contoh kemungkinan: 'landing/logo/original.png' di disk public
-            $originalCandidate = $folder . '/' . pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '.' . $file->getClientOriginalExtension();
+            $originalCandidate = $folder.'/'.pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME).'.'.$file->getClientOriginalExtension();
             $this->deletePublicFileIfExists($originalCandidate);
         }
 
@@ -75,9 +74,6 @@ class ImageService
 
     /**
      * Normalize various forms of stored-path/URL to storage path and delete if exists on public disk.
-     *
-     * @param string $maybePathOrUrl
-     * @return void
      */
     public function deletePublicFileIfExists(string $maybePathOrUrl): void
     {

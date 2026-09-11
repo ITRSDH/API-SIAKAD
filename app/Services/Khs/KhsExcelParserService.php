@@ -86,7 +86,7 @@ class KhsExcelParserService
 
             if ($isLegacyFormat) {
                 $subHeaders = array_map(
-                    fn($value) => strtoupper(trim((string) $value)),
+                    fn ($value) => strtoupper(trim((string) $value)),
                     array_slice($subHeaderRow, $column, 5)
                 );
 
@@ -95,7 +95,7 @@ class KhsExcelParserService
                 }
             } else {
                 $subHeaders = array_map(
-                    fn($value) => strtoupper(trim((string) $value)),
+                    fn ($value) => strtoupper(trim((string) $value)),
                     array_slice($subHeaderRow, $column, 4)
                 );
 
@@ -292,7 +292,7 @@ class KhsExcelParserService
     {
         foreach ([4, 3] as $tailCount) {
             $tailHeaders = array_map(
-                fn($value) => strtoupper(trim((string) $value)),
+                fn ($value) => strtoupper(trim((string) $value)),
                 array_slice($headerRow, -$tailCount)
             );
 
@@ -307,7 +307,7 @@ class KhsExcelParserService
         foreach ($fallbackRows as $fallbackRow) {
             foreach ([4, 3] as $tailCount) {
                 $tailHeaders = array_map(
-                    fn($value) => strtoupper(trim((string) $value)),
+                    fn ($value) => strtoupper(trim((string) $value)),
                     array_slice((array) $fallbackRow, -$tailCount)
                 );
 
@@ -422,7 +422,7 @@ class KhsExcelParserService
             $value = $normalized;
         }
 
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             return null;
         }
 

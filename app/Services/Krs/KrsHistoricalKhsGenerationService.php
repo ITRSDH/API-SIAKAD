@@ -5,9 +5,9 @@ namespace App\Services\Krs;
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KHSDetail;
 use App\Models\Akademik\KRS;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KrsCollectiveBatch;
 use App\Models\Akademik\KrsCollectiveBatchItem;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\Mahasiswa;
 use App\Services\Khs\KhsCalculationService;
 use Illuminate\Support\Collection;
@@ -20,8 +20,7 @@ class KrsHistoricalKhsGenerationService
 
     public function __construct(
         private readonly KhsCalculationService $calculationService
-    ) {
-    }
+    ) {}
 
     public function preview(array $payload): Collection
     {
@@ -30,11 +29,11 @@ class KrsHistoricalKhsGenerationService
         return $this->loadHistoricalKrs($payload)->map(function (array $item) use ($payload, $studentPayloads) {
             $krs = $item['krs'];
 
-            if (!$krs) {
+            if (! $krs) {
                 return $this->result($item['mahasiswa'], KrsCollectiveBatchItem::STATUS_FAILED, 'KRS historis tidak ditemukan');
             }
 
-            if ($krs->status_approval !== KRS::STATUS_APPROVED || !$krs->is_locked) {
+            if ($krs->status_approval !== KRS::STATUS_APPROVED || ! $krs->is_locked) {
                 return $this->result($item['mahasiswa'], KrsCollectiveBatchItem::STATUS_SKIPPED, 'KRS historis belum final sehingga belum bisa digenerate menjadi KHS', [
                     'id_krs' => $krs->id,
                 ]);
@@ -92,13 +91,13 @@ class KrsHistoricalKhsGenerationService
         $krsMap = $this->loadHistoricalKrs([
             'id_semester' => $payload['id_semester'],
             'selected_mahasiswa_ids' => $selectedMahasiswaIds,
-        ])->keyBy(fn(array $item) => $item['mahasiswa']['id']);
+        ])->keyBy(fn (array $item) => $item['mahasiswa']['id']);
 
         return collect($selectedMahasiswaIds)->map(function (string $studentId) use ($preview, $krsMap, $payload, $studentPayloads) {
             $previewItem = $preview->get($studentId);
             $item = $krsMap->get($studentId);
 
-            if (!$previewItem || $previewItem['status'] !== KrsCollectiveBatchItem::STATUS_READY || !$item) {
+            if (! $previewItem || $previewItem['status'] !== KrsCollectiveBatchItem::STATUS_READY || ! $item) {
                 return $previewItem ?? [
                     'id_mahasiswa' => $studentId,
                     'status' => KrsCollectiveBatchItem::STATUS_FAILED,
@@ -155,13 +154,13 @@ class KrsHistoricalKhsGenerationService
                 });
 
                 return $this->result($item['mahasiswa'], KrsCollectiveBatchItem::STATUS_EXECUTED, 'Hasil studi berhasil dibuat dari KRS historis', [
-                        'action_type' => KrsCollectiveBatch::ACTION_GENERATE_KHS,
-                        'id_krs' => $krs->id,
-                        'id_khs' => $khs->id,
-                        'semester_ke' => $snapshot['semester_ke'],
-                        'requires_manual_ipk' => $snapshot['requires_manual_ipk'],
-                        'summary' => $snapshot['summary'],
-                    ]);
+                    'action_type' => KrsCollectiveBatch::ACTION_GENERATE_KHS,
+                    'id_krs' => $krs->id,
+                    'id_khs' => $khs->id,
+                    'semester_ke' => $snapshot['semester_ke'],
+                    'requires_manual_ipk' => $snapshot['requires_manual_ipk'],
+                    'summary' => $snapshot['summary'],
+                ]);
             } catch (\Throwable $exception) {
                 return $this->result($item['mahasiswa'], KrsCollectiveBatchItem::STATUS_FAILED, $exception->getMessage(), [
                     'action_type' => KrsCollectiveBatch::ACTION_GENERATE_KHS,
@@ -204,13 +203,13 @@ class KrsHistoricalKhsGenerationService
                 ],
                 'krs' => $krsMap->get($studentId),
             ];
-        })->filter(fn(array $item) => !empty($item['mahasiswa']['id']));
+        })->filter(fn (array $item) => ! empty($item['mahasiswa']['id']));
     }
 
     private function buildSemesterSnapshot(string $mahasiswaId, string $semesterId, KRS $krs, ?array $studentPayload = null): array
     {
         $details = $krs->details
-            ->filter(fn(KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
+            ->filter(fn (KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
             ->map(function (KRSDetail $detail) {
                 return [
                     'id_krs_detail' => $detail->id,
@@ -244,9 +243,9 @@ class KrsHistoricalKhsGenerationService
             ? $this->resolveManualIpk($studentPayload)
             : $summary['ips'];
         $historicalRemark = $krs->details
-            ->filter(fn(KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
+            ->filter(fn (KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
             ->pluck('catatan')
-            ->filter(fn($catatan) => filled($catatan))
+            ->filter(fn ($catatan) => filled($catatan))
             ->first();
 
         return [
@@ -269,8 +268,8 @@ class KrsHistoricalKhsGenerationService
     {
         $semesterKe = $krs->details
             ->pluck('kelasKuliah.kurikulumMataKuliah.semester_ke')
-            ->filter(fn($value) => $value !== null)
-            ->map(fn($value) => (int) $value)
+            ->filter(fn ($value) => $value !== null)
+            ->map(fn ($value) => (int) $value)
             ->values();
 
         if ($semesterKe->isNotEmpty()) {
@@ -296,14 +295,14 @@ class KrsHistoricalKhsGenerationService
         $details = $krs->details;
 
         $activeDetails = $details
-            ->filter(fn(KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
+            ->filter(fn (KRSDetail $detail) => $detail->status !== KRSDetail::STATUS_DROP)
             ->values();
 
         if ($activeDetails->isEmpty()) {
             return 'Belum ada mata kuliah aktif pada KRS historis ini untuk dibuatkan hasil studi';
         }
 
-        $invalidScoreCount = $activeDetails->filter(fn(KRSDetail $detail) => !$detail->isFinalScored())->count();
+        $invalidScoreCount = $activeDetails->filter(fn (KRSDetail $detail) => ! $detail->isFinalScored())->count();
         if ($invalidScoreCount > 0) {
             return 'Masih ada nilai historis pada KRS detail yang belum final atau belum lengkap';
         }

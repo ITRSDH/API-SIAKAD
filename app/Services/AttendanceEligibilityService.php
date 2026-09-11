@@ -12,8 +12,7 @@ class AttendanceEligibilityService
 {
     public function __construct(
         private readonly AcademicPolicyService $academicPolicyService
-    ) {
-    }
+    ) {}
 
     public function summarizeForKrsDetail(KRSDetail $detail, ?float $minimumPercentage = null): array
     {

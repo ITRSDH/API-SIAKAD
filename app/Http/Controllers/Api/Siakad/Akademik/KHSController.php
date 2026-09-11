@@ -7,7 +7,7 @@ use App\Models\Akademik\KHS;
 use App\Models\Akademik\KHSDetail;
 use App\Models\Akademik\KRS;
 use App\Models\Akademik\KRSDetail;
-use App\Models\Akademik\PenilaianKelas;
+use App\Models\Akademik\NilaiTransfer;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Semester;
 use App\Services\ActiveCurriculumService;
@@ -85,7 +85,7 @@ class KHSController extends Controller
 
         $khs = $query->find($id);
 
-        if (!$khs) {
+        if (! $khs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KHS tidak ditemukan',
@@ -120,7 +120,7 @@ class KHSController extends Controller
         $mahasiswa = Mahasiswa::find($validated['id_mahasiswa']);
         $semester = Semester::with('tahunAkademik')->find($validated['id_semester']);
 
-        if (!$mahasiswa || !$semester) {
+        if (! $mahasiswa || ! $semester) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa atau semester tidak ditemukan',
@@ -137,14 +137,14 @@ class KHSController extends Controller
             ->where('status_approval', KRS::STATUS_APPROVED)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS approved untuk mahasiswa dan semester tersebut tidak ditemukan',
             ], 404);
         }
 
-        if (!$krs->is_locked) {
+        if (! $krs->is_locked) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS harus dalam kondisi terkunci sebelum KHS dapat digenerate',
@@ -250,14 +250,14 @@ class KHSController extends Controller
             ->where('status_approval', KRS::STATUS_APPROVED)
             ->first();
 
-        if (!$krs) {
+        if (! $krs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS approved untuk mahasiswa dan semester tersebut tidak ditemukan',
             ], 404);
         }
 
-        if (!$krs->is_locked) {
+        if (! $krs->is_locked) {
             return response()->json([
                 'success' => false,
                 'message' => 'KRS harus dalam kondisi terkunci sebelum KHS dapat dipreview',
@@ -307,7 +307,7 @@ class KHSController extends Controller
         }
 
         $khs = $query->find($id);
-        if (!$khs) {
+        if (! $khs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KHS tidak ditemukan',
@@ -315,7 +315,7 @@ class KHSController extends Controller
         }
 
         $detail = $khs->details->firstWhere('id', $detailId);
-        if (!$detail) {
+        if (! $detail) {
             return response()->json([
                 'success' => false,
                 'message' => 'Detail KHS tidak ditemukan',
@@ -350,7 +350,7 @@ class KHSController extends Controller
         }
 
         $khs = $query->find($id);
-        if (!$khs) {
+        if (! $khs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KHS tidak ditemukan',
@@ -382,7 +382,7 @@ class KHSController extends Controller
         }
 
         $khs = $query->find($id);
-        if (!$khs) {
+        if (! $khs) {
             return response()->json([
                 'success' => false,
                 'message' => 'KHS tidak ditemukan',
@@ -423,10 +423,27 @@ class KHSController extends Controller
         })->values();
         $summary = $this->calculationService->calculateSummaryFromKrsDetails($krs->details);
         $semesterKe = $this->resolveSemesterKe($krs);
-        $requiresManualIpk = $semesterKe > 1;
-        $ipk = $requiresManualIpk
-            ? ($manualIpk !== null ? round((float) $manualIpk, 2) : null)
-            : $summary['ips'];
+
+        // Hitung akumulasi IPK secara otomatis jika ada riwayat KHS sebelumnya atau Nilai Transfer
+        $autoIpk = null;
+        if ($mahasiswa) {
+            $autoIpk = $this->calculationService->calculateCumulativeIpkWithTransfer(
+                $mahasiswa,
+                (float) ($summary['total_mutu'] ?? 0),
+                (int) ($summary['total_sks_diambil'] ?? 0),
+                $semesterId
+            );
+        }
+
+        $hasPriorHistory = ($mahasiswa && $mahasiswa->khs()->where('is_final', true)->exists())
+            || NilaiTransfer::where('id_mahasiswa', $mahasiswaId)->exists();
+
+        // Hanya wajibkan input manual IPK jika semester di atas 1 dan benar-benar tidak ada riwayat akademik/konversi sebelumnya
+        $requiresManualIpk = $semesterKe > 1 && ! $hasPriorHistory && $autoIpk === null;
+
+        $ipk = $manualIpk !== null
+            ? round((float) $manualIpk, 2)
+            : ($autoIpk !== null ? $autoIpk : $summary['ips']);
 
         return [
             'semester_ke' => $semesterKe,
@@ -451,8 +468,8 @@ class KHSController extends Controller
     {
         $semesterKe = $krs->details
             ->pluck('kelasKuliah.kurikulumMataKuliah.semester_ke')
-            ->filter(fn($value) => $value !== null)
-            ->map(fn($value) => (int) $value)
+            ->filter(fn ($value) => $value !== null)
+            ->map(fn ($value) => (int) $value)
             ->values();
 
         return $semesterKe->isNotEmpty() ? (int) $semesterKe->max() : 1;
@@ -463,7 +480,7 @@ class KHSController extends Controller
         $details = $krs->details;
 
         $pendingDetails = $details
-            ->filter(fn(KRSDetail $detail) => $detail->status === KRSDetail::STATUS_TERDAFTAR)
+            ->filter(fn (KRSDetail $detail) => $detail->status === KRSDetail::STATUS_TERDAFTAR)
             ->values();
 
         if ($pendingDetails->isNotEmpty()) {
@@ -492,11 +509,11 @@ class KHSController extends Controller
                     ? $detail->nilaiKomponen->isNotEmpty()
                     : $detail->nilaiKomponen()->exists();
 
-                if (!$workflow || !$hasNilaiKomponen) {
+                if (! $workflow || ! $hasNilaiKomponen) {
                     return false;
                 }
 
-                return !$workflow->isPublished();
+                return ! $workflow->isPublished();
             })
             ->values();
 
@@ -511,7 +528,7 @@ class KHSController extends Controller
         }
 
         $incompleteDetails = $countedDetails
-            ->filter(fn(KRSDetail $detail) => !$detail->isFinalScored())
+            ->filter(fn (KRSDetail $detail) => ! $detail->isFinalScored())
             ->values();
 
         if ($incompleteDetails->isNotEmpty()) {
@@ -530,7 +547,7 @@ class KHSController extends Controller
     private function collectCountedKhsDetails(Collection $details): Collection
     {
         return $details
-            ->filter(fn(KRSDetail $detail) => $detail->isCountedInKhs())
+            ->filter(fn (KRSDetail $detail) => $detail->isCountedInKhs())
             ->values();
     }
 
@@ -538,7 +555,7 @@ class KHSController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -587,7 +604,7 @@ class KHSController extends Controller
         $normalized = [];
 
         foreach ($keys as $key) {
-            if (!$request->exists($key)) {
+            if (! $request->exists($key)) {
                 continue;
             }
 
@@ -595,6 +612,7 @@ class KHSController extends Controller
 
             if ($value === null || $value === '') {
                 $normalized[$key] = $value;
+
                 continue;
             }
 
@@ -622,7 +640,7 @@ class KHSController extends Controller
             }
         }
 
-        if (!empty($normalized)) {
+        if (! empty($normalized)) {
             $request->merge($normalized);
         }
     }

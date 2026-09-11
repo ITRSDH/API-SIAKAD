@@ -14,13 +14,19 @@ class KrsCollectiveBatchItem extends Model
     use HasUuids;
 
     public const STATUS_READY = 'ready';
+
     public const STATUS_EXECUTED = 'executed';
+
     public const STATUS_SKIPPED = 'skipped';
+
     public const STATUS_FAILED = 'failed';
 
     protected $table = 'krs_collective_batch_items';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

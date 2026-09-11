@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use App\Http\Controllers\Api\Website\ProfileDosenController;
+use App\Models\Website\ProfileDosen;
+use App\Services\ImageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Mockery;
-use App\Services\ImageService;
-use App\Models\Website\ProfileDosen;
-use App\Http\Controllers\Api\Website\ProfileDosenController;
+use Tests\TestCase;
 
 class ProfileDosenControllerTest extends TestCase
 {
@@ -73,11 +73,11 @@ class ProfileDosenControllerTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['success','message','data' => ['id','nama','nidn','foto','status','id_prodi']]);
+            ->assertJsonStructure(['success', 'message', 'data' => ['id', 'nama', 'nidn', 'foto', 'status', 'id_prodi']]);
 
         $this->assertDatabaseHas('profile_dosen', [
             'nidn' => '12345',
-            'nama' => 'Budi'
+            'nama' => 'Budi',
         ]);
     }
 
@@ -86,8 +86,8 @@ class ProfileDosenControllerTest extends TestCase
         $id = (string) Str::uuid();
         $prodiId = (string) Str::uuid();
         $jenjangId = (string) Str::uuid();
-        DB::table('jenjang_pendidikan')->insert(['id'=>$jenjangId,'kode_jenjang'=>'S1','nama_jenjang'=>'Sarjana','deskripsi'=>null,'jumlah_semester'=>8,'created_at'=>now(),'updated_at'=>now()]);
-        DB::table('prodi')->insert(['id'=>$prodiId,'id_jenjang_pendidikan'=>$jenjangId,'kode_prodi'=>'S1-T','nama_prodi'=>'Prodi','created_at'=>now(),'updated_at'=>now()]);
+        DB::table('jenjang_pendidikan')->insert(['id' => $jenjangId, 'kode_jenjang' => 'S1', 'nama_jenjang' => 'Sarjana', 'deskripsi' => null, 'jumlah_semester' => 8, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('prodi')->insert(['id' => $prodiId, 'id_jenjang_pendidikan' => $jenjangId, 'kode_prodi' => 'S1-T', 'nama_prodi' => 'Prodi', 'created_at' => now(), 'updated_at' => now()]);
 
         ProfileDosen::create([
             'id' => $id,
@@ -112,8 +112,8 @@ class ProfileDosenControllerTest extends TestCase
         $id = (string) Str::uuid();
         $prodiId = (string) Str::uuid();
         $jenjangId = (string) Str::uuid();
-        DB::table('jenjang_pendidikan')->insert(['id'=>$jenjangId,'kode_jenjang'=>'S1','nama_jenjang'=>'Sarjana','deskripsi'=>null,'jumlah_semester'=>8,'created_at'=>now(),'updated_at'=>now()]);
-        DB::table('prodi')->insert(['id'=>$prodiId,'id_jenjang_pendidikan'=>$jenjangId,'kode_prodi'=>'S1-T','nama_prodi'=>'Prodi','created_at'=>now(),'updated_at'=>now()]);
+        DB::table('jenjang_pendidikan')->insert(['id' => $jenjangId, 'kode_jenjang' => 'S1', 'nama_jenjang' => 'Sarjana', 'deskripsi' => null, 'jumlah_semester' => 8, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('prodi')->insert(['id' => $prodiId, 'id_jenjang_pendidikan' => $jenjangId, 'kode_prodi' => 'S1-T', 'nama_prodi' => 'Prodi', 'created_at' => now(), 'updated_at' => now()]);
 
         ProfileDosen::create([
             'id' => $id,
@@ -146,7 +146,7 @@ class ProfileDosenControllerTest extends TestCase
 
         $id = (string) Str::uuid();
         $prodiId = (string) Str::uuid();
-        DB::table('prodi')->insert(['id'=>$prodiId,'nama_prodi'=>'Prodi','created_at'=>now(),'updated_at'=>now()]);
+        DB::table('prodi')->insert(['id' => $prodiId, 'nama_prodi' => 'Prodi', 'created_at' => now(), 'updated_at' => now()]);
 
         // create a dummy file and profile
         Storage::disk('public')->put('profile_dosen/file.webp', '');
@@ -158,7 +158,7 @@ class ProfileDosenControllerTest extends TestCase
             'status' => 'Dosen',
             'id_prodi' => $prodiId,
             'biografi' => 'Bio',
-            'foto' => 'profile_dosen/file.webp'
+            'foto' => 'profile_dosen/file.webp',
         ]);
 
         $mock = Mockery::mock(ImageService::class);

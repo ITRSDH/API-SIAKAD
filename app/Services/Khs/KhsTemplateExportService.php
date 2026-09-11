@@ -43,7 +43,7 @@ class KhsTemplateExportService
             'metadata' => [
                 'angkatan' => (int) $filters['angkatan'],
                 'semester_ke' => $semesterKe,
-                'semester_label' => trim(($semester->nama_semester ?? '-') . ' ' . ($semester->tahunAkademik?->tahun_akademik ?? '-')),
+                'semester_label' => trim(($semester->nama_semester ?? '-').' '.($semester->tahunAkademik?->tahun_akademik ?? '-')),
                 'prodi_label' => $prodi?->nama_prodi ?? ($krsCollection->first()?->mahasiswa?->prodi?->nama_prodi ?? ''),
             ],
             'subjects' => $subjects->values()->all(),
@@ -70,7 +70,7 @@ class KhsTemplateExportService
                     ];
                 });
             })
-            ->filter(fn(array $subject) => filled($subject['kode_mk']))
+            ->filter(fn (array $subject) => filled($subject['kode_mk']))
             ->unique('kode_mk')
             ->sortBy('kode_mk')
             ->values();
@@ -95,7 +95,7 @@ class KhsTemplateExportService
 
                         return $detailSemesterKe > 0 && $detailSemesterKe <= $semesterKe;
                     })
-                    ->keyBy(fn(KRSDetail $detail) => $detail->kode_mata_kuliah);
+                    ->keyBy(fn (KRSDetail $detail) => $detail->kode_mata_kuliah);
 
                 return [
                     'no' => $index + 1,

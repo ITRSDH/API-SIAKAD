@@ -11,8 +11,11 @@ class ProfileKampus extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'profile_kampus';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

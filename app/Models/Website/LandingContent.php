@@ -8,11 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class LandingContent extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'landing_content';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -73,5 +76,4 @@ class LandingContent extends Model
     {
         $this->attributes['jumlah_mitra'] = $value ?? 0;
     }
-
 }

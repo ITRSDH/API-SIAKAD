@@ -15,16 +15,15 @@ class GaleriSeeder extends Seeder
     public function run(): void
     {
         echo "\n⏳ Sedang membuat 10.000 data galeri... ini memakan waktu beberapa detik\n";
-        
+
         // Truncate table dulu untuk clear data lama
         DB::table('galeri')->truncate();
         echo "✓ Cleared existing galeri data\n";
-        
+
         // Create 10.000 galeri items
         Galeri::factory(10000)->create();
-        
+
         echo "✅ Berhasil membuat 10.000 data galeri!\n";
-        echo "📊 Total records: " . Galeri::count() . "\n";
+        echo '📊 Total records: '.Galeri::count()."\n";
     }
 }
-

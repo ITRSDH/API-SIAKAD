@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\Prestasi;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class PrestasiControllerTest extends TestCase
 {
@@ -17,7 +17,7 @@ class PrestasiControllerTest extends TestCase
         $response = $this->getJson('/api/v1/prestasi');
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'success', 'message', 'data' => [['id', 'nama_mahasiswa', 'program_studi', 'judul_prestasi', 'tingkat', 'tahun', 'deskripsi', 'gambar', 'created_at']]
+                'success', 'message', 'data' => [['id', 'nama_mahasiswa', 'program_studi', 'judul_prestasi', 'tingkat', 'tahun', 'deskripsi', 'gambar', 'created_at']],
             ]);
     }
 
@@ -42,7 +42,7 @@ class PrestasiControllerTest extends TestCase
     public function test_show_returns_prestasi_detail()
     {
         $prestasi = Prestasi::factory()->create();
-        $response = $this->getJson('/api/v1/prestasi/' . $prestasi->id);
+        $response = $this->getJson('/api/v1/prestasi/'.$prestasi->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
@@ -55,7 +55,7 @@ class PrestasiControllerTest extends TestCase
             'judul_prestasi' => 'Juara 2 Lomba Coding',
             'gambar' => $file,
         ];
-        $response = $this->put('/api/v1/prestasi/' . $prestasi->id, $data);
+        $response = $this->put('/api/v1/prestasi/'.$prestasi->id, $data);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseHas('prestasi', ['id' => $prestasi->id, 'judul_prestasi' => 'Juara 2 Lomba Coding']);
@@ -64,7 +64,7 @@ class PrestasiControllerTest extends TestCase
     public function test_destroy_deletes_prestasi()
     {
         $prestasi = Prestasi::factory()->create();
-        $response = $this->deleteJson('/api/v1/prestasi/' . $prestasi->id);
+        $response = $this->deleteJson('/api/v1/prestasi/'.$prestasi->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseMissing('prestasi', ['id' => $prestasi->id]);

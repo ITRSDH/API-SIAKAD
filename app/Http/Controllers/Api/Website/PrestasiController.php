@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\Website;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Website\Prestasi;
 use App\Http\Requests\Website\StorePrestasiRequest;
 use App\Http\Requests\Website\UpdatePrestasiRequest;
+use App\Models\Website\Prestasi;
 use App\Services\ImageService;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PrestasiController extends Controller
 {
@@ -55,34 +55,34 @@ class PrestasiController extends Controller
     {
         try {
             Log::info('Start store prestasi', [
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
-    
+
             $data = $request->validated();
-    
+
             if ($request->hasFile('gambar')) {
                 Log::info('Upload gambar detected');
-    
+
                 $newStoragePath = $imageService->convertToWebpAndReplace(
                     $request->file('gambar'),
                     75,
                     'prestasi'
                 );
-    
+
                 Log::info('Gambar berhasil diproses', [
-                    'path' => $newStoragePath
+                    'path' => $newStoragePath,
                 ]);
-    
+
                 $data['gambar'] = $newStoragePath;
             }
-    
+
             $prestasi = Prestasi::create($data);
-    
+
             Log::info('Prestasi berhasil dibuat', [
                 'prestasi_id' => $prestasi->id,
-                'data' => $prestasi
+                'data' => $prestasi,
             ]);
-    
+
             return response()->json(
                 [
                     'success' => true,
@@ -91,17 +91,17 @@ class PrestasiController extends Controller
                 ],
                 201
             );
-    
+
         } catch (\Exception $e) {
-    
+
             Log::error('Error store prestasi', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+                'request' => $request->all(),
             ]);
-    
+
             return response()->json(
                 [
                     'success' => false,
@@ -117,6 +117,7 @@ class PrestasiController extends Controller
     {
         try {
             $prestasi = Prestasi::findOrFail($id);
+
             return response()->json(
                 [
                     'success' => true,
@@ -149,6 +150,7 @@ class PrestasiController extends Controller
                 $data['gambar'] = $newStoragePath;
             }
             $prestasi->update($data);
+
             return response()->json(
                 [
                     'success' => true,
@@ -177,6 +179,7 @@ class PrestasiController extends Controller
                 Storage::disk('public')->delete($prestasi->gambar);
             }
             $prestasi->delete();
+
             return response()->json(
                 [
                     'success' => true,

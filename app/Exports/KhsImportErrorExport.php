@@ -11,8 +11,7 @@ class KhsImportErrorExport implements FromCollection, WithHeadings, WithMapping
 {
     public function __construct(
         private readonly KhsImportBatch $batch
-    ) {
-    }
+    ) {}
 
     public function collection()
     {

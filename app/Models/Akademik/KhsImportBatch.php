@@ -15,8 +15,11 @@ class KhsImportBatch extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'khs_import_batches';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

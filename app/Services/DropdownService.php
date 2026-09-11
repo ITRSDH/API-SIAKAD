@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\KurikulumMataKuliah;
+use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Prodi;
 use App\Models\MasterData\TahunAkademik;
-use App\Models\MasterData\Mahasiswa;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -16,13 +16,13 @@ class DropdownService
     public function get(string $type)
     {
         $available = [
-            'prodi'     => fn() => $this->prodi(),
-            'semester'  => fn() => $this->semester(),
-            'kurikulum'  => fn() => $this->kurikulum(),
-            'kurikulum_matakuliah'  => fn() => $this->kurikulum_matakuliah(),
-            'dosen_pengajar'  => fn() => $this->dosen_pengajar(),
-            'dosen_wali'  => fn() => $this->dosen_wali(),
-            'mahasiswa_wali'  => fn() => $this->mahasiswa_wali(),
+            'prodi' => fn () => $this->prodi(),
+            'semester' => fn () => $this->semester(),
+            'kurikulum' => fn () => $this->kurikulum(),
+            'kurikulum_matakuliah' => fn () => $this->kurikulum_matakuliah(),
+            'dosen_pengajar' => fn () => $this->dosen_pengajar(),
+            'dosen_wali' => fn () => $this->dosen_wali(),
+            'mahasiswa_wali' => fn () => $this->mahasiswa_wali(),
         ];
 
         $types = explode(',', $type);
@@ -31,7 +31,7 @@ class DropdownService
         foreach ($types as $item) {
             $key = trim($item);
 
-            if (!isset($available[$key])) {
+            if (! isset($available[$key])) {
                 throw new InvalidArgumentException("Dropdown type '{$key}' tidak valid.");
             }
 
@@ -70,19 +70,19 @@ class DropdownService
             ->get()
             ->map(function ($item) {
                 $mulaiBerlaku = $item->kurikulum?->semesterMulai?->tahunAkademik
-                    ? trim($item->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->kurikulum->semesterMulai->nama_semester)
+                    ? trim($item->kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$item->kurikulum->semesterMulai->nama_semester)
                     : null;
 
                 return [
                     'id' => $item->id,
                     'matakuliah' => $item->mataKuliah->kode_mk
-                        . ' - ' . $item->mataKuliah->nama_mk
-                        . ' (SKS ' . $item->mataKuliah->sks . ')'
-                        . ' - '
-                        . ' (Semester ' . $item->semester_ke . ')'
-                        . '  '
-                        . ($item->kurikulum?->nama_kurikulum ?? $item->kurikulum?->nama_struktur_mk)
-                        . ($mulaiBerlaku ? ' (Mulai ' . $mulaiBerlaku . ')' : ''),
+                        .' - '.$item->mataKuliah->nama_mk
+                        .' (SKS '.$item->mataKuliah->sks.')'
+                        .' - '
+                        .' (Semester '.$item->semester_ke.')'
+                        .'  '
+                        .($item->kurikulum?->nama_kurikulum ?? $item->kurikulum?->nama_struktur_mk)
+                        .($mulaiBerlaku ? ' (Mulai '.$mulaiBerlaku.')' : ''),
                 ];
             });
     }
@@ -97,7 +97,7 @@ class DropdownService
             ->get()
             ->map(function ($item) {
                 $mulaiBerlaku = $item->semesterMulai?->tahunAkademik
-                    ? trim($item->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $item->semesterMulai->nama_semester)
+                    ? trim($item->semesterMulai->tahunAkademik->tahun_akademik.' '.$item->semesterMulai->nama_semester)
                     : null;
 
                 return [
@@ -110,8 +110,8 @@ class DropdownService
                     'kurikulum' => collect([
                         $item->kode_kurikulum,
                         $item->nama_struktur_mk,
-                        $mulaiBerlaku ? 'Mulai ' . $mulaiBerlaku : null,
-                        $item->prodi ? '(' . $item->prodi->jenjang_pendidikan . ') ' . $item->prodi->nama_prodi : null,
+                        $mulaiBerlaku ? 'Mulai '.$mulaiBerlaku : null,
+                        $item->prodi ? '('.$item->prodi->jenjang_pendidikan.') '.$item->prodi->nama_prodi : null,
                     ])->filter()->implode(' - '),
                 ];
             });
@@ -123,7 +123,7 @@ class DropdownService
             ->get()->map(function ($item) {
                 return [
                     'id' => $item->id,
-                    'dosen_pengajar' => $item->nidn . ' - ' . $item->nama_dosen . ' (' . $item->prodi->jenjang_pendidikan . ' ' . $item->prodi->nama_prodi . ')'
+                    'dosen_pengajar' => $item->nidn.' - '.$item->nama_dosen.' ('.$item->prodi->jenjang_pendidikan.' '.$item->prodi->nama_prodi.')',
                 ];
             });
     }
@@ -140,9 +140,9 @@ class DropdownService
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
-                    'dosen_wali' => $item->nidn . ' - ' . $item->nama_dosen . ' (' .
-                        ($item->prodi->jenjang_pendidikan ?? '') . ' ' .
-                        ($item->prodi->nama_prodi ?? '') . ')'
+                    'dosen_wali' => $item->nidn.' - '.$item->nama_dosen.' ('.
+                        ($item->prodi->jenjang_pendidikan ?? '').' '.
+                        ($item->prodi->nama_prodi ?? '').')',
                 ];
             });
     }
@@ -157,7 +157,7 @@ class DropdownService
                     'id' => $item->id,
                     'nim' => $item->nim,
                     'nama_mahasiswa' => $item->nama_mahasiswa,
-                    'prodi' => ' (' . $item->prodi->jenjang_pendidikan . ' ' . $item->prodi->nama_prodi . ')',
+                    'prodi' => ' ('.$item->prodi->jenjang_pendidikan.' '.$item->prodi->nama_prodi.')',
                 ];
             });
     }

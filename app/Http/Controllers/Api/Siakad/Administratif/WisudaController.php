@@ -27,7 +27,7 @@ class WisudaController extends Controller
         $periode = PeriodeWisuda::with(['peserta.mahasiswa:id,nim,nama_mahasiswa', 'peserta.kelulusan'])
             ->find($id);
 
-        if (!$periode) {
+        if (! $periode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode wisuda tidak ditemukan',
@@ -73,7 +73,7 @@ class WisudaController extends Controller
     {
         $periode = PeriodeWisuda::find($id);
 
-        if (!$periode) {
+        if (! $periode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode wisuda tidak ditemukan',
@@ -103,7 +103,7 @@ class WisudaController extends Controller
     {
         $periode = PeriodeWisuda::find($id_periode_wisuda);
 
-        if (!$periode) {
+        if (! $periode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode wisuda tidak ditemukan',
@@ -130,7 +130,7 @@ class WisudaController extends Controller
             'kelulusan:id,id_mahasiswa,tanggal_lulus,nomor_ijazah,status',
         ])->find($id);
 
-        if (!$peserta) {
+        if (! $peserta) {
             return response()->json([
                 'success' => false,
                 'message' => 'Peserta wisuda tidak ditemukan',
@@ -147,7 +147,7 @@ class WisudaController extends Controller
     {
         $periode = PeriodeWisuda::find($id_periode_wisuda);
 
-        if (!$periode) {
+        if (! $periode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode wisuda tidak ditemukan',
@@ -167,7 +167,7 @@ class WisudaController extends Controller
             ->orderByDesc('generated_at')
             ->first();
 
-        if (!$kelulusan) {
+        if (! $kelulusan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Mahasiswa belum memiliki data kelulusan',
@@ -217,7 +217,7 @@ class WisudaController extends Controller
     {
         $peserta = PesertaWisuda::find($id);
 
-        if (!$peserta) {
+        if (! $peserta) {
             return response()->json([
                 'success' => false,
                 'message' => 'Peserta wisuda tidak ditemukan',

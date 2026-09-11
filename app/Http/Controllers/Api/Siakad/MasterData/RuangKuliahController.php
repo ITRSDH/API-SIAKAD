@@ -25,7 +25,7 @@ class RuangKuliahController extends Controller
     {
         $data = RuangKuliah::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ruang kuliah tidak ditemukan',
@@ -69,7 +69,7 @@ class RuangKuliahController extends Controller
     {
         $data = RuangKuliah::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ruang kuliah tidak ditemukan',
@@ -77,7 +77,7 @@ class RuangKuliahController extends Controller
         }
 
         $validated = $request->validate([
-            'kode_ruang' => 'sometimes|required|string|max:30|unique:ruang_kuliah,kode_ruang,' . $id,
+            'kode_ruang' => 'sometimes|required|string|max:30|unique:ruang_kuliah,kode_ruang,'.$id,
             'nama_ruang' => 'sometimes|required|string|max:255',
             'gedung' => 'nullable|string|max:255',
             'lantai' => 'nullable|string|max:20',
@@ -98,7 +98,7 @@ class RuangKuliahController extends Controller
     {
         $data = RuangKuliah::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ruang kuliah tidak ditemukan',

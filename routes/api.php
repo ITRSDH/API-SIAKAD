@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\ManagementPengguna\PermissionController;
 use App\Http\Controllers\Api\ManagementPengguna\RoleController;
 use App\Http\Controllers\Api\ManagementPengguna\UserController;
+use App\Http\Controllers\Api\Siakad\Administratif\PddiktiSettingController;
 use App\Http\Controllers\Api\Siakad\Administratif\WisudaController;
 use App\Http\Controllers\Api\Siakad\Akademik\AcademicPolicyController;
 use App\Http\Controllers\Api\Siakad\Akademik\StudentStudyAdministrationController;
@@ -78,6 +79,7 @@ Route::prefix('v1')->group(function () {
                     Route::put('konversi-mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KonversiMataKuliahController::class, 'update'])->name('konversi-mata-kuliah.update');
                     Route::delete('konversi-mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KonversiMataKuliahController::class, 'destroy'])->name('konversi-mata-kuliah.destroy');
 
+                    Route::get('mata-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'index'])->name('mata-kuliah.all');
                     Route::get('mata-kuliah/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'index'])->name('mata-kuliah.index');
                     Route::post('mata-kuliah/prodi/{id_prodi}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'store'])->name('mata-kuliah.store');
                     Route::get('mata-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MataKuliahController::class, 'show'])->name('mata-kuliah.show');
@@ -150,6 +152,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('mahasiswa-baru', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'index'])->name('mahasiswa-baru.index');
                     Route::get('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'show'])->name('mahasiswa-baru.show');
                     Route::post('mahasiswa-baru/sync', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'sync'])->name('mahasiswa-baru.sync');
+                    Route::post('mahasiswa-baru/{id}/verify', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'verify'])->name('mahasiswa-baru.verify');
                     Route::put('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'update'])->name('mahasiswa-baru.update');
                     Route::delete('mahasiswa-baru/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\MahasiswaBaruController::class, 'destroy'])->name('mahasiswa-baru.destroy');
                 });
@@ -313,6 +316,15 @@ Route::prefix('v1')->group(function () {
                 Route::post('transkrip/generate', [\App\Http\Controllers\Api\Siakad\Akademik\TranskripController::class, 'generate'])->name('generate');
             });
 
+            Route::name('nilai-transfer.')->group(function () {
+                Route::get('nilai-transfer', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'index'])->name('index');
+                Route::get('nilai-transfer/summary/{mahasiswaId}', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'summary'])->name('summary');
+                Route::get('nilai-transfer/{id}', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'show'])->name('show');
+                Route::post('nilai-transfer', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'store'])->name('store');
+                Route::put('nilai-transfer/{id}', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'update'])->name('update');
+                Route::delete('nilai-transfer/{id}', [\App\Http\Controllers\Api\Siakad\Akademik\NilaiTransferController::class, 'destroy'])->name('destroy');
+            });
+
             Route::name('yudisium.')->group(function () {
                 Route::get('yudisium', [\App\Http\Controllers\Api\Siakad\Akademik\YudisiumController::class, 'index'])->name('index');
                 Route::get('yudisium/{id}', [\App\Http\Controllers\Api\Siakad\Akademik\YudisiumController::class, 'show'])->name('show');
@@ -398,6 +410,12 @@ Route::prefix('v1')->group(function () {
                 Route::post('wisuda/periode/{id_periode_wisuda}/peserta', [WisudaController::class, 'storePeserta'])->name('peserta.store');
                 Route::get('wisuda/peserta/{id}', [WisudaController::class, 'showPeserta'])->name('peserta.show');
                 Route::put('wisuda/peserta/{id}', [WisudaController::class, 'updatePeserta'])->name('peserta.update');
+            });
+
+            Route::name('pddikti.')->prefix('pddikti')->group(function () {
+                Route::get('setting', [PddiktiSettingController::class, 'index'])->name('setting.index');
+                Route::post('setting', [PddiktiSettingController::class, 'update'])->name('setting.update');
+                Route::post('test-connection', [PddiktiSettingController::class, 'testConnection'])->name('test-connection');
             });
         });
     });

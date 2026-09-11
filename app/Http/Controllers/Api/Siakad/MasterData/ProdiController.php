@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Prodi;
+use Exception;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ProdiController extends Controller
 {
@@ -28,7 +28,7 @@ class ProdiController extends Controller
 
             $prodi = $prodiQuery
                 ->get()
-                ->map(fn(Prodi $item) => $this->serializeProdi($item, $hasKaprodiColumn))
+                ->map(fn (Prodi $item) => $this->serializeProdi($item, $hasKaprodiColumn))
                 ->values();
 
             $dosenListQuery = Dosen::query()->select('id', 'nama_dosen', 'nup', 'nidn');
@@ -43,7 +43,7 @@ class ProdiController extends Controller
 
             $dosen_list = $dosenListQuery
                 ->get()
-                ->map(fn(Dosen $dosen) => $this->serializeDosenOption($dosen))
+                ->map(fn (Dosen $dosen) => $this->serializeDosenOption($dosen))
                 ->values();
 
             return response()->json([
@@ -52,13 +52,13 @@ class ProdiController extends Controller
                 'data' => [
                     'prodi' => $prodi,
                     'dosen_list' => $dosen_list,
-                ]
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data All Program Studi.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -75,7 +75,7 @@ class ProdiController extends Controller
                 'jenjang_pendidikan' => 'required|string|max:100',
                 'id_kaprodi' => 'nullable|exists:dosen,id',
                 'akreditasi' => 'nullable|string|max:50',
-                'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
+                'tahun_berdiri' => 'nullable|integer|min:1900|max:'.(date('Y') + 1),
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);
 
@@ -84,13 +84,13 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil ditambahkan',
-                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup')),
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambahkan program studi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -101,10 +101,10 @@ class ProdiController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            if (!Str::isUuid($id)) {
+            if (! Str::isUuid($id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ID harus berupa UUID yang valid'
+                    'message' => 'ID harus berupa UUID yang valid',
                 ], 400);
             }
 
@@ -122,13 +122,13 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Detail program studi',
-                'data' => $this->serializeProdi($prodi)
+                'data' => $this->serializeProdi($prodi),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Program studi tidak ditemukan',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
         }
     }
@@ -139,22 +139,22 @@ class ProdiController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         try {
-            if (!Str::isUuid($id)) {
+            if (! Str::isUuid($id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ID harus berupa UUID yang valid'
+                    'message' => 'ID harus berupa UUID yang valid',
                 ], 400);
             }
 
             $prodi = Prodi::findOrFail($id);
 
             $request->validate([
-                'kode_prodi' => 'sometimes|required|unique:prodi,kode_prodi,' . $id,
+                'kode_prodi' => 'sometimes|required|unique:prodi,kode_prodi,'.$id,
                 'nama_prodi' => 'sometimes|required|string|max:100',
                 'jenjang_pendidikan' => 'sometimes|required|string|max:100',
                 'id_kaprodi' => 'sometimes|nullable|exists:dosen,id',
                 'akreditasi' => 'nullable|string|max:50',
-                'tahun_berdiri' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
+                'tahun_berdiri' => 'nullable|integer|min:1900|max:'.(date('Y') + 1),
                 'gelar_lulusan' => 'nullable|string|max:100',
             ]);
 
@@ -163,13 +163,13 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program studi berhasil diperbarui',
-                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup')),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui program studi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -180,10 +180,10 @@ class ProdiController extends Controller
     public function destroy($id): JsonResponse
     {
         try {
-            if (!Str::isUuid($id)) {
+            if (! Str::isUuid($id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ID harus berupa UUID yang valid'
+                    'message' => 'ID harus berupa UUID yang valid',
                 ], 400);
             }
 
@@ -193,13 +193,13 @@ class ProdiController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Program studi berhasil dihapus'
+                'message' => 'Program studi berhasil dihapus',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus program studi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -210,15 +210,15 @@ class ProdiController extends Controller
     public function updateKaprodi(Request $request, $id): JsonResponse
     {
         try {
-            if (!Str::isUuid($id)) {
+            if (! Str::isUuid($id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ID harus berupa UUID yang valid'
+                    'message' => 'ID harus berupa UUID yang valid',
                 ], 400);
             }
 
             $request->validate([
-                'id_kaprodi' => 'nullable|exists:dosen,id|unique:prodi,id_kaprodi' // Tambahkan unique constraint
+                'id_kaprodi' => 'nullable|exists:dosen,id|unique:prodi,id_kaprodi', // Tambahkan unique constraint
             ]);
 
             $prodi = Prodi::findOrFail($id);
@@ -228,13 +228,13 @@ class ProdiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Kaprodi berhasil diperbarui',
-                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup'))
+                'data' => $this->serializeProdi($prodi->load('kaprodi:id,nama_dosen,nidn,nup')),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui kaprodi',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

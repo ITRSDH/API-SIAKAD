@@ -23,10 +23,10 @@ class PemetaanCPLMKController extends Controller
             $levelPemetaan = $request->get('level_pemetaan', 'cpl');
 
             // ✅ Validasi level
-            if (!in_array($levelPemetaan, ['cpl', 'cpl_ik'])) {
+            if (! in_array($levelPemetaan, ['cpl', 'cpl_ik'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Level pemetaan tidak valid. Pilih: cpl atau cpl_ik'
+                    'message' => 'Level pemetaan tidak valid. Pilih: cpl atau cpl_ik',
                 ], 400);
             }
 
@@ -67,8 +67,8 @@ class PemetaanCPLMKController extends Controller
                     'level_pemetaan' => $levelPemetaan,
                     'cpl' => $cpls,
                     'mata_kuliah' => $mataKuliahs,
-                    'mapping' => $mapping
-                ]
+                    'mapping' => $mapping,
+                ],
             ];
 
             // ✅ Tambahkan IK kalau diperlukan
@@ -82,7 +82,7 @@ class PemetaanCPLMKController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server',
-                'error' => $e->getMessage() // opsional, bisa dihapus di production
+                'error' => $e->getMessage(), // opsional, bisa dihapus di production
             ], 500);
         }
     }
@@ -100,7 +100,7 @@ class PemetaanCPLMKController extends Controller
             'mapping.*.*' => 'nullable|numeric|min:0|max:100',
             'indikator_kinerja_mapping' => 'nullable|array',
             'indikator_kinerja_mapping.*' => 'nullable|array',
-            'indikator_kinerja_mapping.*.*' => 'nullable|numeric|min:0|max:100'
+            'indikator_kinerja_mapping.*.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
         DB::beginTransaction();
@@ -113,7 +113,7 @@ class PemetaanCPLMKController extends Controller
                 $cpl = Cpl::findOrFail($cplId);
                 $syncData = [];
 
-                $selected = array_filter($mkData, fn($v) => $v > 0);
+                $selected = array_filter($mkData, fn ($v) => $v > 0);
                 $count = count($selected);
 
                 if ($count > 0) {
@@ -138,7 +138,7 @@ class PemetaanCPLMKController extends Controller
                     $ik = IndikatorKinerja::findOrFail($ikId);
                     $syncData = [];
 
-                    $selected = array_filter($mkData, fn($v) => $v > 0);
+                    $selected = array_filter($mkData, fn ($v) => $v > 0);
                     $count = count($selected);
 
                     if ($count > 0) {
@@ -167,7 +167,7 @@ class PemetaanCPLMKController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'level_pemetaan' => $levelPemetaan
+                'level_pemetaan' => $levelPemetaan,
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -175,7 +175,7 @@ class PemetaanCPLMKController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan data',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

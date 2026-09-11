@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('status', 100);
             $table->uuid('id_prodi')->nullable();
             $table->text('biografi')->nullable();
-            
+
             // Tambah foreign key constraint
             $table->foreign('id_prodi')
                 ->references('id')

@@ -30,7 +30,7 @@ class AcademicPolicyService
         $stored = AcademicPolicy::query()
             ->get()
             ->keyBy('key')
-            ->map(fn(AcademicPolicy $policy) => $policy->value)
+            ->map(fn (AcademicPolicy $policy) => $policy->value)
             ->all();
 
         $resolved = [];
@@ -53,7 +53,7 @@ class AcademicPolicyService
     public function updateMany(array $payload): array
     {
         foreach ($payload as $key => $value) {
-            if (!array_key_exists($key, self::DEFAULT_POLICIES)) {
+            if (! array_key_exists($key, self::DEFAULT_POLICIES)) {
                 continue;
             }
 
@@ -71,13 +71,14 @@ class AcademicPolicyService
 
     private function mergePolicy(array $defaults, mixed $overrides): array
     {
-        if (!is_array($overrides)) {
+        if (! is_array($overrides)) {
             return $defaults;
         }
 
         foreach ($overrides as $key => $value) {
             if (is_array($value) && isset($defaults[$key]) && is_array($defaults[$key])) {
                 $defaults[$key] = $this->mergePolicy($defaults[$key], $value);
+
                 continue;
             }
 

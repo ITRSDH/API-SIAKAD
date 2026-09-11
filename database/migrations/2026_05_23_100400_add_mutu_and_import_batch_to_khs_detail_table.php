@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('khs_detail', 'mutu')) {
+        if (! Schema::hasColumn('khs_detail', 'mutu')) {
             Schema::table('khs_detail', function (Blueprint $table) {
                 $table->decimal('mutu', 6, 2)->nullable()->after('bobot_nilai');
             });
         }
 
-        if (!Schema::hasColumn('khs_detail', 'id_import_batch')) {
+        if (! Schema::hasColumn('khs_detail', 'id_import_batch')) {
             Schema::table('khs_detail', function (Blueprint $table) {
                 $table->uuid('id_import_batch')->nullable()->after('id_mata_kuliah');
             });

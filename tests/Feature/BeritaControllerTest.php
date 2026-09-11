@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\Berita;
-use Illuminate\Support\Str;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class BeritaControllerTest extends TestCase
 {
@@ -23,8 +22,8 @@ class BeritaControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    '*' => ['id', 'judul', 'isi', 'kategori', 'created_at']
-                ]
+                    '*' => ['id', 'judul', 'isi', 'kategori', 'created_at'],
+                ],
             ]);
     }
 
@@ -60,7 +59,7 @@ class BeritaControllerTest extends TestCase
     {
         $berita = Berita::factory()->create();
 
-        $response = $this->getJson('/api/v1/berita/' . $berita->id);
+        $response = $this->getJson('/api/v1/berita/'.$berita->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -71,7 +70,7 @@ class BeritaControllerTest extends TestCase
                     'judul' => $berita->judul,
                     'isi' => $berita->isi,
                     'kategori' => $berita->kategori,
-                ]
+                ],
             ]);
     }
 
@@ -86,7 +85,7 @@ class BeritaControllerTest extends TestCase
             'gambar' => $file,
         ];
 
-        $response = $this->put('/api/v1/berita/' . $berita->id, $data);
+        $response = $this->put('/api/v1/berita/'.$berita->id, $data);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -109,7 +108,7 @@ class BeritaControllerTest extends TestCase
     {
         $berita = Berita::factory()->create();
 
-        $response = $this->deleteJson('/api/v1/berita/' . $berita->id);
+        $response = $this->deleteJson('/api/v1/berita/'.$berita->id);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -118,7 +117,7 @@ class BeritaControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('berita', [
-            'id' => $berita->id
+            'id' => $berita->id,
         ]);
     }
 }

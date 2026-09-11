@@ -12,8 +12,7 @@ class StudentStudyAdministrationController extends Controller
 {
     public function __construct(
         private readonly StudentStudyAdministrationService $service
-    ) {
-    }
+    ) {}
 
     public function filters(Request $request): JsonResponse
     {
@@ -80,7 +79,7 @@ class StudentStudyAdministrationController extends Controller
 
         $batch = $this->service->findBatch($source, $id);
 
-        if (!$batch) {
+        if (! $batch) {
             return response()->json([
                 'success' => false,
                 'message' => 'Batch administrasi studi tidak ditemukan.',

@@ -13,8 +13,7 @@ class KhsNilaiImport implements ToCollection, WithChunkReading
 
     public function __construct(
         private readonly ?KhsExcelParserService $parserService = null
-    ) {
-    }
+    ) {}
 
     public function collection(Collection $rows)
     {

@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
+use App\Exports\MahasiswaExport;
+use App\Http\Controllers\Controller;
+use App\Imports\MahasiswaImport;
 use App\Models\Akademik\KRS;
-use App\Models\User;
-use App\Models\MasterData\Prodi;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Kurikulum;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
 use App\Models\MasterData\Mahasiswa;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use App\Exports\MahasiswaExport;
-use App\Imports\MahasiswaImport;
+use App\Models\MasterData\Prodi;
+use App\Models\User;
 use App\Services\ActiveCurriculumService;
 use App\Services\MahasiswaCurriculumContextService;
 use App\Services\StudentAngkatanResolverService;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MahasiswaController extends Controller
@@ -37,7 +37,7 @@ class MahasiswaController extends Controller
             $mahasiswas = Mahasiswa::with(['prodi', 'dosenWali', 'user'])
                 ->where('status', '!=', 'PMB')
                 ->get()
-                ->map(fn(Mahasiswa $mahasiswa) => $this->serializeMahasiswa($mahasiswa));
+                ->map(fn (Mahasiswa $mahasiswa) => $this->serializeMahasiswa($mahasiswa));
             $dataprodi = Prodi::all();
             $datadosen = Dosen::all();
             $datakurikulum = Kurikulum::with(['prodi', 'semesterMulai.tahunAkademik'])->get();
@@ -46,17 +46,17 @@ class MahasiswaController extends Controller
                 'success' => true,
                 'message' => 'Daftar Mahasiswa',
                 'data' => [
-                    'mahasiswa'     => $mahasiswas,
-                    'prodi'         => $dataprodi,
-                    'dosen'         => $datadosen,
-                    'kurikulum'     => $datakurikulum,
-                ]
+                    'mahasiswa' => $mahasiswas,
+                    'prodi' => $dataprodi,
+                    'dosen' => $datadosen,
+                    'kurikulum' => $datakurikulum,
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data mahasiswa.',
-                'error' => $e->getMessage() // Hanya tampilkan pesan error jika debug=true
+                'error' => $e->getMessage(), // Hanya tampilkan pesan error jika debug=true
             ], 500);
         }
     }
@@ -70,23 +70,23 @@ class MahasiswaController extends Controller
                 'user',
             ])->find($id);
 
-            if (!$mahasiswa) {
+            if (! $mahasiswa) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Mahasiswa tidak ditemukan.',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Detail Mahasiswa',
-                'data' => $this->serializeMahasiswa($mahasiswa)
+                'data' => $this->serializeMahasiswa($mahasiswa),
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -106,9 +106,38 @@ class MahasiswaController extends Controller
                 'alamat' => 'nullable|string',
                 'agama' => 'nullable|in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu',
                 'status' => 'nullable|in:Aktif,Cuti,DO,Lulus',
-                'angkatan' => 'nullable|integer|min:1900|max:' . (date('Y') + 10),
+                'angkatan' => 'nullable|integer|min:1900|max:'.(date('Y') + 10),
                 'email' => 'nullable|email|unique:users,email',
-                'password' => 'nullable|min:6'
+                'password' => 'nullable|min:6',
+                // PDDikti & RPL additions
+                'nisn' => 'nullable|string|max:20',
+                'handphone' => 'nullable|string|max:30',
+                'email_pribadi' => 'nullable|email|max:100',
+                'alamat_jalan' => 'nullable|string|max:255',
+                'rt' => 'nullable|string|max:5',
+                'rw' => 'nullable|string|max:5',
+                'kelurahan' => 'nullable|string|max:100',
+                'id_wilayah' => 'nullable|string|max:50',
+                'kode_pos' => 'nullable|string|max:10',
+                'nama_ibu_kandung' => 'nullable|string|max:255',
+                'nik_ibu' => 'nullable|string|max:20',
+                'pendidikan_ibu' => 'nullable|string|max:50',
+                'pekerjaan_ibu' => 'nullable|string|max:100',
+                'penghasilan_ibu' => 'nullable|string|max:100',
+                'nama_ayah' => 'nullable|string|max:255',
+                'nik_ayah' => 'nullable|string|max:20',
+                'pendidikan_ayah' => 'nullable|string|max:50',
+                'pekerjaan_ayah' => 'nullable|string|max:100',
+                'penghasilan_ayah' => 'nullable|string|max:100',
+                'nama_wali' => 'nullable|string|max:255',
+                'pendidikan_wali' => 'nullable|string|max:50',
+                'pekerjaan_wali' => 'nullable|string|max:100',
+                'penghasilan_wali' => 'nullable|string|max:100',
+                'jenis_pendaftaran' => 'nullable|in:Reguler,RPL,Pindahan',
+                'jalur_masuk' => 'nullable|string|max:50',
+                'perguruan_tinggi_asal' => 'nullable|string|max:255',
+                'prodi_asal' => 'nullable|string|max:100',
+                'sks_diakui' => 'nullable|numeric|min:0',
             ]);
 
             // Gunakan transaksi untuk memastikan kedua data tersimpan atau gagal bersama
@@ -124,7 +153,7 @@ class MahasiswaController extends Controller
                     'name' => $request->nama_mahasiswa,
                     'email' => $request->email,
                     'password' => $password,
-                    'status' => $request->status === 'Aktif' ? 'aktif' : 'tidak-aktif'
+                    'status' => $request->status === 'Aktif' ? 'aktif' : 'tidak-aktif',
                 ]);
 
                 // 2. Assign role "mahasiswa" ke user
@@ -139,7 +168,7 @@ class MahasiswaController extends Controller
 
                 return [
                     'user' => $user,
-                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user'])
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user']),
                 ];
             });
 
@@ -148,20 +177,20 @@ class MahasiswaController extends Controller
                 'message' => 'Mahasiswa dan User berhasil dibuat.',
                 'data' => [
                     'mahasiswa' => $this->serializeMahasiswa($result['mahasiswa']),
-                    'user' => $result['user']
-                ]
+                    'user' => $result['user'],
+                ],
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -171,16 +200,16 @@ class MahasiswaController extends Controller
         try {
             $mahasiswa = Mahasiswa::with('user')->find($id);
 
-            if (!$mahasiswa) {
+            if (! $mahasiswa) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Mahasiswa tidak ditemukan.',
                 ], 404);
             }
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,' . $id,
+                'nim' => 'sometimes|string|max:20|unique:mahasiswa,nim,'.$id,
                 'nik' => 'sometimes|string|max:20',
                 'nama_mahasiswa' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
@@ -190,9 +219,38 @@ class MahasiswaController extends Controller
                 'alamat' => 'nullable|string',
                 'agama' => 'sometimes|in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu',
                 'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
-                'angkatan' => 'nullable|integer|min:1900|max:' . (date('Y') + 10),
-                'email' => 'nullable|email|unique:users,email,' . $mahasiswa->user_id,
-                'password' => 'nullable|string|min:6'
+                'angkatan' => 'nullable|integer|min:1900|max:'.(date('Y') + 10),
+                'email' => 'nullable|email|unique:users,email,'.$mahasiswa->user_id,
+                'password' => 'nullable|string|min:6',
+                // PDDikti & RPL additions
+                'nisn' => 'nullable|string|max:20',
+                'handphone' => 'nullable|string|max:30',
+                'email_pribadi' => 'nullable|email|max:100',
+                'alamat_jalan' => 'nullable|string|max:255',
+                'rt' => 'nullable|string|max:5',
+                'rw' => 'nullable|string|max:5',
+                'kelurahan' => 'nullable|string|max:100',
+                'id_wilayah' => 'nullable|string|max:50',
+                'kode_pos' => 'nullable|string|max:10',
+                'nama_ibu_kandung' => 'nullable|string|max:255',
+                'nik_ibu' => 'nullable|string|max:20',
+                'pendidikan_ibu' => 'nullable|string|max:50',
+                'pekerjaan_ibu' => 'nullable|string|max:100',
+                'penghasilan_ibu' => 'nullable|string|max:100',
+                'nama_ayah' => 'nullable|string|max:255',
+                'nik_ayah' => 'nullable|string|max:20',
+                'pendidikan_ayah' => 'nullable|string|max:50',
+                'pekerjaan_ayah' => 'nullable|string|max:100',
+                'penghasilan_ayah' => 'nullable|string|max:100',
+                'nama_wali' => 'nullable|string|max:255',
+                'pendidikan_wali' => 'nullable|string|max:50',
+                'pekerjaan_wali' => 'nullable|string|max:100',
+                'penghasilan_wali' => 'nullable|string|max:100',
+                'jenis_pendaftaran' => 'nullable|in:Reguler,RPL,Pindahan',
+                'jalur_masuk' => 'nullable|string|max:50',
+                'perguruan_tinggi_asal' => 'nullable|string|max:255',
+                'prodi_asal' => 'nullable|string|max:100',
+                'sks_diakui' => 'nullable|numeric|min:0',
             ]);
 
             // Gunakan transaksi untuk memastikan kedua data terupdate atau gagal bersama
@@ -248,32 +306,32 @@ class MahasiswaController extends Controller
                         $userData['status'] = $request->status === 'Aktif' ? 'aktif' : 'tidak-aktif';
                     }
 
-                    if (!empty($userData)) {
+                    if (! empty($userData)) {
                         $mahasiswa->user->update($userData);
                     }
                 }
 
                 return [
-                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user'])
+                    'mahasiswa' => $mahasiswa->fresh(['prodi', 'dosenWali', 'user']),
                 ];
             });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Mahasiswa dan User berhasil diperbarui.',
-                'data' => $this->serializeMahasiswa($result['mahasiswa'])
+                'data' => $this->serializeMahasiswa($result['mahasiswa']),
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -283,10 +341,10 @@ class MahasiswaController extends Controller
         try {
             $mahasiswa = Mahasiswa::with('user')->find($id);
 
-            if (!$mahasiswa) {
+            if (! $mahasiswa) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mahasiswa tidak ditemukan.'
+                    'message' => 'Mahasiswa tidak ditemukan.',
                 ], 404);
             }
 
@@ -311,13 +369,13 @@ class MahasiswaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mahasiswa, user, dan data akademik terkait berhasil dihapus.'
+                'message' => 'Mahasiswa, user, dan data akademik terkait berhasil dihapus.',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -371,13 +429,13 @@ class MahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus mahasiswa secara kolektif.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -476,16 +534,17 @@ class MahasiswaController extends Controller
     {
         try {
             $id_prodi = $request->get('id_prodi');
-            $is_dummy = $request->get('is_dummy', false);
+            $jenis_pendaftaran = $request->get('jenis_pendaftaran');
+            $is_dummy = $request->boolean('is_dummy', false);
 
-            $filename = 'data_mahasiswa_' . date('Y_m_d') . '.xlsx';
+            $filename = 'data_mahasiswa_'.date('Y_m_d').'.xlsx';
 
-            return Excel::download(new MahasiswaExport($id_prodi, $is_dummy), $filename);
+            return Excel::download(new MahasiswaExport($id_prodi, $is_dummy, $jenis_pendaftaran), $filename);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat export data mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -493,14 +552,15 @@ class MahasiswaController extends Controller
     public function exportTemplate(Request $request, $id_prodi = null)
     {
         try {
-            $filename = 'template_import_mahasiswa_' . date('Y_m_d') . '.xlsx';
+            $jenis_pendaftaran = $request->get('jenis_pendaftaran');
+            $filename = 'template_import_mahasiswa_'.date('Y_m_d').'.xlsx';
 
-            return Excel::download(new MahasiswaExport($id_prodi, true), $filename);
+            return Excel::download(new MahasiswaExport($id_prodi, true, $jenis_pendaftaran), $filename);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat download template import mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -526,11 +586,11 @@ class MahasiswaController extends Controller
                     'total_rows' => $rowCount,
                     'success_count' => $successCount,
                     'error_count' => count($errors),
-                    'errors' => $errors
-                ]
+                    'errors' => $errors,
+                ],
             ];
 
-            if (!empty($errors)) {
+            if (! empty($errors)) {
                 $response['message'] = 'Import selesai dengan beberapa error. Lihat detail error di bawah.';
             }
 
@@ -539,13 +599,13 @@ class MahasiswaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat import data mahasiswa.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -564,15 +624,57 @@ class MahasiswaController extends Controller
             'id_dosen',
             'nim',
             'nik',
+            'nisn',
+            'kewarganegaraan',
+            'npwp',
             'nama_mahasiswa',
             'jenis_kelamin',
             'tempat_lahir',
             'tanggal_lahir',
             'tanggal_masuk',
             'alamat',
+            'alamat_jalan',
+            'rt',
+            'rw',
+            'dusun',
+            'kelurahan',
+            'kode_pos',
+            'id_wilayah',
+            'jenis_tinggal',
+            'alat_transportasi',
+            'handphone',
+            'email_pribadi',
+            'nama_ibu_kandung',
+            'nik_ibu',
+            'tanggal_lahir_ibu',
+            'pendidikan_ibu',
+            'pekerjaan_ibu',
+            'penghasilan_ibu',
+            'nama_ayah',
+            'nik_ayah',
+            'tanggal_lahir_ayah',
+            'pendidikan_ayah',
+            'pekerjaan_ayah',
+            'penghasilan_ayah',
+            'nama_wali',
+            'pendidikan_wali',
+            'pekerjaan_wali',
+            'penghasilan_wali',
             'agama',
             'status',
             'angkatan',
+            'jenis_pendaftaran',
+            'jalur_masuk',
+            'sistem_pembiayaan',
+            'id_periode_masuk',
+            'perguruan_tinggi_asal',
+            'prodi_asal',
+            'sks_diakui',
+            'penerima_kps',
+            'nomor_kps',
+            'kebutuhan_khusus',
+            'id_mahasiswa_pddikti',
+            'id_registrasi_mahasiswa_pddikti',
         ]);
 
         return $payload;

@@ -3,8 +3,8 @@
 namespace App\Services\Krs;
 
 use App\Models\Akademik\KRS;
-use App\Models\Akademik\KRSDetail;
 use App\Models\Akademik\KrsCollectiveBatchItem;
+use App\Models\Akademik\KRSDetail;
 use App\Models\MasterData\KelasKuliah;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Prodi;
@@ -21,8 +21,7 @@ class KrsHistoricalEligibilityService
         private readonly ActiveCurriculumService $activeCurriculumService,
         private readonly CurriculumConversionService $curriculumConversionService,
         private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
-    ) {
-    }
+    ) {}
 
     public function filters(): array
     {
@@ -37,9 +36,9 @@ class KrsHistoricalEligibilityService
             'prodi' => Prodi::query()
                 ->orderBy('nama_prodi')
                 ->get(),
-            'semester_ke_options' => collect(range(1, 14))->map(fn(int $semesterKe) => [
+            'semester_ke_options' => collect(range(1, 14))->map(fn (int $semesterKe) => [
                 'value' => $semesterKe,
-                'label' => 'Semester ' . $semesterKe,
+                'label' => 'Semester '.$semesterKe,
             ])->all(),
         ];
     }
@@ -57,15 +56,15 @@ class KrsHistoricalEligibilityService
                     ->orWhere('status', '!=', 'nonaktif');
             });
 
-        if (!empty($filters['id_prodi'])) {
+        if (! empty($filters['id_prodi'])) {
             $query->where('id_prodi', $filters['id_prodi']);
         }
 
-        if (!empty($filters['angkatan'])) {
+        if (! empty($filters['angkatan'])) {
             $query->where('angkatan', $filters['angkatan']);
         }
 
-        if (!empty($filters['id_mahasiswa']) && is_array($filters['id_mahasiswa'])) {
+        if (! empty($filters['id_mahasiswa']) && is_array($filters['id_mahasiswa'])) {
             $query->whereIn('id', $filters['id_mahasiswa']);
         }
 
@@ -93,10 +92,17 @@ class KrsHistoricalEligibilityService
 
         return $students->map(function (Mahasiswa $mahasiswa) use ($existingKrs, $availableClassesPerProdi, $semester) {
             $existing = $existingKrs->get($mahasiswa->id);
+            $hasExisting = (bool) $existing;
             $availableClasses = (int) ($availableClassesPerProdi[$mahasiswa->id_prodi] ?? 0);
             $hasClasses = $availableClasses > 0;
-            $hasExisting = $existing !== null;
-            $semesterTarget = $this->calculateHistoricalSemester($mahasiswa->angkatan, $semester);
+            $isRplStudent = in_array($mahasiswa->jenis_pendaftaran, ['RPL', 'Pindahan'], true)
+                || str_ends_with(strtoupper(trim((string) $mahasiswa->nim)), 'B')
+                || strtoupper(trim((string) ($mahasiswa->jalur_masuk ?? ''))) === 'RPL';
+            $semesterMasaStudi = $this->calculateHistoricalSemester($mahasiswa->angkatan, $semester);
+            $paketSemester = $semesterMasaStudi;
+            if ($isRplStudent && ($mahasiswa->sks_diakui ?? 0) > 0) {
+                $paketSemester += (int) floor($mahasiswa->sks_diakui / 20);
+            }
             $resolvedOperationalKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
             $resolvedOperationalKurikulum = $this->activeCurriculumService->resolveActiveKurikulum($mahasiswa);
             $messages = [];
@@ -105,7 +111,7 @@ class KrsHistoricalEligibilityService
                 $messages[] = 'Mahasiswa sudah memiliki KRS pada semester historis ini';
             }
 
-            if (!$hasClasses) {
+            if (! $hasClasses) {
                 $messages[] = 'Kelas kuliah historis untuk prodi dan semester ini belum tersedia';
             }
 
@@ -116,6 +122,9 @@ class KrsHistoricalEligibilityService
                 'angkatan' => $mahasiswa->angkatan,
                 'id_prodi' => $mahasiswa->id_prodi,
                 'prodi' => $mahasiswa->prodi,
+                'is_rpl' => $isRplStudent,
+                'jalur_masuk' => $mahasiswa->jalur_masuk ?? ($isRplStudent ? 'RPL' : ($mahasiswa->jenis_pendaftaran ?? 'Reguler')),
+                'sks_diakui' => (int) ($mahasiswa->sks_diakui ?? 0),
                 'id_struktur_operasional' => $resolvedOperationalKurikulumId,
                 'id_kurikulum_operasional' => $resolvedOperationalKurikulumId,
                 'kurikulum_context' => [
@@ -126,11 +135,13 @@ class KrsHistoricalEligibilityService
                         'nama_struktur_mk' => $resolvedOperationalKurikulum->display_name,
                         'nama_kurikulum' => $resolvedOperationalKurikulum->nama_kurikulum,
                         'mulai_berlaku' => $resolvedOperationalKurikulum->semesterMulai?->tahunAkademik
-                            ? trim($resolvedOperationalKurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $resolvedOperationalKurikulum->semesterMulai->nama_semester)
+                            ? trim($resolvedOperationalKurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$resolvedOperationalKurikulum->semesterMulai->nama_semester)
                             : null,
                     ] : null,
                 ],
-                'semester_target' => $semesterTarget,
+                'semester_target' => $semesterMasaStudi,
+                'semester_ke' => $semesterMasaStudi,
+                'paket_semester' => $paketSemester,
                 'existing_historical_krs' => $existing ? [
                     'id' => $existing->id,
                     'status_approval' => $existing->status_approval,
@@ -138,7 +149,7 @@ class KrsHistoricalEligibilityService
                     'total_sks' => $existing->total_sks,
                 ] : null,
                 'available_class_count' => $availableClasses,
-                'is_ready' => !$hasExisting && $hasClasses,
+                'is_ready' => ! $hasExisting && $hasClasses,
                 'default_action' => $hasExisting ? KrsCollectiveBatchItem::STATUS_SKIPPED : ($hasClasses ? KrsCollectiveBatchItem::STATUS_READY : KrsCollectiveBatchItem::STATUS_FAILED),
                 'message' => empty($messages) ? 'Mahasiswa siap diproses pada semester historis ini' : implode('; ', $messages),
             ];
@@ -160,9 +171,9 @@ class KrsHistoricalEligibilityService
             })
             ->get()
             ->sortBy([
-                fn(KelasKuliah $kelas) => $kelas->kurikulumMataKuliah?->kurikulum?->display_name ?? '',
-                fn(KelasKuliah $kelas) => $kelas->kurikulumMataKuliah?->mataKuliah?->kode_mk ?? '',
-                fn(KelasKuliah $kelas) => $kelas->nama_kelas ?? '',
+                fn (KelasKuliah $kelas) => $kelas->kurikulumMataKuliah?->kurikulum?->display_name ?? '',
+                fn (KelasKuliah $kelas) => $kelas->kurikulumMataKuliah?->mataKuliah?->kode_mk ?? '',
+                fn (KelasKuliah $kelas) => $kelas->nama_kelas ?? '',
             ])
             ->values()
             ->map(function (KelasKuliah $kelas) {
@@ -181,7 +192,7 @@ class KrsHistoricalEligibilityService
                             'nama_struktur_mk' => $kelas->kurikulumMataKuliah->kurikulum->display_name,
                             'nama_kurikulum' => $kelas->kurikulumMataKuliah->kurikulum->nama_kurikulum,
                             'mulai_berlaku' => $kelas->kurikulumMataKuliah->kurikulum->semesterMulai?->tahunAkademik
-                                ? trim($kelas->kurikulumMataKuliah->kurikulum->semesterMulai->tahunAkademik->tahun_akademik . ' ' . $kelas->kurikulumMataKuliah->kurikulum->semesterMulai->nama_semester)
+                                ? trim($kelas->kurikulumMataKuliah->kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$kelas->kurikulumMataKuliah->kurikulum->semesterMulai->nama_semester)
                                 : null,
                         ] : null,
                     ],
@@ -235,7 +246,7 @@ class KrsHistoricalEligibilityService
             /** @var Mahasiswa|null $student */
             $student = $students->get($studentId);
 
-            if (!$student) {
+            if (! $student) {
                 return [
                     'id_mahasiswa' => $studentId,
                     'courses' => [],
@@ -264,7 +275,7 @@ class KrsHistoricalEligibilityService
                     $sourceCourseId = $detail->id_mata_kuliah
                         ?? $detail->mataKuliah?->id
                         ?? $detail->kelasKuliah?->kurikulumMataKuliah?->mataKuliah?->id;
-                    if (!filled($sourceCourseId)) {
+                    if (! filled($sourceCourseId)) {
                         return null;
                     }
 
@@ -280,8 +291,8 @@ class KrsHistoricalEligibilityService
                         );
                     });
                 })
-                ->filter(fn(Collection $items) => $items->isNotEmpty())
-                ->filter(fn($items, $mataKuliahId) => filled($mataKuliahId));
+                ->filter(fn (Collection $items) => $items->isNotEmpty())
+                ->filter(fn ($items, $mataKuliahId) => filled($mataKuliahId));
 
             $courses = $failedHistories->map(function (Collection $histories, $mataKuliahId) use ($student, $semester, $packageMataKuliahIds) {
                 if ($packageMataKuliahIds->contains($mataKuliahId)) {
@@ -300,7 +311,7 @@ class KrsHistoricalEligibilityService
                     ? $this->curriculumConversionService->resolveTranscriptCourse($student->id, $sourceCourseId)
                     : null;
 
-                if (!$mataKuliah) {
+                if (! $mataKuliah) {
                     return null;
                 }
 
@@ -330,7 +341,7 @@ class KrsHistoricalEligibilityService
 
                 $riwayatSemester = $latestHistory?->krs?->semester;
                 $riwayatTahun = $riwayatSemester?->tahunAkademik?->tahun_akademik ?? '';
-                $riwayatLabel = trim((string) (($riwayatSemester?->nama_semester ?? '-') . ' ' . $riwayatTahun));
+                $riwayatLabel = trim((string) (($riwayatSemester?->nama_semester ?? '-').' '.$riwayatTahun));
 
                 return [
                     'id_mata_kuliah' => $mataKuliah->id,
@@ -359,7 +370,7 @@ class KrsHistoricalEligibilityService
 
     private function calculateHistoricalSemester(?int $angkatan, Semester $semester): int
     {
-        if (!$angkatan) {
+        if (! $angkatan) {
             return 0;
         }
 
@@ -372,7 +383,7 @@ class KrsHistoricalEligibilityService
 
     private function isSemesterBefore(?Semester $candidate, Semester $reference): bool
     {
-        if (!$candidate || !$candidate->tahunAkademik || !$reference->tahunAkademik) {
+        if (! $candidate || ! $candidate->tahunAkademik || ! $reference->tahunAkademik) {
             return true;
         }
 

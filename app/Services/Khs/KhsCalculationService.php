@@ -5,14 +5,15 @@ namespace App\Services\Khs;
 use App\Models\Akademik\KHS;
 use App\Models\Akademik\KRS;
 use App\Models\Akademik\KRSDetail;
+use App\Models\Akademik\NilaiTransfer;
+use App\Models\MasterData\Mahasiswa;
 use Illuminate\Support\Collection;
 
 class KhsCalculationService
 {
     public function __construct(
         private readonly KhsRemarkService $remarkService
-    ) {
-    }
+    ) {}
 
     public function calculateSummary(Collection $details): array
     {
@@ -40,7 +41,7 @@ class KhsCalculationService
     public function calculateSummaryFromKrsDetails(Collection $details): array
     {
         $normalized = $details
-            ->filter(fn(KRSDetail $detail) => $detail->isCountedInKhs())
+            ->filter(fn (KRSDetail $detail) => $detail->isCountedInKhs())
             ->map(function (KRSDetail $detail) {
                 $mutu = $detail->resolveMutuValue();
 
@@ -72,6 +73,73 @@ class KhsCalculationService
                 });
             });
 
+        // Sertakan nilai transfer jika mahasiswa memiliki rekognisi transfer / RPL
+        $transfers = NilaiTransfer::where('id_mahasiswa', $khs->id_mahasiswa)->get();
+        if ($transfers->isNotEmpty()) {
+            $transferDetails = $transfers->map(function (NilaiTransfer $transfer) {
+                $sks = (int) $transfer->sks_diakui;
+                $mutu = $transfer->nilai_indeks_diakui !== null ? (float) $transfer->nilai_indeks_diakui : null;
+
+                return [
+                    'sks' => $sks,
+                    'mutu' => $mutu,
+                    'bobot_nilai' => $mutu !== null ? round($sks * $mutu, 2) : null,
+                ];
+            });
+
+            $allDetails = $allDetails->concat($transferDetails);
+        }
+
+        return $this->calculateIpkFromNormalizedDetails($allDetails);
+    }
+
+    public function calculateCumulativeIpkWithTransfer(Mahasiswa $mahasiswa, float $currentSemesterMutu, int $currentSemesterSks, ?string $semesterId = null): ?float
+    {
+        // Ambil riwayat KHS final mahasiswa sebelumnya
+        $previousKhsDetails = $mahasiswa->khs()
+            ->with('details')
+            ->when($semesterId, fn ($q) => $q->where('id_semester', '!=', $semesterId))
+            ->where('is_final', true)
+            ->get()
+            ->flatMap(function (KHS $item) {
+                return $item->details->map(function ($detail) {
+                    return [
+                        'sks' => (int) $detail->sks,
+                        'mutu' => $detail->mutu !== null ? (float) $detail->mutu : null,
+                        'bobot_nilai' => $detail->bobot_nilai !== null ? (float) $detail->bobot_nilai : null,
+                    ];
+                });
+            });
+
+        // Ambil data nilai konversi transfer / RPL
+        $transfers = NilaiTransfer::where('id_mahasiswa', $mahasiswa->id)->get();
+        $transferDetails = $transfers->map(function (NilaiTransfer $transfer) {
+            $sks = (int) $transfer->sks_diakui;
+            $mutu = $transfer->nilai_indeks_diakui !== null ? (float) $transfer->nilai_indeks_diakui : null;
+
+            return [
+                'sks' => $sks,
+                'mutu' => $mutu,
+                'bobot_nilai' => $mutu !== null ? round($sks * $mutu, 2) : null,
+            ];
+        });
+
+        // Sertakan nilai semester berjalan yang sedang digenerate
+        $currentDetails = collect();
+        if ($currentSemesterSks > 0) {
+            $currentDetails->push([
+                'sks' => $currentSemesterSks,
+                'mutu' => round($currentSemesterMutu / $currentSemesterSks, 2),
+                'bobot_nilai' => $currentSemesterMutu,
+            ]);
+        }
+
+        $allDetails = $previousKhsDetails->concat($transferDetails)->concat($currentDetails);
+
+        if ($allDetails->isEmpty() || $allDetails->sum('sks') == 0) {
+            return null;
+        }
+
         return $this->calculateIpkFromNormalizedDetails($allDetails);
     }
 
@@ -82,11 +150,11 @@ class KhsCalculationService
                 $tahun = $item->semester?->tahunAkademik?->tahun_akademik ?? '0000/0000';
                 $semester = strtolower($item->semester?->nama_semester ?? '');
 
-                return $tahun . '-' . ($semester === 'ganjil' ? '1' : '2');
+                return $tahun.'-'.($semester === 'ganjil' ? '1' : '2');
             })
             ->values();
 
-        $targetIndex = $orderedKrs->search(fn(KRS $item) => $item->id_semester === $semesterId);
+        $targetIndex = $orderedKrs->search(fn (KRS $item) => $item->id_semester === $semesterId);
         if ($targetIndex === false) {
             $targetIndex = $orderedKrs->count() - 1;
         }
@@ -95,7 +163,7 @@ class KhsCalculationService
             ->take($targetIndex + 1)
             ->flatMap(function (KRS $krs) {
                 return $krs->details
-                    ->filter(fn(KRSDetail $detail) => $detail->isCountedInKhs())
+                    ->filter(fn (KRSDetail $detail) => $detail->isCountedInKhs())
                     ->map(function (KRSDetail $detail) {
                         $mutu = $detail->resolveMutuValue();
 
@@ -108,12 +176,31 @@ class KhsCalculationService
             })
             ->values();
 
+        $firstKrs = $allApprovedKrs->first();
+        if ($firstKrs && $firstKrs->id_mahasiswa) {
+            $transfers = NilaiTransfer::where('id_mahasiswa', $firstKrs->id_mahasiswa)->get();
+            if ($transfers->isNotEmpty()) {
+                $transferDetails = $transfers->map(function (NilaiTransfer $transfer) {
+                    $sks = (int) $transfer->sks_diakui;
+                    $mutu = $transfer->nilai_indeks_diakui !== null ? (float) $transfer->nilai_indeks_diakui : null;
+
+                    return [
+                        'sks' => $sks,
+                        'mutu' => $mutu,
+                        'bobot_nilai' => $mutu !== null ? round($sks * $mutu, 2) : null,
+                    ];
+                });
+
+                $normalized = $normalized->concat($transferDetails);
+            }
+        }
+
         return $this->calculateIpkFromNormalizedDetails($normalized);
     }
 
     private function calculateIpkFromNormalizedDetails(Collection $allDetails): float
     {
-        $eligible = $allDetails->filter(fn(array $detail) => $detail['mutu'] !== null && $detail['sks'] > 0);
+        $eligible = $allDetails->filter(fn (array $detail) => $detail['mutu'] !== null && $detail['sks'] > 0);
         $totalSks = (int) $eligible->sum('sks');
         $totalBobotNilai = (float) $eligible->sum(function (array $detail) {
             if ($detail['bobot_nilai'] !== null) {

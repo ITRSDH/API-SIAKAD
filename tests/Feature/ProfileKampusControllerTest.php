@@ -1,10 +1,11 @@
 <?php
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Website\ProfileKampus;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 class ProfileKampusControllerTest extends TestCase
 {
@@ -17,8 +18,8 @@ class ProfileKampusControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success', 'message', 'data' => [[
-                    'id', 'judul', 'deskripsi', 'visi', 'misi', 'struktur_image', 'fasilitas', 'created_at'
-                ]]
+                    'id', 'judul', 'deskripsi', 'visi', 'misi', 'struktur_image', 'fasilitas', 'created_at',
+                ]],
             ]);
     }
 
@@ -44,7 +45,7 @@ class ProfileKampusControllerTest extends TestCase
     public function test_show_returns_profile_kampus_detail()
     {
         $profile = ProfileKampus::factory()->create();
-        $response = $this->getJson('/api/v1/profile-kampus/' . $profile->id);
+        $response = $this->getJson('/api/v1/profile-kampus/'.$profile->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
@@ -57,7 +58,7 @@ class ProfileKampusControllerTest extends TestCase
             'visi' => 'Menjadi kampus internasional',
             'struktur_image' => $file,
         ];
-        $response = $this->put('/api/v1/profile-kampus/' . $profile->id, $data);
+        $response = $this->put('/api/v1/profile-kampus/'.$profile->id, $data);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseHas('profile_kampus', ['id' => $profile->id, 'visi' => 'Menjadi kampus internasional']);
@@ -68,7 +69,7 @@ class ProfileKampusControllerTest extends TestCase
     public function test_destroy_deletes_profile_kampus()
     {
         $profile = ProfileKampus::factory()->create();
-        $response = $this->deleteJson('/api/v1/profile-kampus/' . $profile->id);
+        $response = $this->deleteJson('/api/v1/profile-kampus/'.$profile->id);
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
         $this->assertDatabaseMissing('profile_kampus', ['id' => $profile->id]);

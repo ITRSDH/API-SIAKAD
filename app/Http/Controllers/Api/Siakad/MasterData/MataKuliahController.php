@@ -2,34 +2,40 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use App\Models\MasterData\Prodi;
-use Illuminate\Http\JsonResponse;
+use App\Exports\MataKuliahExport;
 use App\Http\Controllers\Controller;
+use App\Imports\MataKuliahImport;
 use App\Models\MasterData\MataKuliah;
 use App\Models\MasterData\MataKuliahPrasyarat;
-use Illuminate\Validation\ValidationException;
-use App\Imports\MataKuliahImport;
-use App\Exports\MataKuliahExport;
-use Maatwebsite\Excel\Facades\Excel;
+use App\Models\MasterData\Prodi;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MataKuliahController extends Controller
 {
-    public function index(Request $request, $id_prodi): JsonResponse
+    public function index(Request $request, $id_prodi = null): JsonResponse
     {
         try {
+            $idProdi = $id_prodi ?: $request->input('id_prodi');
 
             // Parameter default DataTables
-            $draw   = intval($request->input('draw', 1));
-            $start  = intval($request->input('start', 0));
+            $draw = intval($request->input('draw', 1));
+            $start = intval($request->input('start', 0));
             $length = intval($request->input('length', 10));
-            $search = $request->input('search.value');
+            $search = is_array($request->input('search'))
+                ? ($request->input('search.value') ?? '')
+                : ($request->input('search') ?? $request->input('q'));
 
             // Base query
-            $baseQuery = MataKuliah::where('id_prodi', $id_prodi);
+            $baseQuery = MataKuliah::query();
+            if ($idProdi) {
+                $baseQuery->where('id_prodi', $idProdi);
+            }
 
             // Total tanpa filter
             $recordsTotal = $baseQuery->count();
@@ -38,7 +44,7 @@ class MataKuliahController extends Controller
             $query = clone $baseQuery;
 
             // Searching
-            if (!empty($search)) {
+            if (! empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('kode_mk', 'like', "%{$search}%")
                         ->orWhere('nama_mk', 'like', "%{$search}%");
@@ -62,20 +68,19 @@ class MataKuliahController extends Controller
                 ]);
 
             return response()->json([
-                "draw" => $draw,
-                "recordsTotal" => $recordsTotal,
-                "recordsFiltered" => $recordsFiltered,
-                "data" => $data
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
             ], 200);
         } catch (Exception $e) {
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     /**
      * Store a newly created resource in storage.
@@ -92,7 +97,7 @@ class MataKuliahController extends Controller
                     'string',
                     'max:20',
                     Rule::unique('mata_kuliah')
-                        ->where('id_prodi', $id_prodi)
+                        ->where('id_prodi', $id_prodi),
                 ],
                 'nama_mk' => 'required|string|max:255',
                 'sks_tatap_muka' => 'nullable|integer|min:0',
@@ -152,13 +157,13 @@ class MataKuliahController extends Controller
                 'kelompok_mk',
             ])->with([
                 'prodi:id,kode_prodi,jenjang_pendidikan,nama_prodi,akreditasi,tahun_berdiri,gelar_lulusan',
-                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk'
+                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk',
             ])->findOrFail($id);
 
-            if (!$mataKuliah) {
+            if (! $mataKuliah) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mata Kuliah tidak ditemukan.'
+                    'message' => 'Mata Kuliah tidak ditemukan.',
                 ], 404);
             }
 
@@ -185,7 +190,7 @@ class MataKuliahController extends Controller
 
             $mataKuliah = MataKuliah::findOrFail($id);
 
-            if (!$mataKuliah) {
+            if (! $mataKuliah) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Mata Kuliah tidak ditemukan.',
@@ -197,7 +202,7 @@ class MataKuliahController extends Controller
                     'required',
                     'string',
                     'max:20',
-                    Rule::unique('mata_kuliah')->where('id_prodi', $id_prodi)->ignore($id)
+                    Rule::unique('mata_kuliah')->where('id_prodi', $id_prodi)->ignore($id),
                 ],
                 'nama_mk' => 'required|string|max:255',
                 'sks_tatap_muka' => 'nullable|integer|min:0',
@@ -246,10 +251,10 @@ class MataKuliahController extends Controller
         try {
             $mk = MataKuliah::findOrFail($id);
 
-            if (!$mk) {
+            if (! $mk) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mata Kuliah tidak ditemukan.'
+                    'message' => 'Mata Kuliah tidak ditemukan.',
                 ], 404);
             }
 
@@ -322,7 +327,7 @@ class MataKuliahController extends Controller
 
             $filename = $isDummy
                 ? 'format_import_mata_kuliah.xlsx'
-                : 'data_mata_kuliah_' . date('Y-m-d_H-i-s') . '.xlsx';
+                : 'data_mata_kuliah_'.date('Y-m-d_H-i-s').'.xlsx';
 
             return Excel::download(new MataKuliahExport($id_prodi, $isDummy), $filename);
         } catch (Exception $e) {
@@ -345,7 +350,7 @@ class MataKuliahController extends Controller
     {
         try {
             $mataKuliah = MataKuliah::with([
-                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk,sks'
+                'prasyarat.mataKuliahPrasyarat:id,id_prodi,kode_mk,nama_mk,sks',
             ])->findOrFail($id);
 
             $data = $mataKuliah->prasyarat->map(function (MataKuliahPrasyarat $item) {
@@ -397,7 +402,7 @@ class MataKuliahController extends Controller
                     }
 
                     $mkPrasyarat = MataKuliah::find($item['id_mata_kuliah_prasyarat']);
-                    if (!$mkPrasyarat || $mkPrasyarat->id_prodi !== $mataKuliah->id_prodi) {
+                    if (! $mkPrasyarat || $mkPrasyarat->id_prodi !== $mataKuliah->id_prodi) {
                         continue;
                     }
 

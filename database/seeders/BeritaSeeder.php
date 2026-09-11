@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Website\Berita;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class BeritaSeeder extends Seeder
         Berita::factory(100)->create();
 
         echo "✅ Berhasil membuat 100 data berita!\n";
-        
+
         // Get total records
         $total = DB::table('berita')->count();
         echo "📊 Total records: $total\n\n";

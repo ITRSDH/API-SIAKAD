@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\Website\Beasiswa;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class BeasiswaSeeder extends Seeder
         Beasiswa::factory(100)->create();
 
         echo "✅ Berhasil membuat 100 data beasiswa!\n";
-        
+
         // Get total records
         $total = DB::table('beasiswa')->count();
         echo "📊 Total records: $total\n\n";

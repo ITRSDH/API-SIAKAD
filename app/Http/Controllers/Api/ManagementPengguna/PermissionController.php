@@ -19,13 +19,13 @@ class PermissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $permissions
+                'data' => $permissions,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve permissions.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -36,13 +36,13 @@ class PermissionController extends Controller
     public function sync()
     {
         $routes = collect(Route::getRoutes())
-            ->filter(fn($route) => $route->getName())
+            ->filter(fn ($route) => $route->getName())
             ->filter(function ($route) {
                 $uri = $route->uri();
                 $name = $route->getName();
 
                 $middleware = $route->middleware();
-                if (!in_array('check.role.permission', $middleware)) {
+                if (! in_array('check.role.permission', $middleware)) {
                     return false;
                 }
 
@@ -62,11 +62,11 @@ class PermissionController extends Controller
 
                 return true;
             })
-            ->map(fn($route) => [
+            ->map(fn ($route) => [
                 'name' => $route->getName(),
                 'uri' => $route->uri(),
                 'method' => implode('|', $route->methods()),
-                'guard_name' => 'api'
+                'guard_name' => 'api',
             ]);
 
         $existingPermissions = Permission::pluck('name')->toArray();
@@ -74,10 +74,10 @@ class PermissionController extends Controller
         $removed = 0;
 
         foreach ($routes as $route) {
-            if (!in_array($route['name'], $existingPermissions)) {
+            if (! in_array($route['name'], $existingPermissions)) {
                 Permission::updateOrCreate([
                     'name' => $route['name'],
-                    'guard_name' => $route['guard_name']
+                    'guard_name' => $route['guard_name'],
                 ]);
                 $added++;
             }
@@ -113,13 +113,13 @@ class PermissionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Permission created successfully.',
-                'data' => $permission
+                'data' => $permission,
             ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create permission.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -129,22 +129,22 @@ class PermissionController extends Controller
         try {
             $permission = Permission::findById($id);
 
-            if (!$permission) {
+            if (! $permission) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Permission not found.'
+                    'message' => 'Permission not found.',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $permission
+                'data' => $permission,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve permission.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -153,15 +153,15 @@ class PermissionController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255|unique:permissions,name,' . $id,
+                'name' => 'required|string|max:255|unique:permissions,name,'.$id,
             ]);
 
             $permission = Permission::findById($id);
 
-            if (!$permission) {
+            if (! $permission) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Permission not found.'
+                    'message' => 'Permission not found.',
                 ], 404);
             }
 
@@ -170,13 +170,13 @@ class PermissionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Permission updated successfully.',
-                'data' => $permission
+                'data' => $permission,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update permission.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -186,10 +186,10 @@ class PermissionController extends Controller
         try {
             $permission = Permission::findById($id);
 
-            if (!$permission) {
+            if (! $permission) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Permission not found.'
+                    'message' => 'Permission not found.',
                 ], 404);
             }
 
@@ -197,13 +197,13 @@ class PermissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Permission deleted successfully.'
+                'message' => 'Permission deleted successfully.',
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete permission.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -217,7 +217,7 @@ class PermissionController extends Controller
 
             foreach ($routes as $route) {
                 $name = $route->getName();
-                if (!$name) {
+                if (! $name) {
                     continue;
                 }
 
@@ -233,7 +233,7 @@ class PermissionController extends Controller
                     continue;
                 }
 
-                $labels = array_map(fn($part) => ucfirst(str_replace('-', ' ', $part)), $parts);
+                $labels = array_map(fn ($part) => ucfirst(str_replace('-', ' ', $part)), $parts);
                 $url = url($route->uri());
 
                 if ($count === 2) {
@@ -242,8 +242,9 @@ class PermissionController extends Controller
                     $sidebar[$section][$section]['items'][] = [
                         'label' => "$section ($item)",
                         'route' => $name,
-                        'url' => $url
+                        'url' => $url,
                     ];
+
                     continue;
                 }
 
@@ -253,8 +254,9 @@ class PermissionController extends Controller
                     $sidebar[$section][$menu]['items'][] = [
                         'label' => $item,
                         'route' => $name,
-                        'url' => $url
+                        'url' => $url,
                     ];
+
                     continue;
                 }
 
@@ -264,8 +266,9 @@ class PermissionController extends Controller
                     $sidebar[$section][$menu]['sub'][$sub][] = [
                         'label' => "$sub ($item)",
                         'route' => $name,
-                        'url' => $url
+                        'url' => $url,
                     ];
+
                     continue;
                 }
 
@@ -275,7 +278,7 @@ class PermissionController extends Controller
                     $sidebar[$section][$menu]['sub'][$sub][] = [
                         'label' => "$item ($method)",
                         'route' => $name,
-                        'url' => $url
+                        'url' => $url,
                     ];
                 }
             }
@@ -289,8 +292,9 @@ class PermissionController extends Controller
                     if (isset($data['items'])) {
                         $menuArr[] = [
                             'title' => $menuName,
-                            'items' => $data['items']
+                            'items' => $data['items'],
                         ];
+
                         continue;
                     }
 
@@ -300,32 +304,32 @@ class PermissionController extends Controller
                         foreach ($data['sub'] as $subName => $items) {
                             $subArr[] = [
                                 'title' => $subName,
-                                'items' => $items
+                                'items' => $items,
                             ];
                         }
 
                         $menuArr[] = [
                             'title' => $menuName,
-                            'sub' => $subArr
+                            'sub' => $subArr,
                         ];
                     }
                 }
 
                 $result[] = [
                     'section' => $section,
-                    'menus' => $menuArr
+                    'menus' => $menuArr,
                 ];
             }
 
             return response()->json([
                 'success' => true,
-                'menu' => $result
+                'menu' => $result,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membentuk sidebar.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -352,7 +356,7 @@ class PermissionController extends Controller
                 ->where('guard_name', 'api')
                 ->first();
 
-            if (!$role) {
+            if (! $role) {
                 continue;
             }
 

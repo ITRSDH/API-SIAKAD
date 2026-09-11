@@ -47,7 +47,7 @@ class KonversiMataKuliahController extends Controller
             'createdBy:id,name',
         ])->find($id);
 
-        if (!$rule) {
+        if (! $rule) {
             return response()->json([
                 'success' => false,
                 'message' => 'Aturan konversi tidak ditemukan.',
@@ -80,7 +80,7 @@ class KonversiMataKuliahController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $rule = KonversiMataKuliah::find($id);
-        if (!$rule) {
+        if (! $rule) {
             return response()->json([
                 'success' => false,
                 'message' => 'Aturan konversi tidak ditemukan.',
@@ -102,7 +102,7 @@ class KonversiMataKuliahController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $rule = KonversiMataKuliah::find($id);
-        if (!$rule) {
+        if (! $rule) {
             return response()->json([
                 'success' => false,
                 'message' => 'Aturan konversi tidak ditemukan.',
@@ -150,7 +150,7 @@ class KonversiMataKuliahController extends Controller
             ->where('id_mata_kuliah', $validated['id_mata_kuliah_asal'])
             ->exists();
 
-        if (!$isMataKuliahAsalValid) {
+        if (! $isMataKuliahAsalValid) {
             throw ValidationException::withMessages([
                 'id_mata_kuliah_asal' => ['Mata kuliah asal tidak terdaftar pada kurikulum asal.'],
             ]);
@@ -161,7 +161,7 @@ class KonversiMataKuliahController extends Controller
             ->where('id_mata_kuliah', $validated['id_mata_kuliah_tujuan'])
             ->exists();
 
-        if (!$isMataKuliahTujuanValid) {
+        if (! $isMataKuliahTujuanValid) {
             throw ValidationException::withMessages([
                 'id_mata_kuliah_tujuan' => ['Mata kuliah tujuan tidak terdaftar pada kurikulum tujuan.'],
             ]);

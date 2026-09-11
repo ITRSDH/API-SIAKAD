@@ -5,17 +5,18 @@ namespace App\Exports;
 use App\Services\Khs\KhsTemplateExportService;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class KhsTemplateExport implements FromArray, WithEvents
 {
     private array $template;
+
     private bool $usesSeparatedIpkColumn;
 
     public function __construct(array $filters, ?KhsTemplateExportService $service = null)
@@ -30,7 +31,7 @@ class KhsTemplateExport implements FromArray, WithEvents
         $subjects = $this->template['subjects'];
         $rows = $this->template['rows'];
         $totalSks = (int) array_sum(array_map(
-            static fn(array $subject): int => (int) ($subject['sks'] ?? 0),
+            static fn (array $subject): int => (int) ($subject['sks'] ?? 0),
             $subjects
         ));
         $tailHeaders = $this->tailHeaders();
@@ -53,13 +54,13 @@ class KhsTemplateExport implements FromArray, WithEvents
         $headerRow = ['No', 'NIM', 'NAMA'];
         foreach ($subjects as $subject) {
             $headerRow[] = '';
-            $headerRow[] = $subject['nama_mk'] . "\n" . $subject['kode_mk'];
+            $headerRow[] = $subject['nama_mk']."\n".$subject['kode_mk'];
         }
         foreach ($subjects as $subject) {
-            $headerRow[] = $subject['nama_mk'] . "\n" . $subject['kode_mk'];
+            $headerRow[] = $subject['nama_mk']."\n".$subject['kode_mk'];
         }
         foreach ($subjects as $subject) {
-            $headerRow[] = $subject['nama_mk'] . "\n" . $subject['kode_mk'];
+            $headerRow[] = $subject['nama_mk']."\n".$subject['kode_mk'];
         }
         $headerRow = array_merge($headerRow, $tailHeaders['header']);
 
@@ -110,7 +111,7 @@ class KhsTemplateExport implements FromArray, WithEvents
     public function registerEvents(): array
     {
         $totalSks = (int) array_sum(array_map(
-            static fn(array $subject): int => (int) ($subject['sks'] ?? 0),
+            static fn (array $subject): int => (int) ($subject['sks'] ?? 0),
             $this->template['subjects'] ?? []
         ));
 
@@ -133,12 +134,12 @@ class KhsTemplateExport implements FromArray, WithEvents
                 $tailColumnCount = $this->usesSeparatedIpkColumn ? 4 : 3;
                 $keteranganColumn = Coordinate::stringFromColumnIndex($tailStartIndex + ($this->usesSeparatedIpkColumn ? 3 : 2));
 
-                $sheet->mergeCells('A1:' . $highestColumn . '1');
+                $sheet->mergeCells('A1:'.$highestColumn.'1');
                 $sheet->mergeCells('A2:A4');
                 $sheet->mergeCells('B4:C4');
                 for ($offset = 0; $offset < $tailColumnCount; $offset++) {
                     $column = Coordinate::stringFromColumnIndex($tailStartIndex + $offset);
-                    $sheet->mergeCells($column . '2:' . $column . '3');
+                    $sheet->mergeCells($column.'2:'.$column.'3');
                 }
 
                 $sheet->getRowDimension($metadataRow)->setRowHeight(22);
@@ -146,7 +147,7 @@ class KhsTemplateExport implements FromArray, WithEvents
                 $sheet->getRowDimension($headerRowIndex)->setRowHeight(96);
                 $sheet->getRowDimension($sksRowIndex)->setRowHeight(18);
 
-                $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray([
+                $sheet->getStyle('A1:'.$highestColumn.'1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'size' => 10,
@@ -158,7 +159,7 @@ class KhsTemplateExport implements FromArray, WithEvents
                     ],
                 ]);
 
-                $sheet->getStyle('A2:' . $highestColumn . '4')->applyFromArray([
+                $sheet->getStyle('A2:'.$highestColumn.'4')->applyFromArray([
                     'font' => [
                         'bold' => false,
                         'size' => 8,
@@ -183,11 +184,11 @@ class KhsTemplateExport implements FromArray, WithEvents
 
                 $sheet->getStyle('A2:C4')->getAlignment()->setTextRotation(0);
                 $sheet->getStyle(
-                    Coordinate::stringFromColumnIndex($tailStartIndex) . '2:' .
-                    Coordinate::stringFromColumnIndex($tailStartIndex + $tailColumnCount - 1) . '4'
+                    Coordinate::stringFromColumnIndex($tailStartIndex).'2:'.
+                    Coordinate::stringFromColumnIndex($tailStartIndex + $tailColumnCount - 1).'4'
                 )->getAlignment()->setTextRotation(0);
 
-                $sheet->getStyle('A2:' . $highestColumn . '4')->applyFromArray([
+                $sheet->getStyle('A2:'.$highestColumn.'4')->applyFromArray([
                     'borders' => [
                         'outline' => [
                             'borderStyle' => Border::BORDER_MEDIUM,
@@ -205,8 +206,8 @@ class KhsTemplateExport implements FromArray, WithEvents
 
                     foreach ($subjectHeaderRanges as [$startIndex, $endIndex]) {
                         $sheet->getStyle(
-                            Coordinate::stringFromColumnIndex($startIndex) . '3:' .
-                            Coordinate::stringFromColumnIndex($endIndex) . '3'
+                            Coordinate::stringFromColumnIndex($startIndex).'3:'.
+                            Coordinate::stringFromColumnIndex($endIndex).'3'
                         )->getAlignment()
                             ->setTextRotation(90)
                             ->setWrapText(true)
@@ -214,8 +215,8 @@ class KhsTemplateExport implements FromArray, WithEvents
                             ->setVertical(Alignment::VERTICAL_CENTER);
 
                         $sheet->getStyle(
-                            Coordinate::stringFromColumnIndex($startIndex) . '2:' .
-                            Coordinate::stringFromColumnIndex($endIndex) . '4'
+                            Coordinate::stringFromColumnIndex($startIndex).'2:'.
+                            Coordinate::stringFromColumnIndex($endIndex).'4'
                         )->applyFromArray([
                             'borders' => [
                                 'left' => [
@@ -232,7 +233,7 @@ class KhsTemplateExport implements FromArray, WithEvents
                 }
 
                 if ($highestRow >= $dataStartRow) {
-                    $sheet->getStyle('A5:' . $highestColumn . $highestRow)->applyFromArray([
+                    $sheet->getStyle('A5:'.$highestColumn.$highestRow)->applyFromArray([
                         'font' => [
                             'size' => 10,
                             'name' => 'Arial',
@@ -268,7 +269,7 @@ class KhsTemplateExport implements FromArray, WithEvents
                             if ($isNotTaken || $isRepeat) {
                                 $fillColor = $isNotTaken ? 'D9D9D9' : 'FFF3CD';
                                 foreach ([$scoreColumn, $lambangColumn, $mutuColumn, $bobotColumn] as $fillColumn) {
-                                    $sheet->getStyle($fillColumn . $row)
+                                    $sheet->getStyle($fillColumn.$row)
                                         ->getFill()
                                         ->setFillType(Fill::FILL_SOLID)
                                         ->getStartColor()
@@ -277,16 +278,16 @@ class KhsTemplateExport implements FromArray, WithEvents
                             }
 
                             $sheet->setCellValue(
-                                $lambangColumn . $row,
-                                '=IF(' . $scoreColumn . $row . '<=40,"E",IF(' . $scoreColumn . $row . '<=55,"D",IF(' . $scoreColumn . $row . '<=64,"C",IF(' . $scoreColumn . $row . '<=68,"C+",IF(' . $scoreColumn . $row . '<=74,"B",IF(' . $scoreColumn . $row . '<=79,"B+",IF(' . $scoreColumn . $row . '<=100,"A","")))))))'
+                                $lambangColumn.$row,
+                                '=IF('.$scoreColumn.$row.'<=40,"E",IF('.$scoreColumn.$row.'<=55,"D",IF('.$scoreColumn.$row.'<=64,"C",IF('.$scoreColumn.$row.'<=68,"C+",IF('.$scoreColumn.$row.'<=74,"B",IF('.$scoreColumn.$row.'<=79,"B+",IF('.$scoreColumn.$row.'<=100,"A","")))))))'
                             );
                             $sheet->setCellValue(
-                                $mutuColumn . $row,
-                                '=IF(' . $lambangColumn . $row . '="E",0,IF(' . $lambangColumn . $row . '="D",1,IF(' . $lambangColumn . $row . '="C",2,IF(' . $lambangColumn . $row . '="C+",2.5,IF(' . $lambangColumn . $row . '="B",3,IF(' . $lambangColumn . $row . '="B+",3.5,IF(' . $lambangColumn . $row . '="A",4,"")))))))'
+                                $mutuColumn.$row,
+                                '=IF('.$lambangColumn.$row.'="E",0,IF('.$lambangColumn.$row.'="D",1,IF('.$lambangColumn.$row.'="C",2,IF('.$lambangColumn.$row.'="C+",2.5,IF('.$lambangColumn.$row.'="B",3,IF('.$lambangColumn.$row.'="B+",3.5,IF('.$lambangColumn.$row.'="A",4,"")))))))'
                             );
                             $sheet->setCellValue(
-                                $bobotColumn . $row,
-                                '=IF(' . $mutuColumn . $row . '="","",' . $mutuColumn . $row . '*' . $lambangColumn . '$4)'
+                                $bobotColumn.$row,
+                                '=IF('.$mutuColumn.$row.'="","",'.$mutuColumn.$row.'*'.$lambangColumn.'$4)'
                             );
                         }
 
@@ -297,31 +298,31 @@ class KhsTemplateExport implements FromArray, WithEvents
                             : null;
 
                         $sheet->setCellValue(
-                            $jumlahColumn . $row,
-                            '=SUM(' . Coordinate::stringFromColumnIndex($bobotStartIndex) . $row . ':' . Coordinate::stringFromColumnIndex($tailStartIndex - 1) . $row . ')'
+                            $jumlahColumn.$row,
+                            '=SUM('.Coordinate::stringFromColumnIndex($bobotStartIndex).$row.':'.Coordinate::stringFromColumnIndex($tailStartIndex - 1).$row.')'
                         );
                         $sheet->setCellValue(
-                            $ipColumn . $row,
-                            '=IF(' . $jumlahColumn . $row . '="","",' . $jumlahColumn . $row . '/' . $totalSks . ')'
+                            $ipColumn.$row,
+                            '=IF('.$jumlahColumn.$row.'="","",'.$jumlahColumn.$row.'/'.$totalSks.')'
                         );
                         if ($ipkColumn !== null) {
-                            $sheet->getStyle($ipkColumn . $row)->getFill()->setFillType(Fill::FILL_SOLID);
-                            $sheet->getStyle($ipkColumn . $row)->getFill()->getStartColor()->setRGB('FFF2CC');
+                            $sheet->getStyle($ipkColumn.$row)->getFill()->setFillType(Fill::FILL_SOLID);
+                            $sheet->getStyle($ipkColumn.$row)->getFill()->getStartColor()->setRGB('FFF2CC');
                         }
                         $sheet->setCellValue(
-                            $keteranganColumn . $row,
-                            '=IF(' . $ipColumn . $row . '>=3.5,"Terpuji, Pertahankan Prestasi Anda",IF(' . $ipColumn . $row . '>=3,"Sangat Memuaskan, Harap Pertahankan Prestasi Anda",IF(' . $ipColumn . $row . '>=2.76,"Memuaskan, Pertahankan dan Tingkatkan Prestasi Anda",IF(' . $ipColumn . $row . '>=2,"Cukup, Harap Ditingkatkan Prestasi Anda dan Belajar Yang Lebih Giat ","Tidak Lulus"))))'
+                            $keteranganColumn.$row,
+                            '=IF('.$ipColumn.$row.'>=3.5,"Terpuji, Pertahankan Prestasi Anda",IF('.$ipColumn.$row.'>=3,"Sangat Memuaskan, Harap Pertahankan Prestasi Anda",IF('.$ipColumn.$row.'>=2.76,"Memuaskan, Pertahankan dan Tingkatkan Prestasi Anda",IF('.$ipColumn.$row.'>=2,"Cukup, Harap Ditingkatkan Prestasi Anda dan Belajar Yang Lebih Giat ","Tidak Lulus"))))'
                         );
                     }
                 }
 
                 $sheet->setCellValueExplicit(
-                    Coordinate::stringFromColumnIndex($tailStartIndex) . '4',
+                    Coordinate::stringFromColumnIndex($tailStartIndex).'4',
                     number_format($totalSks, 2, '.', ''),
                     DataType::TYPE_STRING
                 );
                 $sheet->setCellValueExplicit(
-                    Coordinate::stringFromColumnIndex($tailStartIndex + 1) . '4',
+                    Coordinate::stringFromColumnIndex($tailStartIndex + 1).'4',
                     number_format($totalSks, 2, '.', ''),
                     DataType::TYPE_STRING
                 );
@@ -346,29 +347,29 @@ class KhsTemplateExport implements FromArray, WithEvents
                 }
                 $sheet->getColumnDimension($keteranganColumn)->setWidth(24);
 
-                $sheet->getStyle('C5:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle('C5:C'.$highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 $sheet->getStyle(
-                    $keteranganColumn . '5:' . $keteranganColumn . $highestRow
+                    $keteranganColumn.'5:'.$keteranganColumn.$highestRow
                 )->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
                 $sheet->getStyle(
-                    Coordinate::stringFromColumnIndex($headerStart) . '5:' .
-                    Coordinate::stringFromColumnIndex($mutuStartIndex - 1) . $highestRow
+                    Coordinate::stringFromColumnIndex($headerStart).'5:'.
+                    Coordinate::stringFromColumnIndex($mutuStartIndex - 1).$highestRow
                 )->getNumberFormat()->setFormatCode('0');
                 $sheet->getStyle(
-                    Coordinate::stringFromColumnIndex($mutuStartIndex) . '5:' .
-                    Coordinate::stringFromColumnIndex($bobotStartIndex - 1) . $highestRow
+                    Coordinate::stringFromColumnIndex($mutuStartIndex).'5:'.
+                    Coordinate::stringFromColumnIndex($bobotStartIndex - 1).$highestRow
                 )->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_GENERAL);
                 $sheet->getStyle(
-                    Coordinate::stringFromColumnIndex($bobotStartIndex) . '5:' .
-                    Coordinate::stringFromColumnIndex($tailStartIndex - 1) . $highestRow
+                    Coordinate::stringFromColumnIndex($bobotStartIndex).'5:'.
+                    Coordinate::stringFromColumnIndex($tailStartIndex - 1).$highestRow
                 )->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_GENERAL);
                 $sheet->getStyle(
-                    Coordinate::stringFromColumnIndex($tailStartIndex) . '5:' .
-                    Coordinate::stringFromColumnIndex($tailStartIndex + $tailColumnCount - 2) . $highestRow
+                    Coordinate::stringFromColumnIndex($tailStartIndex).'5:'.
+                    Coordinate::stringFromColumnIndex($tailStartIndex + $tailColumnCount - 2).$highestRow
                 )->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
 
-                $sheet->getStyle('A2:' . $highestColumn . $highestRow)->getAlignment()->setWrapText(true);
+                $sheet->getStyle('A2:'.$highestColumn.$highestRow)->getAlignment()->setWrapText(true);
             },
         ];
     }

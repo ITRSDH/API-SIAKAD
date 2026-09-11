@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api\Siakad\MasterData;
 
-use Exception;
-use App\Models\RefreshToken;
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\MasterData\Dosen;
 use App\Models\MasterData\Prodi;
+use App\Models\RefreshToken;
+use App\Models\User;
+use Exception;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -22,19 +22,20 @@ class DosenController extends Controller
             // Memuat relasi prodi dan user
             $dosens = Dosen::with(['prodi', 'user'])->get();
             $dataprodi = Prodi::all();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar Dosen',
                 'data' => [
                     'dosen' => $dosens,
-                    'prodi' => $dataprodi
-                ]
+                    'prodi' => $dataprodi,
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data dosen.',
-                'error' => $e->getMessage() // Hanya tampilkan pesan error jika debug=true
+                'error' => $e->getMessage(), // Hanya tampilkan pesan error jika debug=true
             ], 500);
         }
     }
@@ -44,23 +45,23 @@ class DosenController extends Controller
         try {
             $dosen = Dosen::with(['prodi', 'user'])->find($id);
 
-            if (!$dosen) {
+            if (! $dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dosen tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Detail Dosen',
-                'data' => $dosen
+                'data' => $dosen,
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data dosen.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -112,19 +113,19 @@ class DosenController extends Controller
                 'data' => [
                     'dosen' => $result['dosen'],
                     'user' => $result['user'],
-                ]
+                ],
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat membuat dosen.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -134,23 +135,23 @@ class DosenController extends Controller
         try {
             $dosen = Dosen::with('user')->find($id);
 
-            if (!$dosen) {
+            if (! $dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dosen tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.',
                 ], 404);
             }
 
             $request->validate([
                 'id_prodi' => 'sometimes|exists:prodi,id',
-                'nidn' => 'nullable|string|unique:dosen,nidn,' . $id,
-                'nup' => 'nullable|string|unique:dosen,nup,' . $id,
+                'nidn' => 'nullable|string|unique:dosen,nidn,'.$id,
+                'nup' => 'nullable|string|unique:dosen,nup,'.$id,
                 'nama_dosen' => 'sometimes|string|max:255',
                 'jenis_kelamin' => 'sometimes|in:L,P',
                 'tanggal_lahir' => 'nullable|date',
                 'alamat' => 'nullable|string',
                 'no_hp' => 'nullable|string|max:15',
-                'email' => 'nullable|email|unique:users,email,' . $dosen->user_id,
+                'email' => 'nullable|email|unique:users,email,'.$dosen->user_id,
                 'password' => 'nullable|string|min:6',
             ]);
 
@@ -176,7 +177,7 @@ class DosenController extends Controller
                             $userData['password'] = Hash::make($request->password);
                         }
 
-                        if (!empty($userData)) {
+                        if (! empty($userData)) {
                             $dosen->user->update($userData);
                         }
                     } else {
@@ -204,19 +205,19 @@ class DosenController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dosen dan User berhasil diperbarui.',
-                'data' => $result
+                'data' => $result,
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui dosen.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -240,10 +241,10 @@ class DosenController extends Controller
         try {
             $dosen = Dosen::with('user')->find($id);
 
-            if (!$dosen) {
+            if (! $dosen) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dosen tidak ditemukan.'
+                    'message' => 'Dosen tidak ditemukan.',
                 ], 404);
             }
 
@@ -267,13 +268,13 @@ class DosenController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Dosen, user, dan refresh token terkait berhasil dihapus.'
+                'message' => 'Dosen, user, dan refresh token terkait berhasil dihapus.',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus dosen.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
