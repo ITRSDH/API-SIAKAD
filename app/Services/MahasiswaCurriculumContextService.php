@@ -6,6 +6,7 @@ use App\Models\MasterData\Kurikulum;
 use App\Models\MasterData\Mahasiswa;
 use App\Models\MasterData\Semester;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class MahasiswaCurriculumContextService
@@ -66,22 +67,31 @@ class MahasiswaCurriculumContextService
                 });
             });
 
+        $hasKeterangan = $this->hasKeteranganColumn();
+
         if ($isRpl) {
             $matchedByPeriod = (clone $matchedByPeriodQuery)
-                ->where(function ($q) {
-                    $q->where('nama_struktur_mk', 'like', '%RPL%')
-                        ->orWhere('keterangan', 'like', '%RPL%');
+                ->where(function ($q) use ($hasKeterangan) {
+                    $q->where('nama_struktur_mk', 'like', '%RPL%');
+                    if ($hasKeterangan) {
+                        $q->orWhere('keterangan', 'like', '%RPL%');
+                    }
                 })
                 ->orderBy('nama_struktur_mk')
                 ->orderBy('id')
                 ->first();
         } else {
             $matchedByPeriod = (clone $matchedByPeriodQuery)
-                ->where('nama_struktur_mk', 'not like', '%RPL%')
-                ->where(function ($q) {
+                ->where('nama_struktur_mk', 'not like', '%RPL%');
+
+            if ($hasKeterangan) {
+                $matchedByPeriod = $matchedByPeriod->where(function ($q) {
                     $q->whereNull('keterangan')
                         ->orWhere('keterangan', 'not like', '%RPL%');
-                })
+                });
+            }
+
+            $matchedByPeriod = $matchedByPeriod
                 ->orderBy('nama_struktur_mk')
                 ->orderBy('id')
                 ->first();
@@ -136,22 +146,30 @@ class MahasiswaCurriculumContextService
         $baseQuery = Kurikulum::with('semesterMulai.tahunAkademik')
             ->where('id_prodi', $prodiId);
 
+        $hasKeterangan = $this->hasKeteranganColumn();
+
         if ($isRpl) {
             $rplKurikulums = (clone $baseQuery)
-                ->where(function ($q) {
-                    $q->where('nama_struktur_mk', 'like', '%RPL%')
-                        ->orWhere('keterangan', 'like', '%RPL%');
+                ->where(function ($q) use ($hasKeterangan) {
+                    $q->where('nama_struktur_mk', 'like', '%RPL%');
+                    if ($hasKeterangan) {
+                        $q->orWhere('keterangan', 'like', '%RPL%');
+                    }
                 })
                 ->get();
             $kurikulums = $rplKurikulums->isNotEmpty() ? $rplKurikulums : $baseQuery->get();
         } else {
             $regKurikulums = (clone $baseQuery)
-                ->where('nama_struktur_mk', 'not like', '%RPL%')
-                ->where(function ($q) {
+                ->where('nama_struktur_mk', 'not like', '%RPL%');
+
+            if ($hasKeterangan) {
+                $regKurikulums = $regKurikulums->where(function ($q) {
                     $q->whereNull('keterangan')
                         ->orWhere('keterangan', 'not like', '%RPL%');
-                })
-                ->get();
+                });
+            }
+
+            $regKurikulums = $regKurikulums->get();
             $kurikulums = $regKurikulums->isNotEmpty() ? $regKurikulums : $baseQuery->get();
         }
 
@@ -286,5 +304,16 @@ class MahasiswaCurriculumContextService
             str_contains($normalized, 'genap') => 'genap',
             default => $normalized,
         };
+    }
+
+    private function hasKeteranganColumn(): bool
+    {
+        static $hasColumn = null;
+
+        if ($hasColumn === null) {
+            $hasColumn = Schema::hasColumn('kurikulum', 'keterangan');
+        }
+
+        return $hasColumn;
     }
 }

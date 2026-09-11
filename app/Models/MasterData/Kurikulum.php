@@ -31,6 +31,7 @@ class Kurikulum extends Model
         'jumlah_sks_wajib',
         'jumlah_sks_pilihan',
         'jumlah_sks_lulus',
+        'keterangan',
     ];
 
     public function getDisplayNameAttribute(): string
