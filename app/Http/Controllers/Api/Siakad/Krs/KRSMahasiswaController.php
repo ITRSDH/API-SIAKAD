@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class KRSMahasiswaController extends Controller
@@ -446,32 +447,10 @@ class KRSMahasiswaController extends Controller
                 ->toArray();
         }
 
-        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa, $targetKurikulumSemester);
-
-        $isRpl = $this->isRplMahasiswa($mahasiswa);
-        $hasKeterangan = Schema::hasColumn('kurikulum', 'keterangan');
-
         $availableKelas = KelasKuliah::where('id_prodi', $mahasiswa->id_prodi)
             ->where('id_semester', $semester->id)
-            ->whereHas('kurikulumMataKuliah', function ($query) use ($targetKurikulumSemester, $isRpl, $hasKeterangan) {
+            ->whereHas('kurikulumMataKuliah', function ($query) use ($targetKurikulumSemester) {
                 $query->where('semester_ke', '<=', $targetKurikulumSemester);
-                $query->whereHas('kurikulum', function ($kq) use ($isRpl, $hasKeterangan) {
-                    if ($isRpl) {
-                        $kq->where(function ($q) use ($hasKeterangan) {
-                            $q->where('nama_struktur_mk', 'like', '%RPL%');
-                            if ($hasKeterangan) {
-                                $q->orWhere('keterangan', 'like', '%RPL%');
-                            }
-                        });
-                    } else {
-                        $kq->where('nama_struktur_mk', 'not like', '%RPL%');
-                        if ($hasKeterangan) {
-                            $kq->where(function ($q) {
-                                $q->whereNull('keterangan')->orWhere('keterangan', 'not like', '%RPL%');
-                            });
-                        }
-                    }
-                });
             })
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
@@ -491,10 +470,16 @@ class KRSMahasiswaController extends Controller
         $result = [];
 
         foreach ($availableKelas as $kelas) {
-            $mataKuliah = $kelas->kurikulumMataKuliah->mataKuliah;
+            $kurikulumMataKuliah = $kelas->kurikulumMataKuliah;
+            $mataKuliah = $kurikulumMataKuliah?->mataKuliah;
+
+            if (! $kurikulumMataKuliah || ! $mataKuliah) {
+                continue;
+            }
+
             $isSelected = in_array($kelas->id, $selectedKelasIds, true);
             $isTransferred = $transferredMataKuliah->has($mataKuliah->id);
-            $semesterAllowed = $targetKurikulumSemester >= $kelas->kurikulumMataKuliah->semester_ke;
+            $semesterAllowed = $targetKurikulumSemester >= $kurikulumMataKuliah->semester_ke;
             $wouldExceedSks = ($currentSks + $mataKuliah->sks) > $maxSks;
             $hasConflict = $krs ? $this->hasJadwalKonflik($krs, $kelas) : false;
             $kelasPenuh = $kelas->isPenuh();
@@ -524,8 +509,8 @@ class KRSMahasiswaController extends Controller
                 'mata_kuliah' => $mataKuliah->nama_mk,
                 'kode_mk' => $mataKuliah->kode_mk,
                 'sks' => $mataKuliah->sks,
-                'semester_ke' => $kelas->kurikulumMataKuliah->semester_ke,
-                'is_wajib' => $kelas->kurikulumMataKuliah->is_wajib,
+                'semester_ke' => $kurikulumMataKuliah->semester_ke,
+                'is_wajib' => $kurikulumMataKuliah->is_wajib,
                 'is_transferred' => $isTransferred,
                 'nilai_transfer' => $isTransferred ? $transferredMataKuliah->get($mataKuliah->id)->nilai_huruf_diakui : null,
                 'kapasitas_peserta' => $kelas->kapasitas_peserta,
