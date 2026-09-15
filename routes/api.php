@@ -371,6 +371,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('krs-mahasiswa/repeat-candidates', [KRSMahasiswaController::class, 'repeatCandidates'])->name('repeat-candidates');
                 Route::post('krs-mahasiswa', [KRSMahasiswaController::class, 'store'])->name('store');
                 Route::post('krs-mahasiswa/current/init', [KRSMahasiswaController::class, 'initCurrent'])->name('current.init');
+                Route::post('krs-mahasiswa/current/regenerate-package', [KRSMahasiswaController::class, 'regeneratePackage'])->name('current.regenerate-package');
                 Route::post('krs-mahasiswa/add-mata-kuliah', [KRSMahasiswaController::class, 'addMataKuliah'])->name('add-mata-kuliah');
                 Route::post('krs-mahasiswa/submit', [KRSMahasiswaController::class, 'submit'])->name('submit');
                 Route::delete('krs-mahasiswa/{krsId}/remove-mata-kuliah/{kelasKuliahId}', [KRSMahasiswaController::class, 'removeMataKuliah'])->name('remove-mata-kuliah');

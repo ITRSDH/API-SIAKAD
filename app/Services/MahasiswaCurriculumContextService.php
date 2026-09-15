@@ -30,7 +30,7 @@ class MahasiswaCurriculumContextService
         );
     }
 
-    public function resolveKrsKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
+    public function resolveKrsKurikulumId(Mahasiswa|string|null $mahasiswa, ?int $targetSemester = null): ?string
     {
         $resolvedMahasiswa = $this->resolveMahasiswa($mahasiswa);
         if (! $resolvedMahasiswa) {
@@ -51,60 +51,110 @@ class MahasiswaCurriculumContextService
             return $matchingId;
         }
 
-        // Preferensi struktur yang semesterMulai-nya cocok dengan tahun
-        // akademik + jenis semester aktif; jika tidak ada, fallback ke
-        // hasil matching prodi/angkatan.
+        if ($targetSemester === null) {
+            $targetSemester = $this->calculateTargetKurikulumSemester($resolvedMahasiswa, $semesterAktif);
+        }
+
         $tahunAkademikAktif = $semesterAktif->tahunAkademik->tahun_akademik;
         $jenisSemesterAktif = $this->normalizeSemesterType($semesterAktif->nama_semester);
         $isRpl = $this->isRplMahasiswa($resolvedMahasiswa);
+        $hasKeterangan = $this->hasKeteranganColumn();
 
-        $matchedByPeriodQuery = Kurikulum::query()
-            ->where('id_prodi', $resolvedMahasiswa->id_prodi)
+        // 1. Query dasar kurikulum di prodi mahasiswa sesuai jalur RPL / Reguler
+        $candidateQuery = Kurikulum::query()
+            ->where('id_prodi', $resolvedMahasiswa->id_prodi);
+
+        if ($isRpl) {
+            $candidateQuery->where(function ($q) use ($hasKeterangan) {
+                $q->where('nama_struktur_mk', 'like', '%RPL%');
+                if ($hasKeterangan) {
+                    $q->orWhere('keterangan', 'like', '%RPL%');
+                }
+            });
+        } else {
+            $candidateQuery->where('nama_struktur_mk', 'not like', '%RPL%');
+            if ($hasKeterangan) {
+                $candidateQuery->where(function ($q) {
+                    $q->whereNull('keterangan')
+                        ->orWhere('keterangan', 'not like', '%RPL%');
+                });
+            }
+        }
+
+        // Prioritas 1 (Murni Relasional Database):
+        // Kurikulum yang memiliki baris mata kuliah di semester tempuh mahasiswa ($targetSemester)
+        // DAN memiliki kelas kuliah yang dibuka pada semester aktif di prodi ini.
+        if ($targetSemester > 0) {
+            $level1 = (clone $candidateQuery)
+                ->whereHas('kurikulumMataKuliah', function ($q) use ($targetSemester, $semesterAktif, $resolvedMahasiswa) {
+                    $q->where('semester_ke', $targetSemester)
+                        ->whereHas('kelasKuliah', function ($kq) use ($semesterAktif, $resolvedMahasiswa) {
+                            $kq->where('id_semester', $semesterAktif->id)
+                                ->where('id_prodi', $resolvedMahasiswa->id_prodi);
+                        });
+                })
+                ->first();
+
+            if ($level1) {
+                return $level1->id;
+            }
+
+            // Prioritas 2 (Relasional Kurikulum-Mata Kuliah):
+            // Kurikulum yang memiliki mata kuliah di semester tempuh mahasiswa ($targetSemester).
+            $level2 = (clone $candidateQuery)
+                ->whereHas('kurikulumMataKuliah', function ($q) use ($targetSemester) {
+                    $q->where('semester_ke', $targetSemester);
+                })
+                ->first();
+
+            if ($level2) {
+                return $level2->id;
+            }
+        }
+
+        // Prioritas 3 (Kesesuaian Periode Semester Mulai):
+        $level3 = (clone $candidateQuery)
             ->whereHas('semesterMulai', function ($query) use ($tahunAkademikAktif, $jenisSemesterAktif) {
                 $query->where('nama_semester', 'like', '%'.$jenisSemesterAktif.'%');
                 $query->whereHas('tahunAkademik', function ($tahunAkademikQuery) use ($tahunAkademikAktif) {
                     $tahunAkademikQuery->where('tahun_akademik', $tahunAkademikAktif);
                 });
-            });
+            })
+            ->first();
 
-        $hasKeterangan = $this->hasKeteranganColumn();
+        if ($level3) {
+            return $level3->id;
+        }
 
-        if ($isRpl) {
-            $matchedByPeriod = (clone $matchedByPeriodQuery)
-                ->where(function ($q) use ($hasKeterangan) {
-                    $q->where('nama_struktur_mk', 'like', '%RPL%');
-                    if ($hasKeterangan) {
-                        $q->orWhere('keterangan', 'like', '%RPL%');
-                    }
-                })
-                ->orderBy('nama_struktur_mk')
-                ->orderBy('id')
+        return $matchingId;
+    }
+
+    public function calculateTargetKurikulumSemester(Mahasiswa $mahasiswa, ?Semester $semester = null): int
+    {
+        if (! $semester) {
+            $semester = Semester::query()
+                ->with('tahunAkademik')
+                ->where('status', 'Aktif')
                 ->first();
         } else {
-            $matchedByPeriod = (clone $matchedByPeriodQuery)
-                ->where('nama_struktur_mk', 'not like', '%RPL%');
-
-            if ($hasKeterangan) {
-                $matchedByPeriod = $matchedByPeriod->where(function ($q) {
-                    $q->whereNull('keterangan')
-                        ->orWhere('keterangan', 'not like', '%RPL%');
-                });
-            }
-
-            $matchedByPeriod = $matchedByPeriod
-                ->orderBy('nama_struktur_mk')
-                ->orderBy('id')
-                ->first();
+            $semester->loadMissing('tahunAkademik');
         }
 
-        if (! $matchedByPeriod) {
-            $matchedByPeriod = $matchedByPeriodQuery
-                ->orderBy('nama_struktur_mk')
-                ->orderBy('id')
-                ->first();
+        if (! $semester || ! $semester->tahunAkademik) {
+            return 1;
         }
 
-        return $matchedByPeriod?->id ?? $matchingId;
+        $tahunMulai = (int) substr((string) $semester->tahunAkademik->tahun_akademik, 0, 4);
+        $digitPeriode = strtolower(trim((string) $semester->nama_semester)) === 'ganjil' ? 1 : 2;
+        $selisihTahun = $tahunMulai - (int) ($mahasiswa->angkatan ?? $tahunMulai);
+        $semesterKe = max(1, ($selisihTahun * 2) + $digitPeriode);
+
+        if ($this->isRplMahasiswa($mahasiswa) && ($mahasiswa->sks_diakui ?? 0) > 0) {
+            $semesterEkuivalen = (int) floor($mahasiswa->sks_diakui / 20);
+            $semesterKe += $semesterEkuivalen;
+        }
+
+        return max(1, $semesterKe);
     }
 
     public function resolveRequestedOrMatchingKurikulumId(

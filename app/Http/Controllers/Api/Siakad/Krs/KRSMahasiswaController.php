@@ -178,6 +178,78 @@ class KRSMahasiswaController extends Controller
         ]);
     }
 
+    public function regeneratePackage(Request $request): JsonResponse
+    {
+        $mahasiswa = $this->getAuthenticatedMahasiswa($request);
+
+        if (! $mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data mahasiswa tidak ditemukan',
+            ], 404);
+        }
+
+        $semester = $this->getActiveSemester();
+
+        if (! $semester) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Semester aktif tidak ditemukan',
+            ], 404);
+        }
+
+        $periodError = $this->validateKRSPeriod($semester);
+        if ($periodError) {
+            return $periodError;
+        }
+
+        $krs = KRS::with($this->krsRelations())
+            ->where('id_mahasiswa', $mahasiswa->id)
+            ->where('id_semester', $semester->id)
+            ->first();
+
+        if (! $krs) {
+            return $this->initCurrent($request);
+        }
+
+        if ($krs->status_approval === KRS::STATUS_APPROVED || $krs->is_locked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KRS sudah disetujui atau terkunci sehingga tidak dapat dimuat ulang. Silakan hubungi Dosen Wali jika memerlukan revisi.',
+            ], 422);
+        }
+
+        $result = DB::transaction(function () use ($krs, $mahasiswa, $semester) {
+            $krs->details()->delete();
+            $krs->update([
+                'total_sks' => 0,
+                'status_approval' => KRS::STATUS_REVISED,
+                'is_locked' => false,
+            ]);
+
+            $packageResult = $this->generatePackageKrs($krs, $mahasiswa, $semester);
+
+            return [
+                'krs' => $krs,
+                'package_result' => $packageResult,
+            ];
+        });
+
+        $krs = $result['krs'];
+        $packageResult = $result['package_result'];
+        $krs->load($this->krsRelations());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Paket KRS semester aktif berhasil dimuat ulang.',
+            'data' => [
+                'krs' => $this->transformKRS($krs),
+                'package_summary' => $packageResult['summary'],
+                'unresolved_package_items' => $packageResult['unresolved_items'],
+            ],
+        ]);
+    }
+
     public function show(Request $request, string $id): JsonResponse
     {
         $mahasiswa = $this->getAuthenticatedMahasiswa($request);
@@ -374,15 +446,32 @@ class KRSMahasiswaController extends Controller
                 ->toArray();
         }
 
-        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
+        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa, $targetKurikulumSemester);
+
+        $isRpl = $this->isRplMahasiswa($mahasiswa);
+        $hasKeterangan = Schema::hasColumn('kurikulum', 'keterangan');
 
         $availableKelas = KelasKuliah::where('id_prodi', $mahasiswa->id_prodi)
             ->where('id_semester', $semester->id)
-            ->whereHas('kurikulumMataKuliah', function ($query) use ($targetKurikulumSemester, $activeKurikulumId) {
-                if ($activeKurikulumId) {
-                    $query->where('id_kurikulum', $activeKurikulumId);
-                }
+            ->whereHas('kurikulumMataKuliah', function ($query) use ($targetKurikulumSemester, $isRpl, $hasKeterangan) {
                 $query->where('semester_ke', '<=', $targetKurikulumSemester);
+                $query->whereHas('kurikulum', function ($kq) use ($isRpl, $hasKeterangan) {
+                    if ($isRpl) {
+                        $kq->where(function ($q) use ($hasKeterangan) {
+                            $q->where('nama_struktur_mk', 'like', '%RPL%');
+                            if ($hasKeterangan) {
+                                $q->orWhere('keterangan', 'like', '%RPL%');
+                            }
+                        });
+                    } else {
+                        $kq->where('nama_struktur_mk', 'not like', '%RPL%');
+                        if ($hasKeterangan) {
+                            $kq->where(function ($q) {
+                                $q->whereNull('keterangan')->orWhere('keterangan', 'not like', '%RPL%');
+                            });
+                        }
+                    }
+                });
             })
             ->with([
                 'kurikulumMataKuliah.mataKuliah.prasyarat.mataKuliahPrasyarat',
@@ -1267,7 +1356,7 @@ class KRSMahasiswaController extends Controller
         $mahasiswa = $krs->relationLoaded('mahasiswa') ? $krs->mahasiswa : Mahasiswa::find($krs->id_mahasiswa);
         $semester = $krs->relationLoaded('semester') ? $krs->semester : Semester::find($krs->id_semester);
 
-        $activeKurikulumId = $mahasiswa ? $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa) : null;
+        $activeKurikulumId = $mahasiswa ? $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa, $semesterKe) : null;
 
         if (! $mahasiswa || ! $semester || ! $activeKurikulumId) {
             return [
@@ -1488,8 +1577,8 @@ class KRSMahasiswaController extends Controller
         $unresolvedItems = [];
         $selectedClasses = collect();
 
-        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa);
-        $curriculumContext = $this->activeCurriculumService->resolveCurriculumContext($mahasiswa);
+        $activeKurikulumId = $this->activeCurriculumService->resolveActiveKurikulumId($mahasiswa, $targetKurikulumSemester);
+        $curriculumContext = $this->activeCurriculumService->resolveCurriculumContext($mahasiswa, $targetKurikulumSemester);
 
         if ($semesterKe < 1) {
             return [
@@ -1573,7 +1662,12 @@ class KRSMahasiswaController extends Controller
 
             $candidateClasses = KelasKuliah::where('id_semester', $semester->id)
                 ->where('id_prodi', $mahasiswa->id_prodi)
-                ->where('id_kurikulum_mata_kuliah', $packageItem->id)
+                ->where(function ($q) use ($packageItem, $mataKuliah) {
+                    $q->where('id_kurikulum_mata_kuliah', $packageItem->id)
+                        ->orWhereHas('kurikulumMataKuliah', function ($kq) use ($mataKuliah) {
+                            $kq->where('id_mata_kuliah', $mataKuliah->id);
+                        });
+                })
                 ->with([
                     'kurikulumMataKuliah.mataKuliah',
                     'jadwal',

@@ -13,14 +13,14 @@ class ActiveCurriculumService
         private readonly MahasiswaCurriculumContextService $mahasiswaCurriculumContextService
     ) {}
 
-    public function resolveActiveKurikulumId(Mahasiswa|string|null $mahasiswa): ?string
+    public function resolveActiveKurikulumId(Mahasiswa|string|null $mahasiswa, ?int $semesterKe = null): ?string
     {
-        return $this->mahasiswaCurriculumContextService->resolveKrsKurikulumId($mahasiswa);
+        return $this->mahasiswaCurriculumContextService->resolveKrsKurikulumId($mahasiswa, $semesterKe);
     }
 
-    public function resolveActiveKurikulum(Mahasiswa|string|null $mahasiswa): ?Kurikulum
+    public function resolveActiveKurikulum(Mahasiswa|string|null $mahasiswa, ?int $semesterKe = null): ?Kurikulum
     {
-        $resolvedKurikulumId = $this->resolveActiveKurikulumId($mahasiswa);
+        $resolvedKurikulumId = $this->resolveActiveKurikulumId($mahasiswa, $semesterKe);
 
         return $resolvedKurikulumId
             ? Kurikulum::query()
@@ -31,7 +31,7 @@ class ActiveCurriculumService
 
     public function resolvePackageItemsForSemester(Mahasiswa|string|null $mahasiswa, int $semesterKe): Collection
     {
-        $resolvedKurikulumId = $this->resolveActiveKurikulumId($mahasiswa);
+        $resolvedKurikulumId = $this->resolveActiveKurikulumId($mahasiswa, $semesterKe);
 
         if (! $resolvedKurikulumId) {
             return collect();
@@ -46,9 +46,9 @@ class ActiveCurriculumService
             ->get();
     }
 
-    public function resolveCurriculumContext(Mahasiswa|string|null $mahasiswa): array
+    public function resolveCurriculumContext(Mahasiswa|string|null $mahasiswa, ?int $semesterKe = null): array
     {
-        $activeKurikulum = $this->resolveActiveKurikulum($mahasiswa);
+        $activeKurikulum = $this->resolveActiveKurikulum($mahasiswa, $semesterKe);
         $operationalId = $activeKurikulum?->id;
 
         return [

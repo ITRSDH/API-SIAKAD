@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KurikulumMataKuliah extends Model
 {
@@ -37,5 +38,11 @@ class KurikulumMataKuliah extends Model
     public function mataKuliah(): BelongsTo
     {
         return $this->belongsTo(MataKuliah::class, 'id_mata_kuliah');
+    }
+
+    // Relasi ke Kelas Kuliah
+    public function kelasKuliah(): HasMany
+    {
+        return $this->hasMany(KelasKuliah::class, 'id_kurikulum_mata_kuliah');
     }
 }
