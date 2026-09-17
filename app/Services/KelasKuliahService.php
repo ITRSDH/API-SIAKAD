@@ -137,6 +137,7 @@ class KelasKuliahService
                     KRSDetail::create([
                         'id_krs' => $draftKrs->id,
                         'id_kelas_kuliah' => $kelasKuliah->id,
+                        'id_mata_kuliah' => $kelasKuliah->kurikulumMataKuliah?->id_mata_kuliah,
                         'status' => KRSDetail::STATUS_TERDAFTAR,
                     ]);
 
@@ -237,14 +238,14 @@ class KelasKuliahService
             ];
         }
 
-        if ($krs && ! $krs->isEditable()) {
+        if ($krs && $krs->status_approval === KRS::STATUS_REJECTED) {
             return [
                 'already_registered' => false,
                 'can_register' => false,
                 'state' => 'locked',
-                'state_label' => 'KRS tidak bisa diubah',
-                'state_variant' => 'warning',
-                'reason' => 'Draft KRS mahasiswa pada semester ini tidak dapat diubah.',
+                'state_label' => 'KRS ditolak',
+                'state_variant' => 'danger',
+                'reason' => 'KRS mahasiswa pada semester ini berstatus ditolak.',
             ];
         }
 
@@ -288,7 +289,8 @@ class KelasKuliahService
         }
 
         $currentSks = (int) ($krs?->total_sks ?? 0);
-        if (($currentSks + $candidateSks) > 24) {
+        $isSksOverride = (bool) ($krs?->is_sks_override ?? false);
+        if (! $isSksOverride && ($currentSks + $candidateSks) > 24) {
             return [
                 'already_registered' => false,
                 'can_register' => false,
@@ -310,11 +312,16 @@ class KelasKuliahService
             ];
         }
 
+        $stateLabel = 'Siap didaftarkan';
+        if ($krs && $krs->status_approval === KRS::STATUS_APPROVED) {
+            $stateLabel = 'Siap didaftarkan (KRS Disetujui)';
+        }
+
         return [
             'already_registered' => false,
             'can_register' => true,
             'state' => 'available',
-            'state_label' => 'Siap didaftarkan',
+            'state_label' => $stateLabel,
             'state_variant' => 'primary',
             'reason' => null,
         ];
