@@ -169,16 +169,24 @@ class KelasKuliahController extends Controller
         }
     }
 
-    public function krsCandidates(string $id): JsonResponse
+    public function krsCandidates(Request $request, string $id): JsonResponse
     {
         try {
             $kelasKuliah = $this->kelasKuliahService->loadKelasForKrsRegistration($id);
             $targetMataKuliahId = $kelasKuliah->kurikulumMataKuliah?->id_mata_kuliah;
             $candidateSks = (int) ($kelasKuliah->kurikulumMataKuliah?->mataKuliah?->sks ?? 0);
 
-            $mahasiswaItems = Mahasiswa::query()
+            $status = $request->query('status', 'aktif');
+
+            $mahasiswaQuery = Mahasiswa::query()
                 ->where('id_prodi', $kelasKuliah->id_prodi)
-                ->where('status', '!=', 'PMB')
+                ->where('status', '!=', 'PMB');
+
+            if ($status && strtolower($status) !== 'all') {
+                $mahasiswaQuery->whereRaw('LOWER(status) = ?', [strtolower($status)]);
+            }
+
+            $mahasiswaItems = $mahasiswaQuery
                 ->orderByDesc('angkatan')
                 ->orderBy('nama_mahasiswa')
                 ->get([
