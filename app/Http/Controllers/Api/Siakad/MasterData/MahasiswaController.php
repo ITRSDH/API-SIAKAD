@@ -19,6 +19,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -30,14 +32,30 @@ class MahasiswaController extends Controller
         private readonly StudentAngkatanResolverService $studentAngkatanResolverService
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            // Memuat relasi yang relevan termasuk user
-            $mahasiswas = Mahasiswa::with(['prodi', 'dosenWali', 'user'])
-                ->where('status', '!=', 'PMB')
-                ->get()
-                ->map(fn (Mahasiswa $mahasiswa) => $this->serializeMahasiswa($mahasiswa));
+            $query = Mahasiswa::with(['prodi', 'dosenWali', 'user'])
+                ->where('status', '!=', 'PMB');
+
+            if ($request->filled('status') && strtolower($request->status) !== 'all') {
+                $query->whereRaw('LOWER(status) = ?', [strtolower($request->status)]);
+            }
+
+            if ($request->filled('id_prodi')) {
+                $query->where('id_prodi', $request->id_prodi);
+            }
+
+            if ($request->filled('angkatan')) {
+                $query->where('angkatan', $request->angkatan);
+            }
+
+            if ($request->filled('jenis_pendaftaran')) {
+                $query->where('jenis_pendaftaran', $request->jenis_pendaftaran);
+            }
+
+            // Memuat relasi yang relevan tanpa N+1 serialization kurikulum
+            $mahasiswas = $query->get();
             $dataprodi = Prodi::all();
             $datadosen = Dosen::all();
             $datakurikulum = Kurikulum::with(['prodi', 'semesterMulai.tahunAkademik'])->get();
@@ -149,9 +167,11 @@ class MahasiswaController extends Controller
                     ? Hash::make($request->password)
                     : Hash::make('12345678');
 
+                $email = trim((string) $request->input('email', ''));
+
                 $user = User::create([
                     'name' => $request->nama_mahasiswa,
-                    'email' => $request->email,
+                    'email' => $email === '' ? null : $email,
                     'password' => $password,
                     'status' => $request->status === 'Aktif' ? 'aktif' : 'tidak-aktif',
                 ]);
@@ -220,7 +240,11 @@ class MahasiswaController extends Controller
                 'agama' => 'sometimes|in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu',
                 'status' => 'sometimes|in:Aktif,Cuti,DO,Lulus',
                 'angkatan' => 'nullable|integer|min:1900|max:'.(date('Y') + 10),
-                'email' => 'nullable|email|unique:users,email,'.$mahasiswa->user_id,
+                'email' => [
+                    'nullable',
+                    'email',
+                    Rule::unique('users', 'email')->ignore($mahasiswa->user_id),
+                ],
                 'password' => 'nullable|string|min:6',
                 // PDDikti & RPL additions
                 'nisn' => 'nullable|string|max:20',
@@ -293,7 +317,8 @@ class MahasiswaController extends Controller
                     }
 
                     if ($request->has('email')) {
-                        $userData['email'] = $request->email;
+                        $email = trim((string) $request->input('email', ''));
+                        $userData['email'] = $email === '' ? null : $email;
                     }
 
                     // Hanya update password jika password diisi
@@ -328,9 +353,15 @@ class MahasiswaController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
+            Log::error('Gagal memperbarui mahasiswa: '.$e->getMessage(), [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui mahasiswa.',
+                'message' => 'Terjadi kesalahan saat memperbarui mahasiswa: '.$e->getMessage(),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -535,11 +566,12 @@ class MahasiswaController extends Controller
         try {
             $id_prodi = $request->get('id_prodi');
             $jenis_pendaftaran = $request->get('jenis_pendaftaran');
+            $status = $request->get('status');
             $is_dummy = $request->boolean('is_dummy', false);
 
             $filename = 'data_mahasiswa_'.date('Y_m_d').'.xlsx';
 
-            return Excel::download(new MahasiswaExport($id_prodi, $is_dummy, $jenis_pendaftaran), $filename);
+            return Excel::download(new MahasiswaExport($id_prodi, $is_dummy, $jenis_pendaftaran, $status), $filename);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -619,7 +651,7 @@ class MahasiswaController extends Controller
 
     private function buildMahasiswaPayload(Request $request): array
     {
-        $payload = $request->only([
+        $fields = [
             'id_prodi',
             'id_dosen',
             'nim',
@@ -675,7 +707,24 @@ class MahasiswaController extends Controller
             'kebutuhan_khusus',
             'id_mahasiswa_pddikti',
             'id_registrasi_mahasiswa_pddikti',
-        ]);
+        ];
+
+        $payload = [];
+        foreach ($fields as $field) {
+            if ($request->has($field)) {
+                $val = $request->input($field);
+                if (is_string($val)) {
+                    $trimmed = trim($val);
+                    $payload[$field] = $trimmed === '' ? null : $trimmed;
+                } else {
+                    $payload[$field] = $val;
+                }
+            }
+        }
+
+        if (array_key_exists('sks_diakui', $payload) && ($payload['sks_diakui'] === null || $payload['sks_diakui'] === '')) {
+            $payload['sks_diakui'] = 0;
+        }
 
         return $payload;
     }

@@ -19,11 +19,14 @@ class MahasiswaExport implements FromCollection, WithColumnFormatting, WithEvent
 
     protected $jenis_pendaftaran;
 
-    public function __construct($id_prodi = null, $isDummy = false, $jenis_pendaftaran = null)
+    protected $status;
+
+    public function __construct($id_prodi = null, $isDummy = false, $jenis_pendaftaran = null, $status = null)
     {
         $this->id_prodi = $id_prodi;
         $this->isDummy = $isDummy;
         $this->jenis_pendaftaran = $jenis_pendaftaran;
+        $this->status = $status;
     }
 
     public function collection()
@@ -147,6 +150,10 @@ class MahasiswaExport implements FromCollection, WithColumnFormatting, WithEvent
 
         if ($this->jenis_pendaftaran) {
             $query->where('jenis_pendaftaran', $this->jenis_pendaftaran);
+        }
+
+        if ($this->status && strtolower($this->status) !== 'all') {
+            $query->whereRaw('LOWER(status) = ?', [strtolower($this->status)]);
         }
 
         return $query->orderBy('nim')->get();

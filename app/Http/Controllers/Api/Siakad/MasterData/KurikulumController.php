@@ -1120,9 +1120,30 @@ class KurikulumController extends Controller
         try {
             $kurikulum = Kurikulum::findOrFail($id_kurikulum);
 
-            DB::table('kurikulum_mata_kuliah')
+            $kmk = DB::table('kurikulum_mata_kuliah')
                 ->where('id_kurikulum', $id_kurikulum)
                 ->where('id_mata_kuliah', $id_mata_kuliah)
+                ->first();
+
+            if (! $kmk) {
+                return response()->json([
+                    'message' => 'Mata kuliah tidak ditemukan dalam kurikulum ini.',
+                ], 404);
+            }
+
+            // Cegah penghapusan jika sudah digunakan oleh kelas kuliah
+            $kelasCount = DB::table('kelas_kuliah')
+                ->where('id_kurikulum_mata_kuliah', $kmk->id)
+                ->count();
+
+            if ($kelasCount > 0) {
+                return response()->json([
+                    'message' => "Mata kuliah ini tidak dapat dihapus dari kurikulum karena sudah digunakan pada {$kelasCount} kelas perkuliahan aktif. Hapus kelas perkuliahan terkait terlebih dahulu untuk melindungi data mahasiswa.",
+                ], 422);
+            }
+
+            DB::table('kurikulum_mata_kuliah')
+                ->where('id', $kmk->id)
                 ->delete();
 
             DB::commit();
