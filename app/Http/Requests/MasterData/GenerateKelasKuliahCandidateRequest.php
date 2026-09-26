@@ -18,6 +18,7 @@ class GenerateKelasKuliahCandidateRequest extends FormRequest
             'id_kurikulum' => 'required|uuid|exists:kurikulum,id',
             'id_semester' => 'required|uuid|exists:semester,id',
             'semester_ke' => 'required|integer|min:1|max:14',
+            'default_nama_kelas' => 'nullable|string|max:255',
             'default_kapasitas' => 'nullable|integer|min:1',
         ];
     }

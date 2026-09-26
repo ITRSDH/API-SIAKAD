@@ -15,7 +15,24 @@ class UpdateKelasKuliahRequest extends FormRequest
     {
         return [
             'id_prodi' => 'required|uuid|exists:prodi,id',
-            'id_kurikulum_mata_kuliah' => 'required|uuid|exists:kurikulum_mata_kuliah,id',
+            'id_kurikulum_mata_kuliah' => [
+                'required',
+                'uuid',
+                'exists:kurikulum_mata_kuliah,id',
+                function ($attribute, $value, $fail) {
+                    $prodiId = $this->input('id_prodi');
+                    if ($prodiId) {
+                        $match = \App\Models\MasterData\KurikulumMataKuliah::where('id', $value)
+                            ->whereHas('kurikulum', function ($q) use ($prodiId) {
+                                $q->where('id_prodi', $prodiId);
+                            })
+                            ->exists();
+                        if (! $match) {
+                            $fail('Mata kuliah yang dipilih tidak terdaftar pada Program Studi ini.');
+                        }
+                    }
+                },
+            ],
             'id_semester' => 'required|uuid|exists:semester,id',
             'nama_kelas' => 'required|string|max:255',
             'kapasitas_peserta' => 'nullable|integer|min:1',

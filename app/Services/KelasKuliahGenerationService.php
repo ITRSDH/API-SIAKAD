@@ -58,11 +58,23 @@ class KelasKuliahGenerationService
     public function candidates(array $filters): array
     {
         $candidates = $this->candidateMataKuliah($filters);
-        $duplicatedKmkIds = $this->detectDuplicatedKmkIds($filters, $candidates);
-        $duplicatedSet = array_flip($duplicatedKmkIds);
 
-        $rows = $candidates->map(function (KurikulumMataKuliah $kmk) use ($duplicatedSet, $filters) {
-            $isDuplicate = isset($duplicatedSet[$kmk->id]);
+        $defaultNama = isset($filters['default_nama_kelas']) && trim($filters['default_nama_kelas']) !== ''
+            ? trim($filters['default_nama_kelas'])
+            : null;
+
+        $existingClasses = KelasKuliah::query()
+            ->where('id_semester', $filters['id_semester'])
+            ->whereIn('id_kurikulum_mata_kuliah', $candidates->pluck('id'))
+            ->get(['id_kurikulum_mata_kuliah', 'nama_kelas']);
+
+        $existingGrouped = $existingClasses->groupBy('id_kurikulum_mata_kuliah');
+
+        $rows = $candidates->map(function (KurikulumMataKuliah $kmk) use ($existingGrouped, $defaultNama, $filters) {
+            $existing = $existingGrouped->get($kmk->id, collect());
+            $existingNames = $existing->pluck('nama_kelas')->filter()->values()->all();
+
+            $isExactDuplicate = $defaultNama !== null && in_array($defaultNama, $existingNames, true);
 
             return [
                 'id_kurikulum_mata_kuliah' => $kmk->id,
@@ -70,10 +82,12 @@ class KelasKuliahGenerationService
                 'nama_mk' => $kmk->mataKuliah?->nama_mk,
                 'sks' => (int) ($kmk->mataKuliah?->sks ?? 0),
                 'semester_ke' => (int) $kmk->semester_ke,
-                'status' => $isDuplicate ? 'duplicate' : 'will_create',
-                'message' => $isDuplicate
-                    ? 'Sudah ada kelas untuk mata kuliah ini pada semester target.'
-                    : 'Siap dibuat.',
+                'nama_kelas' => $defaultNama,
+                'existing_kelas' => $existingNames,
+                'status' => $isExactDuplicate ? 'duplicate' : 'will_create',
+                'message' => $isExactDuplicate
+                    ? 'Kelas "'.$defaultNama.'" sudah ada pada semester target.'
+                    : (! empty($existingNames) ? 'Siap dibuat (Sudah ada kelas: '.implode(', ', $existingNames).')' : 'Siap dibuat.'),
                 'default_kapasitas' => $filters['default_kapasitas'] ?? null,
             ];
         })->values();
@@ -90,7 +104,7 @@ class KelasKuliahGenerationService
 
     /**
      * Buat kelas kuliah untuk daftar id_kurikulum_mata_kuliah (yaitu MK) yang dipilih.
-     * Satu request = satu DB::transaction; matkul yang ternyata sudah punya kelas di semester target dilewati (skip).
+     * Satu request = satu DB::transaction; kelas dengan nama yang sama persis di-skip.
      */
     public function create(array $validated, string $createdBy): array
     {
@@ -112,10 +126,6 @@ class KelasKuliahGenerationService
             return $this->emptyReport('Tidak ada mata kuliah valid untuk dibuat kelasnya.');
         }
 
-        // Revalidasi: matkul yang sudah punya kelas di semester target di-skip (bukan error).
-        $selectedKmkIds = $rows->pluck('id_kurikulum_mata_kuliah');
-        $existingKmkIds = array_flip($this->detectDuplicatedKmkIds($filters, $selectedKmkIds));
-
         $results = [];
 
         try {
@@ -123,12 +133,21 @@ class KelasKuliahGenerationService
 
             foreach ($rows as $row) {
                 $kmkId = $row['id_kurikulum_mata_kuliah'];
+                $namaKelas = trim($row['nama_kelas']);
 
-                if (isset($existingKmkIds[$kmkId])) {
+                // Validasi duplikasi hanya jika kelas dengan nama yang sama persis sudah ada pada semester target
+                $alreadyExists = KelasKuliah::query()
+                    ->where('id_semester', $validated['id_semester'])
+                    ->where('id_kurikulum_mata_kuliah', $kmkId)
+                    ->where('nama_kelas', $namaKelas)
+                    ->exists();
+
+                if ($alreadyExists) {
                     $results[] = [
                         'id_kurikulum_mata_kuliah' => $kmkId,
+                        'nama_kelas' => $namaKelas,
                         'status' => 'skipped',
-                        'message' => 'Mata kuliah sudah punya kelas pada semester target.',
+                        'message' => 'Kelas "'.$namaKelas.'" sudah ada pada semester target.',
                     ];
 
                     continue;
@@ -139,7 +158,7 @@ class KelasKuliahGenerationService
                         'id_prodi' => $validated['id_prodi'],
                         'id_kurikulum_mata_kuliah' => $kmkId,
                         'id_semester' => $validated['id_semester'],
-                        'nama_kelas' => $row['nama_kelas'],
+                        'nama_kelas' => $namaKelas,
                         'kapasitas_peserta' => $row['kapasitas_peserta'] ?? null,
                     ]);
 
@@ -153,6 +172,7 @@ class KelasKuliahGenerationService
                 } catch (\Throwable $e) {
                     $results[] = [
                         'id_kurikulum_mata_kuliah' => $kmkId,
+                        'nama_kelas' => $namaKelas,
                         'status' => 'failed',
                         'message' => $e->getMessage(),
                     ];

@@ -93,6 +93,8 @@ Route::prefix('v1')->group(function () {
                     Route::get('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'show'])->name('kelas-kuliah.show');
                     Route::get('kelas-kuliah/{id}/krs-candidates', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'krsCandidates'])->name('kelas-kuliah.krs-candidates');
                     Route::post('kelas-kuliah/{id}/register-krs', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'registerKrsMahasiswa'])->name('kelas-kuliah.register-krs');
+                    Route::post('kelas-kuliah/{id}/sync-krs', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'syncKrsPeserta'])->name('kelas-kuliah.sync-krs');
+                    Route::get('kelas-kuliah/{id}/krs-sync-preview', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'krsSyncPreview'])->name('kelas-kuliah.krs-sync-preview');
                     Route::post('kelas-kuliah', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'store'])->name('kelas-kuliah.store');
                     Route::put('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'update'])->name('kelas-kuliah.update');
                     Route::delete('kelas-kuliah/{id}', [\App\Http\Controllers\Api\Siakad\MasterData\KelasKuliahController::class, 'destroy'])->name('kelas-kuliah.destroy');

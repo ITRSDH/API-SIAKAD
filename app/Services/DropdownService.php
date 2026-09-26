@@ -73,14 +73,30 @@ class DropdownService
                     ? trim($item->kurikulum->semesterMulai->tahunAkademik->tahun_akademik.' '.$item->kurikulum->semesterMulai->nama_semester)
                     : null;
 
+                $mk = $item->mataKuliah;
+
                 return [
                     'id' => $item->id,
-                    'matakuliah' => $item->mataKuliah->kode_mk
-                        .' - '.$item->mataKuliah->nama_mk
-                        .' (SKS '.$item->mataKuliah->sks.')'
+                    'id_kurikulum' => $item->id_kurikulum,
+                    'id_prodi' => $item->kurikulum?->id_prodi,
+                    'id_mata_kuliah' => $item->id_mata_kuliah,
+                    'kode_mk' => $mk?->kode_mk,
+                    'nama_mk' => $mk?->nama_mk,
+                    'sks' => $mk?->sks ?? 0,
+                    'sks_tatap_muka' => $mk?->sks_tatap_muka ?? 0,
+                    'sks_praktikum' => $mk?->sks_praktikum ?? 0,
+                    'sks_praktek_lapangan' => $mk?->sks_praktek_lapangan ?? 0,
+                    'sks_simulasi' => $mk?->sks_simulasi ?? 0,
+                    'semester_ke' => $item->semester_ke,
+                    'status_mk' => $item->status_mk ?? ($item->is_wajib ? 'wajib' : 'pilihan'),
+                    'is_wajib' => (bool) $item->is_wajib,
+                    'nama_kurikulum' => $item->kurikulum?->nama_kurikulum ?? $item->kurikulum?->nama_struktur_mk,
+                    'matakuliah' => ($mk?->kode_mk ?? '-')
+                        .' - '.($mk?->nama_mk ?? '-')
+                        .' (SKS '.($mk?->sks ?? 0).')'
                         .' - '
-                        .' (Semester '.$item->semester_ke.')'
-                        .'  '
+                        .'(Semester '.$item->semester_ke.')'
+                        .' '
                         .($item->kurikulum?->nama_kurikulum ?? $item->kurikulum?->nama_struktur_mk)
                         .($mulaiBerlaku ? ' (Mulai '.$mulaiBerlaku.')' : ''),
                 ];
